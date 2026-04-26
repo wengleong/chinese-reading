@@ -1,0 +1,30 @@
+[
+  {
+    "id": "p3-xiaomao-diaoyu",
+    "title": "小猫钓鱼",
+    "level": "P3",
+    "estMinutes": 3,
+    "tags": ["fable", "animals"]
+  },
+  {
+    "id": "p4-wuya-heshui",
+    "title": "乌鸦喝水",
+    "level": "P4",
+    "estMinutes": 4,
+    "tags": ["fable", "animals"]
+  },
+  {
+    "id": "p5-shouzhu-daitu",
+    "title": "守株待兔",
+    "level": "P5",
+    "estMinutes": 5,
+    "tags": ["idiom", "classical"]
+  },
+  {
+    "id": "p6-zixiang-maodun",
+    "title": "自相矛盾",
+    "level": "P6",
+    "estMinutes": 6,
+    "tags": ["idiom", "classical"]
+  }
+]
