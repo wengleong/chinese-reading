@@ -1,5 +1,6 @@
 import { loadIndex, loadStory } from "./lib/stories.js";
 import { createPlayer, isSupported as ttsSupported } from "./lib/speech.js";
+import { getActiveStudent, scoreTranscript } from "./lib/students.js";
 import { renderStoryPicker } from "./components/storyPicker.js";
 import { renderStoryReader } from "./components/storyReader.js";
 import { renderPinyinToggle } from "./components/pinyinToggle.js";
@@ -7,6 +8,8 @@ import { renderPlaybackControls } from "./components/playbackControls.js";
 import { renderRecorder } from "./components/recorder.js";
 import { renderRecordingsList } from "./components/recordingsList.js";
 import { renderDailyTimer } from "./components/dailyTimer.js";
+import { renderStudentPanel } from "./components/studentPanel.js";
+import { openScoreModal } from "./components/scoreModal.js";
 
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
   window.addEventListener("load", () => {
@@ -21,9 +24,8 @@ window.addEventListener("beforeinstallprompt", (e) => {
   const btn = document.getElementById("install-btn");
   if (btn) btn.hidden = false;
 });
-
 document.addEventListener("click", async (e) => {
-  if (e.target && e.target.id === "install-btn" && deferredInstall) {
+  if (e.target?.id === "install-btn" && deferredInstall) {
     deferredInstall.prompt();
     await deferredInstall.userChoice;
     deferredInstall = null;
@@ -32,6 +34,7 @@ document.addEventListener("click", async (e) => {
 });
 
 const els = {
+  studentPanel: document.getElementById("student-panel"),
   picker: document.getElementById("story-picker"),
   reader: document.getElementById("story-reader"),
   pinyinToggle: document.getElementById("pinyin-toggle"),
@@ -51,10 +54,16 @@ let highlightEnabled = true;
 
 const timerCtl = renderDailyTimer({ root: els.timer });
 
+// Student panel — refresh on student change to update stats display
+let studentPanelCtl = renderStudentPanel({
+  root: els.studentPanel,
+  onStudentChange: () => studentPanelCtl?.refresh(),
+});
+
 renderPinyinToggle({ root: els.pinyinToggle, readerRoot: els.reader });
 
 // Highlight toggle
-(function renderHighlightToggle() {
+(function () {
   const label = document.createElement("label");
   label.className = "toggle";
   const input = document.createElement("input");
@@ -67,31 +76,16 @@ renderPinyinToggle({ root: els.pinyinToggle, readerRoot: els.reader });
   els.highlightToggle.appendChild(label);
   input.addEventListener("change", () => {
     highlightEnabled = input.checked;
-    if (!highlightEnabled && readerCtl) readerCtl.clearActive();
+    if (!highlightEnabled) readerCtl?.clearActive();
   });
 })();
 
 renderPlaybackControls({
   root: els.playback,
-  onPlay: () => {
-    if (!player) return;
-    timerCtl.setActive(true);
-    player.play();
-  },
-  onPause: () => {
-    if (!player) return;
-    player.pause();
-    timerCtl.setActive(false);
-  },
-  onRestart: () => {
-    if (!player) return;
-    player.restart();
-    if (readerCtl) readerCtl.clearActive();
-  },
-  onRateChange: (v) => {
-    rate = v;
-    if (player) player.setRate(v);
-  },
+  onPlay: () => { timerCtl.setActive(true); player?.play(); },
+  onPause: () => { player?.pause(); timerCtl.setActive(false); },
+  onRestart: () => { player?.restart(); readerCtl?.clearActive(); },
+  onRateChange: (v) => { rate = v; player?.setRate(v); },
 });
 
 renderRecorder({
@@ -99,6 +93,21 @@ renderRecorder({
   getCurrentStory: () => activeStory,
   onSaved: () => renderRecordingsList({ root: els.recordings }),
   onActiveChange: (active) => timerCtl.setActive(active),
+  onComplete: ({ transcript, story }) => {
+    const student = getActiveStudent();
+    if (!student || !story) return;
+
+    const score = scoreTranscript(story.tokens, transcript);
+    openScoreModal({
+      student,
+      story,
+      score,
+      transcript,
+      onRetry: () => {},  // user can press Record again
+      onDone: () => studentPanelCtl?.refresh(),
+    });
+    studentPanelCtl?.refresh();
+  },
 });
 
 renderRecordingsList({ root: els.recordings });
@@ -110,24 +119,18 @@ renderRecordingsList({ root: els.recordings });
     els.picker.innerHTML = `<p class="privacy-note">Failed to load stories: ${err.message}</p>`;
     return;
   }
-  renderStoryPicker({
-    root: els.picker,
-    stories,
-    activeId: null,
-    onPick: pickStory,
-  });
+  renderStoryPicker({ root: els.picker, stories, activeId: null, onPick: pickStory });
 
   if (!ttsSupported()) {
     const warn = document.createElement("p");
     warn.className = "privacy-note";
-    warn.textContent =
-      "This browser does not support text-to-speech. Reading will still work; voice playback will not.";
+    warn.textContent = "This browser does not support text-to-speech. Reading will still work; voice playback will not.";
     els.reader.parentElement.insertBefore(warn, els.reader);
   }
 })();
 
 async function pickStory(id) {
-  if (player) player.pause();
+  player?.pause();
   try {
     activeStory = await loadStory(id);
   } catch (err) {
@@ -137,19 +140,9 @@ async function pickStory(id) {
   readerCtl = renderStoryReader({ root: els.reader, story: activeStory });
   player = createPlayer({
     tokens: activeStory.tokens,
-    onTokenStart: (i) => {
-      if (highlightEnabled) readerCtl.setActiveIndex(i);
-    },
-    onEnd: () => {
-      readerCtl.clearActive();
-      timerCtl.setActive(false);
-    },
+    onTokenStart: (i) => { if (highlightEnabled) readerCtl.setActiveIndex(i); },
+    onEnd: () => { readerCtl.clearActive(); timerCtl.setActive(false); },
   });
   player.setRate(rate);
-  renderStoryPicker({
-    root: els.picker,
-    stories,
-    activeId: id,
-    onPick: pickStory,
-  });
+  renderStoryPicker({ root: els.picker, stories, activeId: id, onPick: pickStory });
 }
