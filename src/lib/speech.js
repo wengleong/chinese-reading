@@ -74,7 +74,12 @@ export function createPlayer({ tokens, onTokenStart, onEnd }) {
     }
 
     const seg = segments[segIndex];
-    const text = seg.map(({ token }) => token.char).join("");
+
+    // Build spoken text: Chinese chars + standard punctuation only.
+    // Exotic chars (curly quotes ""'' 《》—…) are stripped to avoid TTS reading
+    // them as symbol names. Standard punctuation (，。！？：；) creates natural pauses.
+    const KEEP = /[\u4e00-\u9fff。，！？：；]/;
+    const text = seg.map(({ token }) => KEEP.test(token.char) ? token.char : "").join("");
 
     // At rate=1.0, zh-CN TTS is roughly 4 chars/sec → 250ms/char.
     const msPerChar = 250 / rate;
@@ -95,7 +100,10 @@ export function createPlayer({ tokens, onTokenStart, onEnd }) {
       onTokenStart && onTokenStart(globalIdx, token);
       charIdx++;
       if (charIdx < seg.length) {
-        highlightTimer = setTimeout(advanceHighlight, msPerChar);
+        // After punctuation the TTS pauses naturally — add extra delay so the
+        // highlight doesn't race ahead. Commas/colons ~300ms, keep proportional to rate.
+        const punctPause = !token.pinyin ? Math.round(280 / rate) : 0;
+        highlightTimer = setTimeout(advanceHighlight, msPerChar + punctPause);
       }
     }
 

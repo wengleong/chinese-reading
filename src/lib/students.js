@@ -1,4 +1,5 @@
 // Student profiles, per-student progress, streak tracking, and gamification.
+// All dates are in Singapore time (Asia/Singapore, UTC+8).
 
 const STUDENTS_KEY = "cr-students";
 const PROGRESS_PREFIX = "cr-progress-";
@@ -9,9 +10,9 @@ export const AVATAR_COLORS = [
   "#f59f00", "#d63939", "#0ca678", "#9c36b5",
 ];
 
-function todayIso() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+// Always compute today's date in Singapore time regardless of device timezone.
+export function todayIso() {
+  return new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Singapore" });
 }
 
 // ---- Student CRUD ----
@@ -76,8 +77,8 @@ export function getStudentStreak(studentId) {
   const sessions = getProgress(studentId).sessions;
   let streak = 0;
   const d = new Date();
-  while (true) {
-    const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  for (let i = 0; i < 365; i++) {
+    const iso = d.toLocaleDateString("sv-SE", { timeZone: "Asia/Singapore" });
     if (sessions.some(s => s.date === iso && s.passed)) {
       streak++;
       d.setDate(d.getDate() - 1);
@@ -91,40 +92,57 @@ export function hasCompletedToday(studentId) {
   return getProgress(studentId).sessions.some(s => s.date === today && s.passed);
 }
 
-// All attempts (pass or fail) on a story today — used for retry bonus detection.
 export function getTodayAttempts(studentId, storyId) {
   const today = todayIso();
   return getProgress(studentId).sessions.filter(s => s.date === today && s.storyId === storyId);
 }
 
-// Has the student ever passed this story on a PREVIOUS day (repeat bonus).
 export function hasPassedStoryBefore(studentId, storyId) {
   const today = todayIso();
   return getProgress(studentId).sessions.some(s => s.storyId === storyId && s.passed && s.date !== today);
 }
 
-// ---- Transcript scoring (LCS-based) ----
+// ---- Dashboard analytics ----
 
-function lcsLength(a, b) {
-  const m = a.length, n = b.length;
-  if (!m || !n) return 0;
-  const prev = new Array(n + 1).fill(0);
-  for (let i = 1; i <= m; i++) {
-    const curr = new Array(n + 1).fill(0);
-    for (let j = 1; j <= n; j++) {
-      curr[j] = a[i - 1] === b[j - 1] ? prev[j - 1] + 1 : Math.max(prev[j], curr[j - 1]);
-    }
-    prev.set ? prev.set(curr) : curr.forEach((v, i) => prev[i] = v);
+// Best (longest) streak ever achieved.
+export function getBestStreak(studentId) {
+  const sessions = getProgress(studentId).sessions;
+  const passDates = [...new Set(sessions.filter(s => s.passed).map(s => s.date))].sort();
+  if (!passDates.length) return 0;
+  let best = 1, cur = 1;
+  for (let i = 1; i < passDates.length; i++) {
+    const diff = (new Date(passDates[i]) - new Date(passDates[i - 1])) / 86400000;
+    cur = diff === 1 ? cur + 1 : 1;
+    if (cur > best) best = cur;
   }
-  return prev[n];
+  return best;
 }
+
+// Per-day summary for the last N days (default 30), in SG time.
+export function getActivityDays(studentId, n = 30) {
+  const sessions = getProgress(studentId).sessions;
+  const days = [];
+  const now = new Date();
+  for (let i = n - 1; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    const iso = d.toLocaleDateString("sv-SE", { timeZone: "Asia/Singapore" });
+    const isToday = i === 0;
+    const daySess = sessions.filter(s => s.date === iso);
+    const passed = daySess.some(s => s.passed);
+    const attempted = daySess.length > 0;
+    const bestScore = daySess.filter(s => s.passed).reduce((m, s) => Math.max(m, s.score), 0);
+    days.push({ iso, isToday, passed, attempted, bestScore });
+  }
+  return days;
+}
+
+// ---- Transcript scoring (LCS-based F1) ----
 
 export function scoreTranscript(storyTokens, transcript) {
   const storyText = storyTokens.filter(t => t.pinyin).map(t => t.char).join("");
   const spoken = (transcript || "").replace(/[^\u4e00-\u9fff]/g, "");
   if (!spoken || !storyText.length) return 0;
-
-  // Use flat array LCS (avoid large matrix allocation)
   const m = storyText.length, n = spoken.length;
   let prev = new Array(n + 1).fill(0);
   for (let i = 1; i <= m; i++) {
@@ -145,39 +163,18 @@ export function scoreTranscript(storyTokens, transcript) {
 
 export function calculatePoints({ score, isRepeat, wasFailedBefore, streakDays }) {
   if (score < 60) return { total: 0, breakdown: [] };
-
   const breakdown = [];
   let total = 100;
   breakdown.push({ label: "完成阅读 Story completed", pts: 100 });
-
-  if (score >= 90) {
-    breakdown.push({ label: "优秀 Excellent (90+) ⭐", pts: 40 });
-    total += 40;
-  } else if (score >= 80) {
-    breakdown.push({ label: "很好 Great (80+)", pts: 20 });
-    total += 20;
-  } else if (score >= 70) {
-    breakdown.push({ label: "良好 Good (70+)", pts: 10 });
-    total += 10;
-  }
-
-  if (wasFailedBefore) {
-    breakdown.push({ label: "坚持不懈 Perseverance! 💪", pts: 25 });
-    total += 25;
-  }
-
-  if (isRepeat) {
-    breakdown.push({ label: "重复练习 Repeat practice 🔄", pts: 15 });
-    total += 15;
-  }
-
+  if (score >= 90) { breakdown.push({ label: "优秀 Excellent (90+) ⭐", pts: 40 }); total += 40; }
+  else if (score >= 80) { breakdown.push({ label: "很好 Great (80+)", pts: 20 }); total += 20; }
+  else if (score >= 70) { breakdown.push({ label: "良好 Good (70+)", pts: 10 }); total += 10; }
+  if (wasFailedBefore) { breakdown.push({ label: "坚持不懈 Perseverance! 💪", pts: 25 }); total += 25; }
+  if (isRepeat) { breakdown.push({ label: "重复练习 Repeat practice 🔄", pts: 15 }); total += 15; }
   if (streakDays > 0) {
     const bonus = Math.min(50, streakDays * 5);
     breakdown.push({ label: `🔥 ${streakDays}-day streak bonus`, pts: bonus });
     total += bonus;
   }
-
   return { total, breakdown };
 }
-
-export function todayIsoExport() { return todayIso(); }

@@ -1,14 +1,17 @@
-// Student selector panel — shows enrolled students, active state, streak, points.
+// Student selector panel — shows enrolled students with streak, points, daily status.
 
 import {
-  getStudents, createStudent, deleteStudent,
+  getStudents, createStudent,
   getActiveStudentId, setActiveStudentId,
   getProgress, getStudentStreak, hasCompletedToday,
 } from "../lib/students.js";
+import { openStudentDashboard } from "./studentDashboard.js";
 
 const LEVELS = ["P1", "P2", "P3", "P4", "P5", "P6"];
 
 export function renderStudentPanel({ root, onStudentChange }) {
+  let panelCtl = { refresh };
+
   function refresh() {
     root.innerHTML = "";
     const students = getStudents();
@@ -25,27 +28,46 @@ export function renderStudentPanel({ root, onStudentChange }) {
     }
 
     for (const student of students) {
+      const row = document.createElement("div");
+      row.className = "student-card-row";
+
+      // Activate card
       const card = document.createElement("button");
       card.className = "student-card" + (student.id === activeId ? " active" : "");
-
       const todayDone = hasCompletedToday(student.id);
       const streak = getStudentStreak(student.id);
       const pts = (getProgress(student.id).totalPoints || 0).toLocaleString();
-
       card.innerHTML = `
         <div class="student-avatar" style="background:${student.color}">${student.name[0].toUpperCase()}</div>
         <div class="student-info">
           <span class="student-name">${student.name}</span>
           <span class="student-meta">${student.level}${todayDone ? " ✅" : " ⭕"}${streak > 0 ? ` 🔥${streak}` : ""} 💎${pts}</span>
         </div>`;
-
       card.addEventListener("click", () => {
         setActiveStudentId(student.id);
-        onStudentChange && onStudentChange(student);
+        onStudentChange?.(student);
         refresh();
       });
 
-      wrap.appendChild(card);
+      // Dashboard view button
+      const viewBtn = document.createElement("button");
+      viewBtn.className = "student-view-btn";
+      viewBtn.title = `${student.name}'s progress`;
+      viewBtn.textContent = "📊";
+      viewBtn.addEventListener("click", () => {
+        openStudentDashboard({
+          student,
+          onDeleted: () => {
+            onStudentChange?.(null);
+            refresh();
+          },
+          onClose: refresh,
+        });
+      });
+
+      row.appendChild(card);
+      row.appendChild(viewBtn);
+      wrap.appendChild(row);
     }
 
     // Add student button
@@ -59,8 +81,7 @@ export function renderStudentPanel({ root, onStudentChange }) {
   }
 
   refresh();
-
-  return { refresh };
+  return panelCtl;
 }
 
 function openAddModal(onDone, onStudentChange) {
@@ -69,12 +90,10 @@ function openAddModal(onDone, onStudentChange) {
   overlay.innerHTML = `
     <div class="modal-card" role="dialog" aria-modal="true">
       <h2 class="modal-title">Add Student</h2>
-      <label class="modal-label">
-        Name
+      <label class="modal-label">Name
         <input class="modal-input" id="add-name" type="text" placeholder="Student name" maxlength="30" />
       </label>
-      <label class="modal-label">
-        Level
+      <label class="modal-label">Level
         <select class="modal-select" id="add-level">
           ${LEVELS.map(l => `<option value="${l}"${l === "P3" ? " selected" : ""}>${l}</option>`).join("")}
         </select>
@@ -85,39 +104,26 @@ function openAddModal(onDone, onStudentChange) {
         <button class="primary" id="add-submit">Add Student</button>
       </div>
     </div>`;
-
   document.body.appendChild(overlay);
 
   const nameEl = overlay.querySelector("#add-name");
   const levelEl = overlay.querySelector("#add-level");
   const errorEl = overlay.querySelector("#add-error");
-
   setTimeout(() => nameEl.focus(), 50);
 
-  function close() {
-    document.removeEventListener("keydown", handleEsc);
-    overlay.remove();
-  }
+  function close() { document.removeEventListener("keydown", handleEsc); overlay.remove(); }
   function handleEsc(e) { if (e.key === "Escape") close(); }
   document.addEventListener("keydown", handleEsc);
-
   overlay.querySelector("#add-cancel").addEventListener("click", close);
   overlay.addEventListener("click", e => { if (e.target === overlay) close(); });
-
-  nameEl.addEventListener("keydown", e => {
-    if (e.key === "Enter") overlay.querySelector("#add-submit").click();
-  });
+  nameEl.addEventListener("keydown", e => { if (e.key === "Enter") overlay.querySelector("#add-submit").click(); });
 
   overlay.querySelector("#add-submit").addEventListener("click", () => {
     const name = nameEl.value.trim();
-    if (!name) {
-      errorEl.textContent = "Please enter a name.";
-      errorEl.hidden = false;
-      return;
-    }
+    if (!name) { errorEl.textContent = "Please enter a name."; errorEl.hidden = false; return; }
     const student = createStudent(name, levelEl.value);
     setActiveStudentId(student.id);
-    onStudentChange && onStudentChange(student);
+    onStudentChange?.(student);
     onDone();
     close();
   });
