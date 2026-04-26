@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-Hans-SG">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#e8590c" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="default"
+    />
+    <meta name="apple-mobile-web-app-title" content="华文阅读" />
+    <title>每日华文阅读 · Daily Chinese Reading</title>
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./icons/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+    <link
+      rel="preconnect"
+      href="https://fonts.googleapis.com"
+    />
+    <link
+      rel="preconnect"
+      href="https://fonts.gstatic.com"
+      crossorigin
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>每日华文阅读</h1>
+      <div class="header-right">
+        <button id="install-btn" class="secondary install-btn" hidden>
+          ⬇ Install
+        </button>
+        <div id="daily-timer" class="daily-timer" aria-live="polite"></div>
+      </div>
+    </header>
+
+    <main class="app-main">
+      <aside id="story-picker" class="story-picker" aria-label="Story library"></aside>
+
+      <section class="reader-pane">
+        <div class="reader-toolbar">
+          <div id="pinyin-toggle"></div>
+          <div id="playback-controls"></div>
+        </div>
+
+        <article id="story-reader" class="story-reader" lang="zh-Hans">
+          <p class="empty-hint">← 选一个故事开始阅读 (Pick a story to begin)</p>
+        </article>
+
+        <section class="recorder-section" aria-label="Recorder">
+          <div id="recorder"></div>
+          <div id="recordings-list"></div>
+        </section>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <small>
+        Recordings stay on this device. Please ask a parent or teacher to
+        review any recording before sharing.
+      </small>
+    </footer>
+
+    <script type="module" src="./src/app.js"></script>
+  </body>
+</html>
