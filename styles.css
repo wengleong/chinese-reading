@@ -954,6 +954,14 @@ button.danger {
   aspect-ratio: 4 / 3;
 }
 
+.recorder-canvas {
+  width: 100%;
+  border-radius: 10px;
+  background: #111;
+  aspect-ratio: 4 / 3;
+  display: block;
+}
+
 .recorder .controls-stack {
   display: flex;
   flex-direction: column;
