@@ -8,6 +8,34 @@ import { renderRecorder } from "./components/recorder.js";
 import { renderRecordingsList } from "./components/recordingsList.js";
 import { renderDailyTimer } from "./components/dailyTimer.js";
 
+// Register the service worker for offline use. Skipped on file:// (where
+// service workers are unavailable) so local double-click previews still work.
+if ("serviceWorker" in navigator && location.protocol !== "file:") {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch(() => {
+      /* silent: app still works online without the SW */
+    });
+  });
+}
+
+// Capture the install prompt on Android/Chrome and surface it as a button.
+let deferredInstall = null;
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredInstall = e;
+  const btn = document.getElementById("install-btn");
+  if (btn) btn.hidden = false;
+});
+
+document.addEventListener("click", async (e) => {
+  if (e.target && e.target.id === "install-btn" && deferredInstall) {
+    deferredInstall.prompt();
+    await deferredInstall.userChoice;
+    deferredInstall = null;
+    e.target.hidden = true;
+  }
+});
+
 const els = {
   picker: document.getElementById("story-picker"),
   reader: document.getElementById("story-reader"),

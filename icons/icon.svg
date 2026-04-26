@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Daily Chinese Reading">
+  <rect width="512" height="512" rx="96" fill="#e8590c"/>
+  <rect x="64" y="80" width="384" height="352" rx="40" fill="#fffaf2"/>
+  <text x="256" y="320"
+        font-family="Noto Sans SC, PingFang SC, Microsoft YaHei, sans-serif"
+        font-size="240"
+        font-weight="700"
+        text-anchor="middle"
+        fill="#e8590c">读</text>
+  <circle cx="160" cy="160" r="22" fill="#ffd166"/>
+  <circle cx="352" cy="160" r="22" fill="#ffd166"/>
+</svg>

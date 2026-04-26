@@ -25,16 +25,26 @@ body {
   background: var(--bg);
   color: var(--ink);
   min-height: 100vh;
+  /* Avoid iOS body-bounce gray when content scrolls. */
+  overscroll-behavior-y: none;
+  -webkit-text-size-adjust: 100%;
 }
 
 .app-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 24px;
+  gap: 12px;
+  padding: 14px 20px;
+  padding-top: max(14px, env(safe-area-inset-top));
+  padding-left: max(20px, env(safe-area-inset-left));
+  padding-right: max(20px, env(safe-area-inset-right));
   background: var(--surface);
   border-bottom: 1px solid var(--border);
   box-shadow: var(--shadow);
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .app-header h1 {
@@ -43,17 +53,41 @@ body {
   color: var(--accent);
 }
 
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.install-btn {
+  font-size: 13px;
+  padding: 6px 12px;
+}
+
 .app-main {
   display: grid;
   grid-template-columns: 280px 1fr;
   gap: 24px;
   padding: 24px;
+  padding-left: max(24px, env(safe-area-inset-left));
+  padding-right: max(24px, env(safe-area-inset-right));
+  padding-bottom: calc(24px + env(safe-area-inset-bottom));
   align-items: start;
 }
 
 @media (max-width: 800px) {
   .app-main {
     grid-template-columns: 1fr;
+    gap: 14px;
+    padding: 14px;
+    padding-bottom: calc(96px + env(safe-area-inset-bottom));
+  }
+  .app-header {
+    padding: 10px 14px;
+    padding-top: max(10px, env(safe-area-inset-top));
+  }
+  .app-header h1 {
+    font-size: 18px;
   }
 }
 
@@ -66,6 +100,13 @@ body {
   box-shadow: var(--shadow);
   max-height: 80vh;
   overflow-y: auto;
+}
+
+@media (max-width: 800px) {
+  .story-picker {
+    max-height: 38vh;
+    padding: 8px;
+  }
 }
 
 .story-picker h2 {
@@ -127,24 +168,57 @@ body {
 .reader-toolbar {
   display: flex;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: 12px;
   align-items: center;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 12px 16px;
+  padding: 10px 14px;
   box-shadow: var(--shadow);
+}
+
+@media (max-width: 800px) {
+  .reader-toolbar {
+    position: sticky;
+    bottom: env(safe-area-inset-bottom);
+    z-index: 5;
+    order: 99;
+    margin-top: 8px;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.08);
+  }
+  .reader-pane {
+    display: flex;
+    flex-direction: column;
+  }
+  .controls {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .speed-slider input {
+    width: 80px;
+  }
 }
 
 .story-reader {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 28px 32px;
+  padding: 24px 28px;
   box-shadow: var(--shadow);
-  min-height: 200px;
+  min-height: 180px;
   line-height: 2.4;
   font-size: 28px;
+}
+
+@media (max-width: 800px) {
+  .story-reader {
+    padding: 18px 16px;
+    font-size: 24px;
+    line-height: 2.2;
+  }
+  .story-reader .story-title {
+    font-size: 18px;
+  }
 }
 
 .story-reader .story-title {
@@ -207,9 +281,25 @@ button.danger {
   font: inherit;
   border: none;
   border-radius: 999px;
-  padding: 8px 18px;
+  padding: 10px 20px;
   cursor: pointer;
   font-weight: 600;
+  min-height: 44px;
+  touch-action: manipulation;
+}
+
+a.secondary {
+  font: inherit;
+  border-radius: 999px;
+  padding: 10px 20px;
+  font-weight: 600;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  background: var(--accent-soft);
+  color: var(--accent);
+  touch-action: manipulation;
 }
 
 button.primary {
@@ -268,9 +358,17 @@ button.danger {
   align-items: center;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 800px) {
   .recorder {
     grid-template-columns: 1fr;
+    padding: 12px;
+    gap: 12px;
+  }
+  .recording-row {
+    gap: 6px;
+  }
+  .recording-row .label {
+    flex: 1 1 100%;
   }
 }
 

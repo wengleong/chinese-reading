@@ -63,7 +63,12 @@ export async function renderRecordingsList({ root }) {
     dlBtn.className = "secondary";
     dlBtn.textContent = "⬇ Download";
     dlBtn.href = url;
-    const ext = (r.mimeType || "").includes("mp4") ? "mp4" : "webm";
+    const blobType = (r.blob && r.blob.type) || r.mimeType || "";
+    const ext = blobType.includes("mp4")
+      ? "mp4"
+      : blobType.includes("ogg")
+      ? "ogv"
+      : "webm";
     dlBtn.download = `${r.storyId}-${r.createdAt}.${ext}`;
     dlBtn.role = "button";
 

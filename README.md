@@ -37,6 +37,32 @@ microphone when prompted to use the recorder.
 > Camera/mic access requires a secure context. `localhost` qualifies; if you
 > deploy this, use HTTPS.
 
+## Deploy to GitHub Pages
+
+A workflow at `.github/workflows/pages.yml` deploys the site automatically
+on every push to `main` (or `master`). One-time setup:
+
+1. In GitHub: **Settings → Pages → Build and deployment → Source:
+   GitHub Actions**.
+2. Merge this branch to `main` (or push a commit there). The
+   *Deploy to GitHub Pages* workflow will run.
+3. The site appears at
+   `https://<your-user>.github.io/<your-repo>/` — HTTPS is automatic, so
+   camera/mic and the install button work out of the box.
+
+## Mobile (phone / tablet)
+
+The app is responsive and installable as a PWA on iOS and Android.
+
+- On Android Chrome: an **⬇ Install** button appears in the header — tap to
+  install. Recordings save as `.webm`.
+- On iOS Safari: tap **Share → Add to Home Screen**. Recordings save as
+  `.mp4` (the download button picks the right extension automatically).
+- Works offline after the first visit (a service worker caches the app
+  shell and bundled stories).
+- Hosting: must be served over HTTPS for camera/mic to work. GitHub Pages
+  (above) is the easiest option.
+
 ## Add a new story
 
 The starter stories ship with hand-verified pinyin. To add more, use the
@@ -94,8 +120,11 @@ node scripts/add-pinyin.mjs raw/new-story.txt p4-new-story "新故事" P4 4 fabl
 ```
 index.html              # single-page shell
 styles.css              # global styles + reader/recorder UI
+sw.js                   # service worker (offline cache)
+manifest.webmanifest    # PWA manifest
+icons/                  # app icons (svg + PNG + apple-touch)
 src/
-  app.js                # entry point, wires components
+  app.js                # entry point, wires components, registers SW
   components/           # storyPicker, storyReader, pinyinToggle,
                         # playbackControls, recorder, recordingsList,
                         # dailyTimer
@@ -106,6 +135,8 @@ stories/
   p3-*.json … p6-*.json # individual stories with tokenized pinyin
 scripts/
   add-pinyin.mjs        # author tool (Node; uses pinyin-pro offline)
+.github/workflows/
+  pages.yml             # auto-deploy to GitHub Pages on push to main
 ```
 
 ## Browser support
