@@ -4,20 +4,22 @@
 // segment is spoken as a single utterance for natural, flowing speech.
 // Per-character highlighting is driven by a timer using an estimated pace,
 // since SpeechSynthesisUtterance.onboundary is unreliable for zh-CN.
+// onstart is also unreliable on Safari — we use a 300ms fallback timer.
 
 const synth = typeof window !== "undefined" ? window.speechSynthesis : null;
 
 function pickChineseVoice() {
   if (!synth) return null;
   const voices = synth.getVoices();
+  // Prefer local (downloaded) voices — they handle tone sandhi better
   return (
+    voices.find((v) => v.lang === "zh-CN" && v.localService) ||
     voices.find((v) => v.lang === "zh-CN") ||
     voices.find((v) => v.lang && v.lang.toLowerCase().startsWith("zh")) ||
     null
   );
 }
 
-// Voices may load asynchronously; resolve once at least one is available.
 function whenVoicesReady() {
   return new Promise((resolve) => {
     if (!synth) return resolve();
@@ -84,6 +86,8 @@ export function createPlayer({ tokens, onTokenStart, onEnd }) {
     if (voice) u.voice = voice;
 
     let charIdx = 0;
+    let onStartFired = false;
+    let startFallback = null;
 
     function advanceHighlight() {
       if (cancelled || charIdx >= seg.length) return;
@@ -95,13 +99,28 @@ export function createPlayer({ tokens, onTokenStart, onEnd }) {
       }
     }
 
-    u.onstart = () => {
-      if (cancelled) return;
+    function beginHighlight() {
       charIdx = 0;
       advanceHighlight();
+    }
+
+    u.onstart = () => {
+      onStartFired = true;
+      if (startFallback) {
+        clearTimeout(startFallback);
+        startFallback = null;
+      }
+      if (cancelled) return;
+      beginHighlight();
     };
 
+    // Safari and some mobile browsers don't reliably fire onstart
+    startFallback = setTimeout(() => {
+      if (!onStartFired && !cancelled && playing) beginHighlight();
+    }, 300);
+
     u.onend = () => {
+      if (startFallback) { clearTimeout(startFallback); startFallback = null; }
       clearHighlightTimer();
       if (cancelled) return;
       segIndex++;
@@ -109,6 +128,7 @@ export function createPlayer({ tokens, onTokenStart, onEnd }) {
     };
 
     u.onerror = () => {
+      if (startFallback) { clearTimeout(startFallback); startFallback = null; }
       clearHighlightTimer();
       if (cancelled) return;
       segIndex++;
@@ -124,7 +144,6 @@ export function createPlayer({ tokens, onTokenStart, onEnd }) {
       if (playing) return;
       playing = true;
       cancelled = false;
-      // Resume from where we paused. If finished, restart.
       if (segIndex >= segments.length) segIndex = 0;
       speakSegment();
     },

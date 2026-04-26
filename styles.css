@@ -91,6 +91,83 @@ body {
   }
 }
 
+/* ---- Modal ---- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: grid;
+  place-items: center;
+  z-index: 200;
+  padding: 20px;
+}
+
+.modal-card {
+  background: var(--surface);
+  border-radius: 16px;
+  padding: 24px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 20px;
+  color: var(--accent);
+}
+
+.modal-subtitle {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.modal-label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.modal-select,
+.modal-input {
+  font: inherit;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.modal-hint {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.modal-error {
+  color: var(--danger);
+  font-size: 13px;
+  padding: 8px 12px;
+  background: #fff0f0;
+  border-radius: 8px;
+  border: 1px solid #ffd0d0;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
 /* ---- Story picker ---- */
 .story-picker {
   background: var(--surface);
@@ -109,10 +186,51 @@ body {
   }
 }
 
-.story-picker h2 {
+.picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.picker-header h2 {
   font-size: 16px;
-  margin: 4px 0 12px;
+  margin: 0;
   color: var(--muted);
+}
+
+.generate-btn {
+  font-size: 12px;
+  padding: 5px 10px;
+  min-height: unset;
+}
+
+.story-button-row {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+}
+
+.story-button-row .story-button {
+  flex: 1;
+}
+
+.delete-story-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  padding: 0 8px;
+  transition: background 120ms, color 120ms, border-color 120ms;
+}
+
+.delete-story-btn:hover {
+  background: #fff0f0;
+  color: var(--danger);
+  border-color: var(--danger);
 }
 
 .level-group {

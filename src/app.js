@@ -8,17 +8,12 @@ import { renderRecorder } from "./components/recorder.js";
 import { renderRecordingsList } from "./components/recordingsList.js";
 import { renderDailyTimer } from "./components/dailyTimer.js";
 
-// Register the service worker for offline use. Skipped on file:// (where
-// service workers are unavailable) so local double-click previews still work.
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js").catch(() => {
-      /* silent: app still works online without the SW */
-    });
+    navigator.serviceWorker.register("./sw.js").catch(() => {});
   });
 }
 
-// Capture the install prompt on Android/Chrome and surface it as a button.
 let deferredInstall = null;
 window.addEventListener("beforeinstallprompt", (e) => {
   e.preventDefault();
@@ -40,6 +35,7 @@ const els = {
   picker: document.getElementById("story-picker"),
   reader: document.getElementById("story-reader"),
   pinyinToggle: document.getElementById("pinyin-toggle"),
+  highlightToggle: document.getElementById("highlight-toggle"),
   playback: document.getElementById("playback-controls"),
   recorder: document.getElementById("recorder"),
   recordings: document.getElementById("recordings-list"),
@@ -51,10 +47,29 @@ let activeStory = null;
 let readerCtl = null;
 let player = null;
 let rate = 0.9;
+let highlightEnabled = true;
 
 const timerCtl = renderDailyTimer({ root: els.timer });
 
 renderPinyinToggle({ root: els.pinyinToggle, readerRoot: els.reader });
+
+// Highlight toggle
+(function renderHighlightToggle() {
+  const label = document.createElement("label");
+  label.className = "toggle";
+  const input = document.createElement("input");
+  input.type = "checkbox";
+  input.checked = true;
+  const span = document.createElement("span");
+  span.textContent = "高亮 Highlight";
+  label.appendChild(input);
+  label.appendChild(span);
+  els.highlightToggle.appendChild(label);
+  input.addEventListener("change", () => {
+    highlightEnabled = input.checked;
+    if (!highlightEnabled && readerCtl) readerCtl.clearActive();
+  });
+})();
 
 renderPlaybackControls({
   root: els.playback,
@@ -122,7 +137,9 @@ async function pickStory(id) {
   readerCtl = renderStoryReader({ root: els.reader, story: activeStory });
   player = createPlayer({
     tokens: activeStory.tokens,
-    onTokenStart: (i) => readerCtl.setActiveIndex(i),
+    onTokenStart: (i) => {
+      if (highlightEnabled) readerCtl.setActiveIndex(i);
+    },
     onEnd: () => {
       readerCtl.clearActive();
       timerCtl.setActive(false);
