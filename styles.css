@@ -64,6 +64,45 @@ body {
   padding: 6px 12px;
 }
 
+.settings-btn {
+  font-size: 18px;
+  padding: 6px 10px;
+  min-height: unset;
+  line-height: 1;
+}
+
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.settings-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+.settings-key-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.settings-key-input { flex: 1; }
+
+.settings-show-btn {
+  padding: 8px 10px;
+  min-height: unset;
+  font-size: 16px;
+}
+
+.settings-key-status {
+  font-size: 13px;
+}
+
 .app-main {
   display: grid;
   grid-template-columns: 280px 1fr;

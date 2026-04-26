@@ -10,6 +10,7 @@ import { renderRecordingsList } from "./components/recordingsList.js";
 import { renderDailyTimer } from "./components/dailyTimer.js";
 import { renderStudentPanel } from "./components/studentPanel.js";
 import { openScoreModal } from "./components/scoreModal.js";
+import { renderSettingsButton } from "./components/settings.js";
 
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
   window.addEventListener("load", () => {
@@ -43,6 +44,7 @@ const els = {
   recorder: document.getElementById("recorder"),
   recordings: document.getElementById("recordings-list"),
   timer: document.getElementById("daily-timer"),
+  settingsBtn: document.getElementById("settings-btn"),
 };
 
 let stories = [];
@@ -53,6 +55,7 @@ let rate = 0.9;
 let highlightEnabled = true;
 
 const timerCtl = renderDailyTimer({ root: els.timer });
+renderSettingsButton({ root: els.settingsBtn });
 
 // Student panel — refresh on student change to update stats display
 let studentPanelCtl = renderStudentPanel({
