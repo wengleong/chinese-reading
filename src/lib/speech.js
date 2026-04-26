@@ -1,8 +1,9 @@
-// Token-by-token Chinese TTS engine.
+// Sentence-level Chinese TTS engine with per-character highlight timing.
 //
-// SpeechSynthesisUtterance.onboundary is unreliable for zh-CN, so we drive
-// playback one token at a time and emit a callback before each utterance so
-// the UI can highlight the matching character.
+// Tokens are grouped into sentence segments (breaking at 。！？) and each
+// segment is spoken as a single utterance for natural, flowing speech.
+// Per-character highlighting is driven by a timer using an estimated pace,
+// since SpeechSynthesisUtterance.onboundary is unreliable for zh-CN.
 
 const synth = typeof window !== "undefined" ? window.speechSynthesis : null;
 
@@ -29,47 +30,91 @@ export function isSupported() {
   return !!synth && typeof SpeechSynthesisUtterance !== "undefined";
 }
 
+// Group tokens into sentence-level segments, breaking at sentence-ending
+// punctuation so each utterance is a complete natural phrase.
+function buildSegments(tokens) {
+  const SENTENCE_END = new Set(["。", "！", "？"]);
+  const segments = [];
+  let current = [];
+
+  tokens.forEach((token, globalIdx) => {
+    current.push({ token, globalIdx });
+    if (SENTENCE_END.has(token.char) || token.char === "\n") {
+      segments.push(current);
+      current = [];
+    }
+  });
+  if (current.length > 0) segments.push(current);
+  return segments;
+}
+
 export function createPlayer({ tokens, onTokenStart, onEnd }) {
-  let index = 0;
+  const segments = buildSegments(tokens);
+  let segIndex = 0;
   let playing = false;
   let rate = 0.9;
   let cancelled = false;
+  let highlightTimer = null;
 
-  // Tokens with no pinyin (punctuation) shouldn't be spoken but still get a
-  // brief highlight so the reader follows the text naturally.
-  function speakNext() {
+  function clearHighlightTimer() {
+    if (highlightTimer !== null) {
+      clearTimeout(highlightTimer);
+      highlightTimer = null;
+    }
+  }
+
+  function speakSegment() {
     if (cancelled || !playing) return;
-    if (index >= tokens.length) {
+    if (segIndex >= segments.length) {
       playing = false;
       onEnd && onEnd();
       return;
     }
-    const i = index;
-    const token = tokens[i];
-    onTokenStart && onTokenStart(i, token);
 
-    if (!token.pinyin) {
-      index = i + 1;
-      // Skip silently after a tiny pause so the highlight reads as a beat.
-      setTimeout(speakNext, 120);
-      return;
-    }
+    const seg = segments[segIndex];
+    const text = seg.map(({ token }) => token.char).join("");
 
-    const u = new SpeechSynthesisUtterance(token.char);
+    // At rate=1.0, zh-CN TTS is roughly 4 chars/sec → 250ms/char.
+    const msPerChar = 250 / rate;
+
+    const u = new SpeechSynthesisUtterance(text);
     u.lang = "zh-CN";
     u.rate = rate;
     const voice = pickChineseVoice();
     if (voice) u.voice = voice;
+
+    let charIdx = 0;
+
+    function advanceHighlight() {
+      if (cancelled || charIdx >= seg.length) return;
+      const { token, globalIdx } = seg[charIdx];
+      onTokenStart && onTokenStart(globalIdx, token);
+      charIdx++;
+      if (charIdx < seg.length) {
+        highlightTimer = setTimeout(advanceHighlight, msPerChar);
+      }
+    }
+
+    u.onstart = () => {
+      if (cancelled) return;
+      charIdx = 0;
+      advanceHighlight();
+    };
+
     u.onend = () => {
+      clearHighlightTimer();
       if (cancelled) return;
-      index = i + 1;
-      speakNext();
+      segIndex++;
+      speakSegment();
     };
+
     u.onerror = () => {
+      clearHighlightTimer();
       if (cancelled) return;
-      index = i + 1;
-      speakNext();
+      segIndex++;
+      speakSegment();
     };
+
     synth.speak(u);
   }
 
@@ -80,17 +125,18 @@ export function createPlayer({ tokens, onTokenStart, onEnd }) {
       playing = true;
       cancelled = false;
       // Resume from where we paused. If finished, restart.
-      if (index >= tokens.length) index = 0;
-      speakNext();
+      if (segIndex >= segments.length) segIndex = 0;
+      speakSegment();
     },
     pause() {
       playing = false;
       cancelled = true;
+      clearHighlightTimer();
       if (synth) synth.cancel();
     },
     restart() {
       this.pause();
-      index = 0;
+      segIndex = 0;
     },
     setRate(value) {
       rate = value;
