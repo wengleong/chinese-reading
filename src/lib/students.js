@@ -1,6 +1,8 @@
 // Student profiles, per-student progress, streak tracking, and gamification.
 // All dates are in Singapore time (Asia/Singapore, UTC+8).
 
+import { pushStudent, deleteStudentCloud, pushSession } from './cloud.js';
+
 const STUDENTS_KEY = "cr-students";
 const PROGRESS_PREFIX = "cr-progress-";
 const ACTIVE_KEY = "cr-active-student";
@@ -28,6 +30,7 @@ export function createStudent(name, level) {
   const student = { id: `stu-${Date.now()}`, name: name.trim(), level, color, createdAt: Date.now() };
   students.push(student);
   localStorage.setItem(STUDENTS_KEY, JSON.stringify(students));
+  pushStudent(student);
   return student;
 }
 
@@ -35,6 +38,7 @@ export function deleteStudent(id) {
   localStorage.setItem(STUDENTS_KEY, JSON.stringify(getStudents().filter(s => s.id !== id)));
   localStorage.removeItem(PROGRESS_PREFIX + id);
   if (getActiveStudentId() === id) localStorage.removeItem(ACTIVE_KEY);
+  deleteStudentCloud(id);
 }
 
 // ---- Active student ----
@@ -70,6 +74,7 @@ export function addSession(studentId, session) {
   progress.sessions.unshift(session);
   progress.totalPoints = (progress.totalPoints || 0) + (session.pointsEarned || 0);
   saveProgress(studentId, progress);
+  pushSession(session, studentId);
 }
 
 // Consecutive days (up to and including today) where student passed ≥1 session.

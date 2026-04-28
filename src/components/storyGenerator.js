@@ -1,6 +1,8 @@
 // Story generator — calls Claude API to produce a tokenised Chinese story
 // aligned with Singapore MOE PSLE Chinese curriculum standards.
 
+import { isLoggedIn, generateViaApi } from '../lib/api.js';
+
 const API_KEY_STORAGE = "anthropicApiKey";
 const LEVELS = ["P1", "P2", "P3", "P4", "P5", "P6"];
 
@@ -64,31 +66,30 @@ CRITICAL RULES — follow exactly:
 6. Story must be age-appropriate, positive values, and aligned with Singapore PSLE Chinese themes and vocabulary for ${level}.
 7. End the story with 。`;
 
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-      "content-type": "application/json",
-      "anthropic-dangerous-direct-browser-access": "true",
-    },
-    body: JSON.stringify({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 4096,
-      messages: [{ role: "user", content: prompt }],
-    }),
-  });
+  const body = {
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 4096,
+    messages: [{ role: 'user', content: prompt }],
+  };
 
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.error?.message || `API error ${res.status}`);
+  let data;
+  if (isLoggedIn()) {
+    data = await generateViaApi(body);
+  } else {
+    if (!apiKey) throw new Error('No API key. Add one in Settings.');
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': apiKey, 'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify(body),
+    });
+    if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.error?.message || `API error ${r.status}`); }
+    data = await r.json();
   }
-
-  const data = await res.json();
-  let text = data.content[0].text.trim();
-
-  // Strip markdown code fences if Claude added them despite instructions
-  text = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+  let text = data.content[0].text.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
 
   let story;
   try {

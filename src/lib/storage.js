@@ -1,4 +1,6 @@
-// IndexedDB helpers for storing video recordings on-device.
+// IndexedDB helpers for storing audio recordings on-device.
+
+import { pushRecording } from './cloud.js';
 
 const DB_NAME = "chinese-reader";
 const DB_VERSION = 1;
@@ -26,9 +28,9 @@ function tx(db, mode) {
   return db.transaction(STORE, mode).objectStore(STORE);
 }
 
-export async function saveRecording({ storyId, storyTitle, blob, mimeType, durationMs }) {
+export async function saveRecording({ storyId, storyTitle, blob, mimeType, durationMs, studentId, sessionId }) {
   const db = await openDb();
-  return new Promise((resolve, reject) => {
+  const result = await new Promise((resolve, reject) => {
     const store = tx(db, "readwrite");
     const record = {
       storyId,
@@ -36,12 +38,17 @@ export async function saveRecording({ storyId, storyTitle, blob, mimeType, durat
       blob,
       mimeType,
       durationMs,
+      sessionId: sessionId ?? null,
       createdAt: Date.now(),
     };
     const req = store.add(record);
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
   });
+  if (studentId && blob) {
+    pushRecording({ blob, mimeType, studentId, sessionId, durationMs }).catch(() => {});
+  }
+  return result;
 }
 
 export async function listRecordings() {

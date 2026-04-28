@@ -1,5 +1,7 @@
 // Settings modal — configure Anthropic API key and other preferences.
 
+import { isLoggedIn, saveApiKey as apiSaveKey } from '../lib/api.js';
+
 const API_KEY_STORAGE = "anthropicApiKey";
 
 export function renderSettingsButton({ root }) {
@@ -23,7 +25,7 @@ function openSettingsModal() {
 
       <div class="settings-section">
         <div class="settings-section-title">Anthropic API Key</div>
-        <p class="modal-hint">Used for AI reading feedback and story generation. Stored only in this browser — never sent anywhere except api.anthropic.com.</p>
+        <p class="modal-hint">Used for AI reading feedback and story generation. Saved to your family account — available on all devices.</p>
         <div class="settings-key-row">
           <input class="modal-input settings-key-input" id="settings-key"
             type="password" placeholder="sk-ant-…"
@@ -97,7 +99,12 @@ function openSettingsModal() {
     }
     if (key) {
       localStorage.setItem(API_KEY_STORAGE, key);
-      statusEl.innerHTML = `<span style="color:var(--good)">✓ API key saved</span>`;
+      if (isLoggedIn()) {
+        apiSaveKey(key).catch(() => {});
+        statusEl.innerHTML = `<span style="color:var(--good)">✓ Saved to family account</span>`;
+      } else {
+        statusEl.innerHTML = `<span style="color:var(--good)">✓ Saved locally</span>`;
+      }
     } else {
       localStorage.removeItem(API_KEY_STORAGE);
     }

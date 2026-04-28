@@ -11,6 +11,9 @@ import { renderDailyTimer } from "./components/dailyTimer.js";
 import { renderStudentPanel } from "./components/studentPanel.js";
 import { openScoreModal } from "./components/scoreModal.js";
 import { renderSettingsButton } from "./components/settings.js";
+import { isLoggedIn } from './lib/api.js';
+import { syncDown } from './lib/cloud.js';
+import { showFamilyOnboarding } from './components/familyOnboarding.js';
 
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
   window.addEventListener("load", () => {
@@ -94,19 +97,17 @@ renderPlaybackControls({
 renderRecorder({
   root: els.recorder,
   getCurrentStory: () => activeStory,
+  getActiveStudent: () => getActiveStudent(),
   onSaved: () => renderRecordingsList({ root: els.recordings }),
   onActiveChange: (active) => timerCtl.setActive(active),
-  onComplete: ({ transcript, story }) => {
+  onStart: () => els.reader.scrollIntoView({ behavior: 'smooth', block: 'center' }),
+  onComplete: ({ transcript, story, sessionId }) => {
     const student = getActiveStudent();
     if (!student || !story) return;
-
     const score = scoreTranscript(story.tokens, transcript);
     openScoreModal({
-      student,
-      story,
-      score,
-      transcript,
-      onRetry: () => {},  // user can press Record again
+      student, story, score, transcript, sessionId,
+      onRetry: () => {},
       onDone: () => studentPanelCtl?.refresh(),
     });
     studentPanelCtl?.refresh();
@@ -116,6 +117,17 @@ renderRecorder({
 renderRecordingsList({ root: els.recordings });
 
 (async function init() {
+  if (!isLoggedIn()) {
+    await new Promise(resolve => {
+      showFamilyOnboarding({
+        onDone: async () => { await syncDown(); resolve(); },
+        onSkip: resolve,
+      });
+    });
+  } else {
+    syncDown().catch(() => {});
+  }
+
   try {
     stories = await loadIndex();
   } catch (err) {

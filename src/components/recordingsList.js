@@ -16,14 +16,14 @@ export async function renderRecordingsList({ root }) {
   const card = document.createElement("div");
   card.className = "recordings";
   const heading = document.createElement("h3");
-  heading.textContent = "我的录像 My recordings";
+  heading.textContent = "我的录音 My recordings";
   card.appendChild(heading);
 
   const items = await listRecordings();
   if (items.length === 0) {
     const empty = document.createElement("p");
     empty.className = "privacy-note";
-    empty.textContent = "还没有录像 (No recordings yet).";
+    empty.textContent = "还没有录音 (No recordings yet).";
     card.appendChild(empty);
     root.appendChild(card);
     return;
@@ -50,12 +50,11 @@ export async function renderRecordingsList({ root }) {
       w.document.title = r.storyTitle;
       w.document.body.style.margin = "0";
       w.document.body.style.background = "#000";
-      const v = w.document.createElement("video");
+      const v = w.document.createElement("audio");
       v.src = url;
       v.controls = true;
       v.autoplay = true;
       v.style.width = "100%";
-      v.style.height = "100%";
       w.document.body.appendChild(v);
     });
 

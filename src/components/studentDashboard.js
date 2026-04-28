@@ -7,6 +7,17 @@ import {
 
 const MONTH_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
+const BADGES = [
+  { id: 'first_pass',  icon: '🌟', label: 'First Pass',     check: (p)    => p.sessions.filter(s => s.passed).length >= 1 },
+  { id: 'stories_5',  icon: '📚', label: '5 Stories',       check: (p)    => new Set(p.sessions.filter(s => s.passed).map(s => s.storyId)).size >= 5 },
+  { id: 'perfect',    icon: '💯', label: 'Perfect Score',   check: (p)    => p.sessions.some(s => s.score >= 100) },
+  { id: 'streak_7',   icon: '🔥', label: '7-Day Streak',    check: (p, k) => k >= 7 },
+  { id: 'streak_30',  icon: '🏆', label: '30-Day Streak',   check: (p, k) => k >= 30 },
+  { id: 'pts_100',    icon: '💎', label: '100 Points',       check: (p)    => p.totalPoints >= 100 },
+  { id: 'pts_500',    icon: '👑', label: '500 Points',       check: (p)    => p.totalPoints >= 500 },
+  { id: 'pts_1000',   icon: '🎯', label: '1000 Points',      check: (p)    => p.totalPoints >= 1000 },
+];
+
 function sgTime(ts) {
   return new Date(ts).toLocaleTimeString("en-SG", {
     timeZone: "Asia/Singapore", hour: "2-digit", minute: "2-digit", hour12: true,
@@ -28,59 +39,68 @@ export function openStudentDashboard({ student, onDeleted, onClose }) {
 
   const progress = getProgress(student.id);
   const sessions = progress.sessions;
-  const totalPts = (progress.totalPoints || 0).toLocaleString();
   const streak = getStudentStreak(student.id);
   const bestStreak = getBestStreak(student.id);
   const passSessions = sessions.filter(s => s.passed);
   const avgScore = passSessions.length
     ? Math.round(passSessions.reduce((s, x) => s + x.score, 0) / passSessions.length)
     : 0;
-  const missedLast30 = getActivityDays(student.id, 30).filter(d => !d.isToday && !d.passed).length;
 
   const joinedMonth = new Date(student.createdAt);
   const joinedStr = `${MONTH_SHORT[joinedMonth.getMonth()]} ${joinedMonth.getFullYear()}`;
 
+  const totalPtsNum = progress.totalPoints || 0;
+  const MILESTONE = 500;
+  const milestoneProgress = Math.min((totalPtsNum % MILESTONE) / MILESTONE * 100, 100);
+  const earnedIds = new Set(BADGES.filter(b => b.check(progress, streak)).map(b => b.id));
+
   overlay.innerHTML = `
-    <div class="modal-card dash-card" role="dialog" aria-modal="true">
-      <!-- Header -->
-      <div class="dash-header">
-        <div class="student-avatar dash-avatar" style="background:${student.color}">${student.name[0].toUpperCase()}</div>
-        <div class="dash-header-info">
+    <div class="modal-card dash-card-v2" role="dialog" aria-modal="true">
+      <div class="dash-hdr">
+        <div class="student-avatar" style="background:${student.color};width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;color:white;flex-shrink:0">${student.name[0].toUpperCase()}</div>
+        <div style="flex:1">
           <div class="dash-name">${student.name}</div>
-          <div class="dash-sub">${student.level} · Member since ${joinedStr}</div>
+          <div class="dash-sub">${student.level} · Since ${joinedStr}</div>
         </div>
         <button class="dash-close" id="dash-close" aria-label="Close">✕</button>
       </div>
 
-      <!-- Stats row -->
-      <div class="dash-stats">
-        <div class="dash-stat"><span class="dash-stat-val">🔥 ${streak}</span><span class="dash-stat-lbl">Streak</span></div>
-        <div class="dash-stat"><span class="dash-stat-val">💎 ${totalPts}</span><span class="dash-stat-lbl">Points</span></div>
-        <div class="dash-stat"><span class="dash-stat-val">📚 ${sessions.length}</span><span class="dash-stat-lbl">Sessions</span></div>
-        <div class="dash-stat"><span class="dash-stat-val">⭐ ${avgScore}</span><span class="dash-stat-lbl">Avg score</span></div>
-        <div class="dash-stat"><span class="dash-stat-val">🏆 ${bestStreak}</span><span class="dash-stat-lbl">Best streak</span></div>
-        <div class="dash-stat"><span class="dash-stat-val" style="color:var(--danger)">❌ ${missedLast30}</span><span class="dash-stat-lbl">Missed (30d)</span></div>
+      <div class="dash-pts-hero">
+        <div class="dash-pts-num">${totalPtsNum.toLocaleString()} 💎</div>
+        <div class="dash-pts-lbl">Total Points</div>
+        <div class="dash-bar-wrap"><div class="dash-bar" style="width:${milestoneProgress}%"></div></div>
+        <div class="dash-bar-lbl">${totalPtsNum % MILESTONE} / ${MILESTONE} to next milestone</div>
       </div>
 
-      <!-- Activity grid: last 30 days -->
-      <div>
-        <div class="dash-section-title">Last 30 Days</div>
-        <div class="dash-activity-grid" id="dash-grid"></div>
-        <div class="dash-legend">
-          <span class="dash-legend-dot" style="background:var(--good)"></span> Passed
-          <span class="dash-legend-dot" style="background:#ffb300; margin-left:8px"></span> Attempted
-          <span class="dash-legend-dot" style="background:var(--danger); margin-left:8px"></span> Missed
-          <span class="dash-legend-dot" style="background:var(--border); margin-left:8px"></span> No reading
-        </div>
+      <div class="dash-stat-cards">
+        <div class="dash-sc"><span class="dash-sc-v">🔥 ${streak}</span><span class="dash-sc-l">Streak</span></div>
+        <div class="dash-sc"><span class="dash-sc-v">🏆 ${bestStreak}</span><span class="dash-sc-l">Best</span></div>
+        <div class="dash-sc"><span class="dash-sc-v">📖 ${sessions.length}</span><span class="dash-sc-l">Sessions</span></div>
+        <div class="dash-sc"><span class="dash-sc-v">⭐ ${avgScore}</span><span class="dash-sc-l">Avg</span></div>
       </div>
 
-      <!-- Reading history -->
+      <div class="dash-section-title" style="padding:0 16px 8px">Badges</div>
+      <div class="dash-badge-wall">
+        ${BADGES.map(b => `
+          <div class="dash-badge ${earnedIds.has(b.id) ? 'earned' : 'locked'}" title="${b.label}">
+            <span style="font-size:26px">${b.icon}</span>
+            <span class="dash-badge-lbl">${b.label}</span>
+          </div>`).join('')}
+      </div>
+
+      <div class="dash-section-title" style="padding:0 16px 8px">Last 30 Days</div>
+      <div class="dash-activity-grid" id="dash-grid"></div>
+      <div class="dash-legend">
+        <span class="dash-legend-dot" style="background:var(--good)"></span> Passed
+        <span class="dash-legend-dot" style="background:#ffb300;margin-left:8px"></span> Attempted
+        <span class="dash-legend-dot" style="background:var(--danger);opacity:.35;margin-left:8px"></span> Missed
+        <span class="dash-legend-dot" style="background:var(--border);margin-left:8px"></span> No reading
+      </div>
+
       <div class="dash-history-wrap">
-        <div class="dash-section-title">Reading History</div>
+        <div class="dash-section-title" style="padding:8px 16px">Reading History</div>
         <div class="dash-history" id="dash-history"></div>
       </div>
-
-      <!-- Delete -->
       <div class="dash-footer">
         <button class="danger dash-delete-btn" id="dash-delete">🗑️ Delete Student</button>
       </div>
