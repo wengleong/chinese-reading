@@ -1086,3 +1086,31 @@ button.danger {
   font-weight: 700;
   font-size: 13px;
 }
+
+/* ---- Family onboarding ---- */
+.onboarding-overlay { z-index: 200; }
+.onboarding-card { max-width: 400px; }
+.onboarding-logo { font-size: 48px; text-align: center; margin-bottom: 4px; }
+
+.onboarding-tabs {
+  display: flex;
+  border-bottom: 2px solid var(--border);
+  margin-bottom: 16px;
+}
+.onboarding-tab {
+  flex: 1; background: none; border: none;
+  border-bottom: 3px solid transparent; margin-bottom: -2px;
+  padding: 10px; font: inherit; font-weight: 600; color: var(--muted); cursor: pointer;
+}
+.onboarding-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+.onboarding-code-input {
+  text-align: center; font-size: 22px; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase;
+}
+.onboarding-code-display {
+  font-size: 36px; font-weight: 900; text-align: center;
+  color: var(--accent); letter-spacing: 0.08em;
+  background: var(--accent-soft); border-radius: 12px;
+  padding: 16px; margin: 8px 0;
+}
