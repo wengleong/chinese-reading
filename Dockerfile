@@ -1,17 +1,19 @@
-FROM nginx:alpine
+FROM node:22-alpine
+WORKDIR /app
 
-# Copy static frontend files
-COPY index.html /usr/share/nginx/html/
-COPY styles.css /usr/share/nginx/html/
-COPY manifest.webmanifest /usr/share/nginx/html/
-COPY sw.js /usr/share/nginx/html/
-COPY src/ /usr/share/nginx/html/src/
-COPY stories/ /usr/share/nginx/html/stories/
-COPY icons/ /usr/share/nginx/html/icons/
+# Install API dependencies
+COPY api/package.json api/package-lock.json ./api/
+RUN cd api && npm ci --production
 
-# nginx config with $PORT substitution for Railway
-COPY nginx.conf /etc/nginx/templates/default.conf.template
+# Copy API source
+COPY api/src/ ./api/src/
 
-EXPOSE $PORT
+# Copy frontend static files into /app/public/
+COPY index.html styles.css manifest.webmanifest sw.js ./public/
+COPY src/ ./public/src/
+COPY stories/ ./public/stories/
+COPY icons/ ./public/icons/
 
-CMD ["nginx", "-g", "daemon off;"]
+EXPOSE 3001
+
+CMD ["node", "api/src/index.js"]
