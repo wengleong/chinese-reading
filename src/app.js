@@ -11,6 +11,9 @@ import { renderDailyTimer } from "./components/dailyTimer.js";
 import { renderStudentPanel } from "./components/studentPanel.js";
 import { openScoreModal } from "./components/scoreModal.js";
 import { renderSettingsButton } from "./components/settings.js";
+import { isLoggedIn } from './lib/api.js';
+import { syncDown } from './lib/cloud.js';
+import { showFamilyOnboarding } from './components/familyOnboarding.js';
 
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
   window.addEventListener("load", () => {
@@ -116,6 +119,17 @@ renderRecorder({
 renderRecordingsList({ root: els.recordings });
 
 (async function init() {
+  if (!isLoggedIn()) {
+    await new Promise(resolve => {
+      showFamilyOnboarding({
+        onDone: async () => { await syncDown(); resolve(); },
+        onSkip: resolve,
+      });
+    });
+  } else {
+    syncDown().catch(() => {});
+  }
+
   try {
     stories = await loadIndex();
   } catch (err) {
