@@ -1297,7 +1297,7 @@
     return '';
   }
 
-  export function renderRecorder({ root, getCurrentStory, getActiveStudent, onSaved, onActiveChange, onComplete }) {
+  export function renderRecorder({ root, getCurrentStory, getActiveStudent, onSaved, onActiveChange, onComplete, onStart }) {
     root.innerHTML = '';
 
     const card = document.createElement('div');
@@ -1417,6 +1417,7 @@
       indicator.style.visibility = 'visible';
       timerInterval = setInterval(updateTimer, 500);
       onActiveChange?.(true);
+      onStart?.();  // scroll story into view
     }
 
     function stop() {
@@ -1488,6 +1489,7 @@
     getActiveStudent: () => getActiveStudent(),
     onSaved: () => renderRecordingsList({ root: els.recordings }),
     onActiveChange: (active) => timerCtl.setActive(active),
+    onStart: () => els.reader.scrollIntoView({ behavior: 'smooth', block: 'center' }),
     onComplete: ({ transcript, story, sessionId }) => {
       const student = getActiveStudent();
       if (!student || !story) return;
