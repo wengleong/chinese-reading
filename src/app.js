@@ -97,19 +97,17 @@ renderPlaybackControls({
 renderRecorder({
   root: els.recorder,
   getCurrentStory: () => activeStory,
+  getActiveStudent: () => getActiveStudent(),
   onSaved: () => renderRecordingsList({ root: els.recordings }),
   onActiveChange: (active) => timerCtl.setActive(active),
-  onComplete: ({ transcript, story }) => {
+  onStart: () => els.reader.scrollIntoView({ behavior: 'smooth', block: 'center' }),
+  onComplete: ({ transcript, story, sessionId }) => {
     const student = getActiveStudent();
     if (!student || !story) return;
-
     const score = scoreTranscript(story.tokens, transcript);
     openScoreModal({
-      student,
-      story,
-      score,
-      transcript,
-      onRetry: () => {},  // user can press Record again
+      student, story, score, transcript, sessionId,
+      onRetry: () => {},
       onDone: () => studentPanelCtl?.refresh(),
     });
     studentPanelCtl?.refresh();
