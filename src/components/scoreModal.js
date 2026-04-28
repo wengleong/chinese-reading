@@ -3,29 +3,14 @@
 import {
   addSession, calculatePoints,
   hasPassedStoryBefore, getTodayAttempts,
-  hasCompletedToday, getStudentStreak,
+  hasCompletedToday, getStudentStreak, getProgress,
 } from "../lib/students.js";
+import { isLoggedIn, generateViaApi } from '../lib/api.js';
 
 const API_KEY_STORAGE = "anthropicApiKey";
 
 async function getAiFeedback(storyTitle, storyText, transcript, score) {
-  const apiKey = localStorage.getItem(API_KEY_STORAGE);
-  if (!apiKey) return null;
-  try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json",
-        "anthropic-dangerous-direct-browser-access": "true",
-      },
-      body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: 220,
-        messages: [{
-          role: "user",
-          content: `A Singapore primary school student just read this Chinese story aloud.
+  const prompt = `A Singapore primary school student just read this Chinese story aloud.
 
 Story: ${storyTitle}
 Story text: ${storyText}
@@ -33,12 +18,23 @@ Speech recognition transcript: ${transcript || "(not captured — microphone may
 Computed accuracy: ${score}/100
 
 Write a SHORT, warm assessment for a young student. Return JSON only — no code fences:
-{"feedback": "1-2 encouraging sentences in English", "tip": "one short, specific improvement tip or empty string if score >= 85"}`,
-        }],
-      }),
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
+{"feedback": "1-2 encouraging sentences in English", "tip": "one short, specific improvement tip or empty string if score >= 85"}`;
+  try {
+    const body = { model: 'claude-haiku-4-5-20251001', max_tokens: 220, messages: [{ role: 'user', content: prompt }] };
+    let data;
+    if (isLoggedIn()) {
+      data = await generateViaApi(body);
+    } else {
+      const apiKey = localStorage.getItem(API_KEY_STORAGE);
+      if (!apiKey) return null;
+      const r = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json', 'anthropic-dangerous-direct-browser-access': 'true' },
+        body: JSON.stringify(body),
+      });
+      if (!r.ok) return null;
+      data = await r.json();
+    }
     let text = data.content[0].text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
     return JSON.parse(text);
   } catch { return null; }
