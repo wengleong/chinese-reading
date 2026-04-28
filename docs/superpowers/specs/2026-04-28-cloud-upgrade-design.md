@@ -1,258 +1,176 @@
-# Chinese Reading App — Cloud Upgrade Design
-*2026-04-28*
+# Chinese Reading App — Cloud Upgrade Design (v2)
+*2026-04-28 · Revised: Railway backend, audio-only recording*
 
 ## Scope
 
-Five improvements in one release:
+1. **Cloud persistence** — sessions, scores, and audio recordings sync to the cloud
+2. **Family code auth** — memorable code (e.g. `TIGER-2310`) created/entered in-app
+3. **API key in the cloud** — stored server-side; Anthropic calls proxied so key never touches the browser
+4. **Audio-only recording** — drop video/camera; mic-only recording. Story text on screen is the teleprompter. Simpler, smaller files, better mobile UX.
+5. **Mobile sticky record button** — Record/Stop fixed at bottom on mobile so kids can scroll the story and tap record
+6. **Bigger, more exciting achievement screen** — animated score ring, confetti, point counter, streak flame, badges
+7. **Bulk story library** — 24 new stories (4 per level, P1–P6) committed to repo
 
-1. **Cloud persistence** — sessions, scores, and recordings sync to the cloud so data survives device changes
-2. **Family code auth** — short memorable code (e.g. `TIGER-2847`) created and entered in-app; each family has multiple students
-3. **API key in the cloud** — Anthropic key stored server-side per family; Anthropic calls proxied via Edge Function so the key never touches the browser again
-4. **Mobile sticky record button** — Record/Stop button fixed at bottom of screen on mobile so kids can read the story and tap record without scrolling
-5. **Bigger, more exciting achievement screen** — animated confetti, large score ring, animated point counter, streak flame, badges
-6. **Bulk story library** — 24 new stories (4 per level P1–P6) generated and committed to repo
-
-GitHub Pages static hosting stays as-is. No new server.
+GitHub Pages static hosting stays. No Supabase.
 
 ---
 
 ## Architecture
 
-### Backend: Supabase
+### Backend: Express on Railway
 
-- **Auth**: Supabase `signInWithPassword` — family code maps to a generated email/password pair stored by an Edge Function
-- **Database**: Supabase Postgres — families, students, progress_sessions
-- **Storage**: Supabase Storage bucket `recordings` — path `{family_id}/{student_id}/{timestamp}.webm`
-- **Edge Functions**:
-  - `create-family` — generates code + Supabase auth user, returns code
-  - `join-family` — given code, returns auth credentials so client can sign in
-  - `generate-story` — proxies Anthropic API call using family's stored API key
+New service `chinese-reading/api/` — Node.js + Express + Railway PostgreSQL.
 
-### Supabase JS SDK
+```
+POST /api/families             create family → returns { code, token }
+POST /api/families/join        join with code → returns { token }
+PUT  /api/families/apikey      save Anthropic API key (auth)
 
-Added via CDN `<script type="module">` import (no bundler needed). Single `src/lib/supabase.js` wraps the client instance.
+GET    /api/students           list (auth)
+POST   /api/students           create (auth)
+DELETE /api/students/:id       delete (auth)
 
----
+POST   /api/sessions           save session (auth)
+GET    /api/sessions           list all for family (auth)
 
-## Database Schema
+POST   /api/recordings         upload audio blob (auth) → returns id
+GET    /api/recordings         list metadata (auth)
+GET    /api/recordings/:id     stream audio (auth)
+
+POST   /api/generate           proxy Anthropic (auth)
+```
+
+### Auth: JWT
+
+- On create/join: server returns a JWT (`{ familyId }`, 1-year expiry, signed with `JWT_SECRET` env var)
+- Client stores token in `localStorage` as `cr-token`
+- All API calls: `Authorization: Bearer {token}`
+- Server middleware verifies and extracts `familyId`
+
+### Database: Railway PostgreSQL
 
 ```sql
--- families: one per family, keyed by human-readable code
-create table families (
-  id uuid primary key default gen_random_uuid(),
-  code text unique not null,          -- e.g. "TIGER-2847"
-  anthropic_key text,                  -- stored encrypted by Supabase
-  created_at timestamptz default now()
-);
-
--- students: multiple per family
-create table students (
-  id text primary key,                 -- reuse existing "stu-{timestamp}" IDs
-  family_id uuid references families not null,
-  name text not null,
-  level text not null,
-  color text not null,
-  created_at timestamptz default now()
-);
-
--- progress_sessions: one row per reading attempt
-create table progress_sessions (
-  id text primary key,                 -- "sess-{timestamp}"
-  student_id text references students not null,
-  family_id uuid references families not null,  -- for fast RLS
-  story_id text not null,
-  story_title text not null,
-  date text not null,                  -- "YYYY-MM-DD" in SG time
-  score integer not null,
-  passed boolean not null,
-  points_earned integer not null default 0,
-  transcript text,
-  recording_url text,                  -- Supabase Storage public URL
-  completed_at bigint,                 -- Unix ms
-  created_at timestamptz default now()
-);
+families (id uuid, code text unique, anthropic_key text, created_at)
+students (id text, family_id uuid, name, level, color, created_at)
+progress_sessions (id text, student_id text, family_id uuid,
+  story_id, story_title, date, score, passed, points_earned,
+  transcript, completed_at)
+recordings (id uuid, session_id text, student_id text, family_id uuid,
+  audio_data bytea, mime_type text, duration_ms int, created_at)
 ```
 
-### Row Level Security
+Audio files stored as `bytea` in PostgreSQL. At ~500KB per reading × 3 kids × 365 days ≈ 550MB/year — well within Railway's PostgreSQL limits.
 
-All tables: `auth.uid() = family_id` (or via student FK).
-Anonymous + unauthenticated access: denied.
+### Sync Strategy
 
----
-
-## Family Code Auth Flow
-
-### Create Family (first-time setup)
-1. User opens app with no family → "Welcome" screen shown
-2. Taps "Create Family" → enters family name (optional)
-3. Frontend calls Edge Function `create-family`
-4. Edge Function:
-   - Generates code: `{ANIMAL}-{4 digits}` (e.g. `TIGER-2847`)
-   - Generates a strong password
-   - Creates Supabase auth user: email=`{code}@cr.app`, password=generated
-   - Inserts into `families` table
-   - Returns `{code, email, password}`
-5. Frontend calls `supabase.auth.signInWithPassword(email, password)` → session established
-6. Code is displayed prominently with copy button: "Save this code! You'll need it on other devices."
-7. Session (email+password) stored in localStorage for auto-restore
-
-### Join on New Device
-1. App opens → detects no session → shows "Enter Family Code"
-2. User types code → frontend calls Edge Function `join-family` with code
-3. Edge Function looks up family → returns `{email, password}` (protected by Supabase service role)
-4. Frontend signs in → data syncs
-
-### Session Persistence
-- Supabase session tokens stored in localStorage (handled by SDK automatically)
-- On app start: `supabase.auth.getSession()` → if valid, restore silently
-- If expired: show family code entry
+Same as before — `localStorage` is the primary read cache:
+- **On write**: write localStorage first (synchronous), then fire async API call
+- **On login**: pull cloud data, merge into localStorage by ID
+- **Audio recordings**: saved to IndexedDB locally, uploaded to server; playback uses local copy first, falls back to server fetch
 
 ---
 
-## Sync Strategy
+## Audio Recorder Redesign
 
-### Offline-first with write-through cache
+### What's removed
+- Camera stream, canvas compositing, Overlay class, Star particles
+- `roundRect` polyfill, `captureStream()`
 
-- `localStorage` remains the **primary read source** — app works fully offline
-- Every write also fires an async cloud upsert (no await, silent failure)
-- On first login / new device: pull all family data from cloud → populate localStorage
+### What replaces it
+- `getUserMedia({ audio: true })` only
+- `MediaRecorder` on the audio stream
+- UI: pulsing red dot + duration timer + Start/Stop buttons
+- SpeechRecognition still runs alongside (for transcript/scoring)
+- On mobile: Start/Stop buttons are sticky at bottom; story text scrolls freely above
 
-### `src/lib/cloud.js` (new module)
-
-```js
-// Thin wrapper — every function is a no-op if not authenticated
-export async function syncDown()       // Pull students + sessions → localStorage
-export async function pushStudent(s)   // Upsert student row
-export async function pushSession(s, studentId)  // Upsert session row
-export async function uploadRecording(blob, mimeType, studentId, sessionId)  // → URL
-export async function saveApiKey(key)  // Upsert into families.anthropic_key
-export async function getApiKey()      // Fetch from families.anthropic_key
-```
-
-### Recording Upload
-
-- Triggered in `recorder.js` immediately after `saveRecording()` succeeds
-- Uploads blob to Supabase Storage: `{family_id}/{student_id}/{Date.now()}.webm`
-- On success: updates `progress_sessions.recording_url` in Postgres
-- On failure: silently logged; local IndexedDB copy is the fallback
+### Playback
+- `<audio controls>` instead of `<video>`
+- Src: blob URL created from IndexedDB audio data (or fetched from server on new device)
 
 ---
 
-## API Key Changes
+## Achievement Screen
 
-- `settings.js`: "Save key to your family account" instead of "Save in browser"
-- `storyGenerator.js` + `scoreModal.js`: call Edge Function `generate-story` instead of direct Anthropic fetch
-- API key never sent to browser after initial save
-- If no cloud session: fallback to `localStorage` key (backwards compat during transition)
+**Score Modal:**
+- Animated SVG score ring (stroke-dasharray CSS transition)
+- Large score number counts up (rAF animation)
+- CSS confetti burst on pass (emoji particles fly outward)
+- Points counter animates up; breakdown rows stagger in
+- Streak flame with CSS pulse animation
+- Badge unlock reveal for newly earned badges
 
----
+**Badges:** first pass, 5 stories, perfect score, 7-day streak, 30-day streak, 100/500/1000 pts
 
-## Mobile: Sticky Record Button
-
-**Problem**: On mobile, the read button (playback controls) is sticky/fixed, but kids need to scroll through the story text while recording — the record/stop button disappears off-screen.
-
-**Fix**:
-- `@media (max-width: 768px)`:
-  - Remove `position: sticky` / `position: fixed` from `.reader-toolbar` (playback controls)
-  - `.recorder-sticky` wrapper: `position: fixed; bottom: 0; left: 0; right: 0; z-index: 100; background: var(--surface); border-top: 1px solid var(--border); padding: 12px 16px`
-  - Only the Start/Stop record buttons are in the sticky bar on mobile; the full recorder canvas stays in the normal flow above
-  - `main` gets `padding-bottom: 80px` on mobile to avoid overlap
-- On desktop: no change — recorder stays inline as before
-
-Implementation: wrap `startBtn` + `stopBtn` in a `div.recorder-sticky` in `recorder.js`; CSS handles mobile-only sticky behaviour.
+**Student Dashboard:**
+- Points hero section (large number + gradient background + milestone progress bar)
+- 4 stat cards (streak, best streak, sessions, avg score)
+- Badge wall (8 badges, locked = grey/faded, earned = gold)
+- Existing 30-day activity grid + history (unchanged)
 
 ---
 
-## Achievement Screen Redesign
+## Mobile Sticky Record Button
 
-### Score Modal (`scoreModal.js`)
-
-**Current**: Small modal, plain score ring, flat points list.
-
-**New**:
-- Full-screen overlay (not just centered card) for celebration impact
-- **Animated score ring**: SVG circle with `stroke-dasharray` animation counting up from 0 to score %
-- **Score number**: large (80px), animates counting up
-- **Pass banner**: for score ≥ 60, full-width gradient banner (`优秀！⭐` / `很好！` / `及格 ✓`) with CSS confetti particle burst (20 emoji particles flung in arcs using CSS keyframe animations)
-- **Points block**: total points in large text (`+165 💎`), breakdown rows animate in with stagger delay
-- **Streak flame**: if streak ≥ 1, pulsing 🔥 animation with streak count
-- **Badge unlocks**: first-pass badge, 7-day streak badge, 100-point milestone — shown if newly earned this session
-- Fail state: encouraging, no confetti — just clear "Score 60+ to pass" message with retry CTA
-
-### Student Dashboard (`studentDashboard.js`)
-
-**Current**: Compact modal with small stat boxes.
-
-**New**:
-- Full-height sliding panel (mobile: slides up from bottom; desktop: wide modal)
-- **Hero stat**: total points displayed large (64px) with a progress bar toward next milestone (every 500 pts)
-- **Stat cards**: streak, best streak, sessions, avg score — larger cards with colour coding
-- **Badge wall**: trophy icons for unlocked achievements (first pass, 7-day streak, 30-day streak, 1000 pts, etc.) — greyed out if not yet earned
-- **Activity grid**: same 30-day grid but larger cells with score tooltip on tap
-- **History**: unchanged
+- Remove `position: sticky` from `.reader-toolbar` on mobile (playback/Read button scrolls with content)
+- `div.recorder-sticky-bar`: `position: fixed; bottom: 0` on mobile — contains Start/Stop buttons only
+- `main` gets `padding-bottom: 80px` on mobile to avoid overlap
 
 ---
 
 ## Bulk Story Generation
 
-Script: `scripts/generate-stories.mjs`
+Script `scripts/generate-stories.mjs` — 4 stories × 6 levels = 24 new stories. Themes: family, animals, school, festivals (P1), friendship, nature, helping others, habits (P2), environment, community, sports, conservation (P3), perseverance, culture, technology, kindness (P4), history, values, global awareness, resilience (P5), harmony, responsibility, science, life purpose (P6).
 
-- Requires `ANTHROPIC_API_KEY` env var
-- Generates 4 stories per level (P1–P6) = 24 stories
-- Themes distributed across: family life, school, nature, friendship, festivals, community helpers, environment, moral values
-- Each story generated sequentially with 1s delay between calls
-- Output: `stories/{level-slug}-{theme-slug}.json`
-- After generation: updates `stories/index.json`
-- Validates pinyin diacritics and token format before saving
-- Run: `node scripts/generate-stories.mjs`
+---
 
-Target library: 28 stories (4 original + 24 new).
+## API Service File Structure
+
+```
+chinese-reading/api/
+├── src/
+│   ├── index.js          Express app + routes wiring
+│   ├── db.js             pg Pool singleton
+│   ├── auth.js           JWT middleware + helpers
+│   └── routes/
+│       ├── families.js   /api/families
+│       ├── students.js   /api/students
+│       ├── sessions.js   /api/sessions
+│       ├── recordings.js /api/recordings
+│       └── generate.js   /api/generate
+├── migrations/
+│   └── 001_initial.sql
+├── package.json
+├── Dockerfile
+└── .env.example
+```
+
+---
+
+## Frontend File Changes
+
+| File | Change |
+|------|--------|
+| `src/lib/api.js` | New: thin fetch wrapper with Bearer token |
+| `src/lib/cloud.js` | New: sync helpers using api.js |
+| `src/components/familyOnboarding.js` | New: create/join family UI |
+| `src/app.js` | Boot: check token, show onboarding if needed |
+| `src/lib/students.js` | Push to cloud on create/delete/addSession |
+| `src/lib/storage.js` | Upload audio on save |
+| `src/components/recorder.js` | **Full rewrite**: audio-only, sticky mobile bar |
+| `src/components/recordingsList.js` | Audio player instead of video |
+| `src/components/scoreModal.js` | Animated redesign + badges |
+| `src/components/studentDashboard.js` | Points hero + badge wall |
+| `src/components/settings.js` | Save API key to cloud |
+| `src/components/storyGenerator.js` | Use /api/generate proxy |
+| `stories/index.json` | 28 stories total |
+| `styles.css` | Mobile sticky, score animations, dashboard |
 
 ---
 
 ## What's NOT Changing
 
 - GitHub Pages static hosting
-- Story JSON format (tokens array)
-- PWA / service worker / install button
-- Recording canvas + speech recognition logic
+- Story JSON format
+- PWA / service worker
 - Student data model (IDs, progress structure)
-
----
-
-## File Changelist
-
-### New files
-- `src/lib/supabase.js` — Supabase client singleton
-- `src/lib/cloud.js` — sync helpers
-- `src/components/familyOnboarding.js` — create/join family UI
-- `supabase/functions/create-family/index.ts`
-- `supabase/functions/join-family/index.ts`
-- `supabase/functions/generate-story/index.ts`
-- `supabase/migrations/001_initial.sql`
-- `scripts/generate-stories.mjs`
-
-### Modified files
-- `src/app.js` — boot: check session, show onboarding if needed; init cloud sync
-- `src/lib/students.js` — `createStudent`, `addSession` call cloud push after localStorage write
-- `src/lib/storage.js` — `saveRecording` triggers cloud upload
-- `src/components/recorder.js` — sticky mobile wrapper; pass session ID to storage
-- `src/components/scoreModal.js` — full animated redesign
-- `src/components/studentDashboard.js` — larger, badge wall, progress bar
-- `src/components/settings.js` — save key to cloud; fall back to localStorage
-- `src/components/storyGenerator.js` — call Edge Function proxy instead of direct Anthropic
-- `index.html` — Supabase SDK script tag; family onboarding mount point
-- `stories/index.json` — 28 stories
-- `styles.css` — mobile sticky recorder, score modal animations, dashboard redesign
-
----
-
-## Supabase Project Setup (manual steps, once)
-
-1. Create Supabase project at supabase.com
-2. Run `supabase/migrations/001_initial.sql`
-3. Enable RLS on all tables
-4. Create `recordings` storage bucket (public reads, auth writes)
-5. Deploy 3 Edge Functions via Supabase CLI
-6. Add `SUPABASE_URL` and `SUPABASE_ANON_KEY` to `src/lib/supabase.js` (public values, safe to commit)
-7. Add `ANTHROPIC_API_KEY` as Edge Function secret: `supabase secrets set ANTHROPIC_API_KEY=...`
+- Speech recognition scoring logic

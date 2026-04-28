@@ -2,236 +2,856 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add Supabase cloud backend for family auth, data sync, and recording storage; redesign the achievement + dashboard screens; add sticky mobile record button; bulk-generate 24 new stories.
+**Goal:** Add Railway Express backend for family auth, cloud data sync, and audio recording storage; redesign the recorder as audio-only; redesign achievement + dashboard screens; add sticky mobile record button; bulk-generate 24 new stories.
 
-**Architecture:** Static GitHub Pages site gains a Supabase backend (Postgres + Auth + Storage + Edge Functions). Family code (e.g. `TIGER-2310`) acts as the auth credential — Edge Functions proxy family creation/joining and Anthropic API calls. `localStorage` remains the primary read cache; all writes also fire async cloud upserts. Sessions and recordings upload automatically after each reading.
+**Architecture:** Static GitHub Pages site calls a new Express API on Railway. Family code (e.g. `TIGER-2310`) is the auth credential — server returns a JWT on create/join, client stores it in localStorage. Audio recordings stored as bytea in PostgreSQL. `localStorage` stays as primary read cache; all writes also fire async API calls.
 
-**Tech Stack:** Vanilla JS ES modules, Supabase JS v2 (CDN), Deno Edge Functions, Supabase Storage (recordings), Claude Haiku 4.5 (story gen + feedback proxy).
+**Tech Stack:** Node.js + Express + Railway PostgreSQL (`pg`), `jsonwebtoken`, `multer`; vanilla JS ES modules on the frontend.
 
 ---
 
 ## File Map
 
-| File | Action | Purpose |
-|------|--------|---------|
-| `src/lib/supabase.js` | Create | Supabase client singleton |
-| `src/lib/cloud.js` | Create | Sync helpers: push/pull students, sessions, recordings, API key |
-| `src/components/familyOnboarding.js` | Create | Create/Join family UI shown on first visit |
-| `supabase/migrations/001_initial.sql` | Create | Schema: families, students, progress_sessions + RLS |
-| `supabase/functions/create-family/index.ts` | Create | Generate code, create Supabase auth user |
-| `supabase/functions/join-family/index.ts` | Create | Lookup code → return auth credentials |
-| `supabase/functions/generate-story/index.ts` | Create | Anthropic proxy using stored family API key |
-| `scripts/generate-stories.mjs` | Create | Bulk generate 24 stories via Anthropic |
-| `src/app.js` | Modify | Boot: check session, show onboarding if needed |
-| `src/lib/students.js` | Modify | `createStudent`, `deleteStudent`, `addSession` call cloud push |
-| `src/lib/storage.js` | Modify | `saveRecording` triggers cloud upload |
-| `src/components/recorder.js` | Modify | Sticky mobile buttons; pass sessionId to storage |
-| `src/components/scoreModal.js` | Modify | Animated score ring, confetti, point counter, badges |
-| `src/components/studentDashboard.js` | Modify | Bigger stats, badge wall, points progress bar |
-| `src/components/settings.js` | Modify | Save API key to cloud; fallback to localStorage |
-| `src/components/storyGenerator.js` | Modify | Use Edge Function proxy instead of direct Anthropic fetch |
-| `stories/index.json` | Modify | Add 24 new story entries |
-| `styles.css` | Modify | Mobile sticky recorder, score modal animations, dashboard redesign |
+### New: `chinese-reading/api/` (Railway service)
+
+| File | Purpose |
+|------|---------|
+| `api/src/index.js` | Express app, CORS, routes wiring |
+| `api/src/db.js` | pg Pool singleton |
+| `api/src/auth.js` | JWT sign/verify + `requireAuth` middleware |
+| `api/src/routes/families.js` | POST /api/families, POST /api/families/join, PUT /api/families/apikey |
+| `api/src/routes/students.js` | CRUD /api/students |
+| `api/src/routes/sessions.js` | POST + GET /api/sessions |
+| `api/src/routes/recordings.js` | POST /api/recordings, GET /api/recordings, GET /api/recordings/:id |
+| `api/src/routes/generate.js` | POST /api/generate (Anthropic proxy) |
+| `api/migrations/001_initial.sql` | Full schema |
+| `api/package.json` | Dependencies |
+| `api/Dockerfile` | Railway deploy |
+| `api/.env.example` | Required env vars |
+
+### Modified: `chinese-reading/` (frontend)
+
+| File | Change |
+|------|--------|
+| `src/lib/api.js` | New: fetch wrapper with Bearer auth + base URL |
+| `src/lib/cloud.js` | New: sync helpers (pushStudent, pushSession, uploadRecording, etc.) |
+| `src/components/familyOnboarding.js` | New: create/join family UI |
+| `src/app.js` | Boot: check token → show onboarding if needed; init sync |
+| `src/lib/students.js` | Fire cloud push on createStudent, deleteStudent, addSession |
+| `src/lib/storage.js` | Fire cloud upload after saveRecording |
+| `src/components/recorder.js` | Full rewrite: audio-only, sticky mobile bar |
+| `src/components/recordingsList.js` | Audio player instead of video |
+| `src/components/scoreModal.js` | Animated redesign + badges |
+| `src/components/studentDashboard.js` | Points hero + badge wall |
+| `src/components/settings.js` | Save API key to cloud |
+| `src/components/storyGenerator.js` | Use /api/generate proxy |
+| `styles.css` | Mobile sticky recorder, score modal animations, dashboard |
 
 ---
 
-## Task 1: Supabase Project Setup (Manual Steps)
+## Task 1: API Service Scaffold
 
-> One-time manual setup — no code yet.
+**Files:**
+- Create: `api/package.json`
+- Create: `api/src/index.js`
+- Create: `api/src/db.js`
+- Create: `api/src/auth.js`
+- Create: `api/.env.example`
+- Create: `api/Dockerfile`
 
-**Files:** None (manual setup, produces values for later tasks)
-
-- [ ] **Step 1: Create Supabase project**
-
-  Go to [supabase.com](https://supabase.com), create a new project called `chinese-reading`. Choose a region close to Singapore (ap-southeast-1 or ap-east-1). Save the database password.
-
-- [ ] **Step 2: Note your project credentials**
-
-  From Project Settings → API, copy:
-  - `Project URL` → call this `SUPABASE_URL` (e.g. `https://abcxyz.supabase.co`)
-  - `anon/public` key → call this `SUPABASE_ANON_KEY`
-  - `service_role` key → call this `SERVICE_ROLE_KEY` (keep secret, Edge Functions only)
-
-- [ ] **Step 3: Install Supabase CLI**
+- [ ] **Step 1: Create api/ directory and package.json**
 
   ```bash
-  brew install supabase/tap/supabase
-  supabase login
+  mkdir -p "/Users/wengleong/Claude Workspace/chinese-reading/api/src/routes"
+  mkdir -p "/Users/wengleong/Claude Workspace/chinese-reading/api/migrations"
   ```
 
-- [ ] **Step 4: Link to your project**
+  Create `api/package.json`:
+
+  ```json
+  {
+    "name": "chinese-reading-api",
+    "version": "1.0.0",
+    "type": "commonjs",
+    "main": "src/index.js",
+    "scripts": {
+      "start": "node src/index.js",
+      "dev": "node --watch src/index.js"
+    },
+    "dependencies": {
+      "cors": "^2.8.5",
+      "dotenv": "^16.4.5",
+      "express": "^4.18.3",
+      "jsonwebtoken": "^9.0.2",
+      "multer": "^1.4.5-lts.1",
+      "pg": "^8.11.5",
+      "uuid": "^9.0.1"
+    }
+  }
+  ```
+
+- [ ] **Step 2: Create .env.example**
+
+  ```
+  # api/.env.example
+  DATABASE_URL=postgresql://user:pass@host:5432/dbname
+  JWT_SECRET=change-me-to-a-long-random-string
+  PORT=3001
+  ALLOWED_ORIGIN=https://yourusername.github.io
+  ```
+
+- [ ] **Step 3: Create db.js**
+
+  ```js
+  // api/src/db.js
+  require('dotenv').config();
+  const { Pool } = require('pg');
+
+  const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: process.env.DATABASE_URL?.includes('railway') ? { rejectUnauthorized: false } : false,
+  });
+
+  module.exports = pool;
+  ```
+
+- [ ] **Step 4: Create auth.js**
+
+  ```js
+  // api/src/auth.js
+  const jwt = require('jsonwebtoken');
+
+  const SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-prod';
+  const EXPIRY = '365d';
+
+  function signToken(familyId) {
+    return jwt.sign({ familyId }, SECRET, { expiresIn: EXPIRY });
+  }
+
+  function requireAuth(req, res, next) {
+    const header = req.headers.authorization;
+    if (!header?.startsWith('Bearer ')) return res.status(401).json({ error: 'Unauthorized' });
+    try {
+      const payload = jwt.verify(header.slice(7), SECRET);
+      req.familyId = payload.familyId;
+      next();
+    } catch {
+      res.status(401).json({ error: 'Invalid or expired token' });
+    }
+  }
+
+  module.exports = { signToken, requireAuth };
+  ```
+
+- [ ] **Step 5: Create index.js**
+
+  ```js
+  // api/src/index.js
+  require('dotenv').config();
+  const express = require('express');
+  const cors = require('cors');
+
+  const app = express();
+  const PORT = process.env.PORT || 3001;
+
+  app.use(cors({
+    origin: process.env.ALLOWED_ORIGIN || '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  }));
+  app.use(express.json());
+
+  app.use('/api/families',   require('./routes/families'));
+  app.use('/api/students',   require('./routes/students'));
+  app.use('/api/sessions',   require('./routes/sessions'));
+  app.use('/api/recordings', require('./routes/recordings'));
+  app.use('/api/generate',   require('./routes/generate'));
+
+  app.get('/health', (_, res) => res.json({ ok: true }));
+
+  app.listen(PORT, () => console.log(`API running on :${PORT}`));
+  ```
+
+- [ ] **Step 6: Create Dockerfile**
+
+  ```dockerfile
+  # api/Dockerfile
+  FROM node:22-alpine
+  WORKDIR /app
+  COPY package.json .
+  RUN npm install --production
+  COPY src/ ./src/
+  EXPOSE 3001
+  CMD ["node", "src/index.js"]
+  ```
+
+- [ ] **Step 7: Install dependencies**
+
+  ```bash
+  cd "/Users/wengleong/Claude Workspace/chinese-reading/api"
+  npm install
+  ```
+
+- [ ] **Step 8: Commit**
 
   ```bash
   cd "/Users/wengleong/Claude Workspace/chinese-reading"
-  supabase init       # creates supabase/ directory
-  supabase link --project-ref YOUR_PROJECT_REF
-  # Project ref is the subdomain in SUPABASE_URL
-  ```
-
-- [ ] **Step 5: Create recordings storage bucket**
-
-  In Supabase Dashboard → Storage → New Bucket:
-  - Name: `recordings`
-  - Public: **No** (authenticated access only)
-  - File size limit: 200MB
-
-- [ ] **Step 6: Commit placeholder supabase config**
-
-  ```bash
-  git add supabase/
-  git commit -m "chore: init supabase project config"
+  git add api/
+  git commit -m "feat: scaffold railway api service"
   ```
 
 ---
 
-## Task 2: Database Schema + RLS
+## Task 2: Database Schema
 
 **Files:**
-- Create: `supabase/migrations/001_initial.sql`
+- Create: `api/migrations/001_initial.sql`
 
 - [ ] **Step 1: Create migration file**
 
-  ```bash
-  mkdir -p supabase/migrations
-  ```
-
-  Create `supabase/migrations/001_initial.sql`:
-
   ```sql
-  -- Families: one per family group
-  create table public.families (
-    id uuid primary key references auth.users(id) on delete cascade,
-    code text unique not null,
-    auth_password text not null,
+  -- api/migrations/001_initial.sql
+
+  create extension if not exists "pgcrypto";
+
+  create table if not exists families (
+    id          uuid primary key default gen_random_uuid(),
+    code        text unique not null,
     anthropic_key text,
-    created_at timestamptz default now()
+    created_at  timestamptz default now()
   );
 
-  -- Students: multiple per family
-  create table public.students (
-    id text primary key,
-    family_id uuid not null references public.families(id) on delete cascade,
-    name text not null,
-    level text not null,
-    color text not null,
-    created_at timestamptz default now()
+  create table if not exists students (
+    id          text primary key,
+    family_id   uuid not null references families(id) on delete cascade,
+    name        text not null,
+    level       text not null,
+    color       text not null,
+    created_at  timestamptz default now()
   );
 
-  -- Progress sessions: one row per reading attempt
-  create table public.progress_sessions (
-    id text primary key,
-    student_id text not null references public.students(id) on delete cascade,
-    family_id uuid not null references public.families(id) on delete cascade,
-    story_id text not null,
-    story_title text not null,
-    date text not null,
-    score integer not null,
-    passed boolean not null,
+  create table if not exists progress_sessions (
+    id            text primary key,
+    student_id    text not null references students(id) on delete cascade,
+    family_id     uuid not null references families(id) on delete cascade,
+    story_id      text not null,
+    story_title   text not null,
+    date          text not null,
+    score         integer not null,
+    passed        boolean not null,
     points_earned integer not null default 0,
-    transcript text,
-    recording_url text,
-    completed_at bigint,
-    created_at timestamptz default now()
+    transcript    text,
+    completed_at  bigint,
+    created_at    timestamptz default now()
   );
 
-  -- Enable RLS
-  alter table public.families enable row level security;
-  alter table public.students enable row level security;
-  alter table public.progress_sessions enable row level security;
+  create table if not exists recordings (
+    id          uuid primary key default gen_random_uuid(),
+    session_id  text,
+    student_id  text not null references students(id) on delete cascade,
+    family_id   uuid not null references families(id) on delete cascade,
+    audio_data  bytea not null,
+    mime_type   text not null default 'audio/webm',
+    duration_ms integer,
+    created_at  timestamptz default now()
+  );
 
-  -- Families: own row only
-  create policy "family_self" on public.families
-    for all using (auth.uid() = id);
-
-  -- Students: own family only
-  create policy "students_family" on public.students
-    for all using (auth.uid() = family_id);
-
-  -- Sessions: own family only
-  create policy "sessions_family" on public.progress_sessions
-    for all using (auth.uid() = family_id);
-
-  -- Storage RLS: authenticated users can manage their own prefix
-  create policy "recordings_own" on storage.objects
-    for all using (
-      bucket_id = 'recordings'
-      and (storage.foldername(name))[1] = auth.uid()::text
-    );
+  create index if not exists idx_students_family   on students(family_id);
+  create index if not exists idx_sessions_family   on progress_sessions(family_id);
+  create index if not exists idx_sessions_student  on progress_sessions(student_id);
+  create index if not exists idx_recordings_family on recordings(family_id);
   ```
 
 - [ ] **Step 2: Apply migration**
 
   ```bash
-  supabase db push
+  # Set DATABASE_URL from Railway dashboard (PostgreSQL → Connect)
+  export DATABASE_URL="postgresql://..."
+  psql "$DATABASE_URL" -f "/Users/wengleong/Claude Workspace/chinese-reading/api/migrations/001_initial.sql"
   ```
 
-  Expected output: `Applying migration 001_initial.sql... Done`
+  Expected: `CREATE TABLE` × 4, `CREATE INDEX` × 4, no errors.
 
 - [ ] **Step 3: Commit**
 
   ```bash
-  git add supabase/migrations/001_initial.sql
-  git commit -m "feat: add supabase schema with RLS"
+  cd "/Users/wengleong/Claude Workspace/chinese-reading"
+  git add api/migrations/
+  git commit -m "feat: database schema for families, students, sessions, recordings"
   ```
 
 ---
 
-## Task 3: Supabase Client Module
+## Task 3: Families Routes
 
 **Files:**
-- Create: `src/lib/supabase.js`
+- Create: `api/src/routes/families.js`
 
-- [ ] **Step 1: Create the module**
-
-  Replace `YOUR_SUPABASE_URL` and `YOUR_SUPABASE_ANON_KEY` with the values from Task 1 Step 2.
+- [ ] **Step 1: Create families.js**
 
   ```js
-  // src/lib/supabase.js
-  // Supabase client singleton. Import this wherever Supabase access is needed.
-  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+  // api/src/routes/families.js
+  const express = require('express');
+  const { v4: uuidv4 } = require('uuid');
+  const db = require('../db');
+  const { signToken, requireAuth } = require('../auth');
 
-  const SUPABASE_URL = 'YOUR_SUPABASE_URL';
-  const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+  const router = express.Router();
 
-  export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    auth: {
-      persistSession: true,
-      storageKey: 'cr-supabase-session',
-    },
+  const ANIMALS = [
+    'TIGER','PANDA','DRAGON','EAGLE','LION',
+    'WOLF','BEAR','CRANE','DEER','HAWK',
+    'FOX','OWL','SEAL','LYNX','DOVE',
+  ];
+
+  function generateCode() {
+    const animal = ANIMALS[Math.floor(Math.random() * ANIMALS.length)];
+    const digits = String(Math.floor(Math.random() * 9000) + 1000);
+    return `${animal}-${digits}`;
+  }
+
+  // POST /api/families — create new family
+  router.post('/', async (req, res) => {
+    let code, attempts = 0;
+    do {
+      code = generateCode();
+      const { rows } = await db.query('select id from families where code = $1', [code]);
+      if (!rows.length) break;
+    } while (++attempts < 10);
+
+    const { rows } = await db.query(
+      'insert into families (code) values ($1) returning id, code',
+      [code]
+    );
+    const family = rows[0];
+    const token = signToken(family.id);
+    res.json({ code: family.code, token });
   });
 
-  /** Returns the current family UUID, or null if not signed in. */
-  export async function getFamilyId() {
-    const { data: { session } } = await supabase.auth.getSession();
-    return session?.user?.id ?? null;
-  }
+  // POST /api/families/join — join with code
+  router.post('/join', async (req, res) => {
+    const { code } = req.body;
+    if (!code) return res.status(400).json({ error: 'Missing code' });
 
-  /** True if there is an active Supabase session. */
-  export async function isAuthenticated() {
-    const id = await getFamilyId();
-    return id !== null;
-  }
+    const { rows } = await db.query(
+      'select id from families where code = $1',
+      [code.toUpperCase().trim()]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Invalid family code' });
+
+    const token = signToken(rows[0].id);
+    res.json({ token });
+  });
+
+  // PUT /api/families/apikey — save Anthropic API key
+  router.put('/apikey', requireAuth, async (req, res) => {
+    const { key } = req.body;
+    await db.query(
+      'update families set anthropic_key = $1 where id = $2',
+      [key ?? null, req.familyId]
+    );
+    res.json({ ok: true });
+  });
+
+  // GET /api/families/apikey — get API key (for pulling into localStorage on login)
+  router.get('/apikey', requireAuth, async (req, res) => {
+    const { rows } = await db.query(
+      'select anthropic_key from families where id = $1',
+      [req.familyId]
+    );
+    res.json({ key: rows[0]?.anthropic_key ?? null });
+  });
+
+  module.exports = router;
   ```
 
-- [ ] **Step 2: Verify it loads in browser**
+- [ ] **Step 2: Test locally**
 
-  Open `index.html` in a browser (via local server: `python3 -m http.server 8080` from the project dir).
-  Open DevTools console, run:
-  ```js
-  import('/src/lib/supabase.js').then(m => console.log('supabase ok', m.supabase))
+  ```bash
+  cd "/Users/wengleong/Claude Workspace/chinese-reading/api"
+  cp .env.example .env
+  # Edit .env: add DATABASE_URL and JWT_SECRET=dev-secret
+  node src/index.js &
+
+  # Create family
+  curl -s -X POST http://localhost:3001/api/families | jq .
+  # Expected: {"code":"TIGER-2310","token":"eyJ..."}
+
+  # Join with that code (replace TIGER-2310)
+  curl -s -X POST http://localhost:3001/api/families/join \
+    -H "Content-Type: application/json" \
+    -d '{"code":"TIGER-2310"}' | jq .
+  # Expected: {"token":"eyJ..."}
+
+  # Kill server
+  kill %1
   ```
-  Expected: logs the supabase client object, no 404 errors.
 
 - [ ] **Step 3: Commit**
 
   ```bash
-  git add src/lib/supabase.js
-  git commit -m "feat: add supabase client module"
+  cd "/Users/wengleong/Claude Workspace/chinese-reading"
+  git add api/src/routes/families.js
+  git commit -m "feat: families routes (create, join, apikey)"
   ```
 
 ---
 
-## Task 4: Cloud Sync Module
+## Task 4: Students + Sessions Routes
+
+**Files:**
+- Create: `api/src/routes/students.js`
+- Create: `api/src/routes/sessions.js`
+
+- [ ] **Step 1: Create students.js**
+
+  ```js
+  // api/src/routes/students.js
+  const express = require('express');
+  const db = require('../db');
+  const { requireAuth } = require('../auth');
+
+  const router = express.Router();
+  router.use(requireAuth);
+
+  // GET /api/students
+  router.get('/', async (req, res) => {
+    const { rows } = await db.query(
+      'select * from students where family_id = $1 order by created_at',
+      [req.familyId]
+    );
+    res.json(rows);
+  });
+
+  // POST /api/students
+  router.post('/', async (req, res) => {
+    const { id, name, level, color, createdAt } = req.body;
+    const { rows } = await db.query(
+      `insert into students (id, family_id, name, level, color, created_at)
+       values ($1, $2, $3, $4, $5, $6)
+       on conflict (id) do update set name=$3, level=$4, color=$5
+       returning *`,
+      [id, req.familyId, name, level, color, new Date(createdAt)]
+    );
+    res.json(rows[0]);
+  });
+
+  // DELETE /api/students/:id
+  router.delete('/:id', async (req, res) => {
+    await db.query(
+      'delete from students where id = $1 and family_id = $2',
+      [req.params.id, req.familyId]
+    );
+    res.json({ ok: true });
+  });
+
+  module.exports = router;
+  ```
+
+- [ ] **Step 2: Create sessions.js**
+
+  ```js
+  // api/src/routes/sessions.js
+  const express = require('express');
+  const db = require('../db');
+  const { requireAuth } = require('../auth');
+
+  const router = express.Router();
+  router.use(requireAuth);
+
+  // GET /api/sessions — all sessions for this family
+  router.get('/', async (req, res) => {
+    const { rows } = await db.query(
+      `select s.* from progress_sessions s
+       where s.family_id = $1
+       order by s.completed_at desc nulls last`,
+      [req.familyId]
+    );
+    res.json(rows);
+  });
+
+  // POST /api/sessions — upsert a session
+  router.post('/', async (req, res) => {
+    const { id, studentId, storyId, storyTitle, date, score, passed,
+            pointsEarned, transcript, completedAt } = req.body;
+    await db.query(
+      `insert into progress_sessions
+         (id, student_id, family_id, story_id, story_title, date, score,
+          passed, points_earned, transcript, completed_at)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+       on conflict (id) do nothing`,
+      [id, studentId, req.familyId, storyId, storyTitle, date, score,
+       passed, pointsEarned ?? 0, transcript ?? '', completedAt ?? null]
+    );
+    res.json({ ok: true });
+  });
+
+  module.exports = router;
+  ```
+
+- [ ] **Step 3: Test locally**
+
+  ```bash
+  cd "/Users/wengleong/Claude Workspace/chinese-reading/api"
+  node src/index.js &
+
+  # Use token from Task 3 test
+  TOKEN="eyJ..."
+
+  curl -s -X POST http://localhost:3001/api/students \
+    -H "Authorization: Bearer $TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '{"id":"stu-1","name":"Emily","level":"P3","color":"#e8590c","createdAt":1700000000000}' | jq .
+  # Expected: {id:"stu-1", name:"Emily", ...}
+
+  curl -s http://localhost:3001/api/students \
+    -H "Authorization: Bearer $TOKEN" | jq .
+  # Expected: [{id:"stu-1",...}]
+
+  kill %1
+  ```
+
+- [ ] **Step 4: Commit**
+
+  ```bash
+  cd "/Users/wengleong/Claude Workspace/chinese-reading"
+  git add api/src/routes/students.js api/src/routes/sessions.js
+  git commit -m "feat: students and sessions routes"
+  ```
+
+---
+
+## Task 5: Recordings Routes
+
+**Files:**
+- Create: `api/src/routes/recordings.js`
+
+- [ ] **Step 1: Create recordings.js**
+
+  ```js
+  // api/src/routes/recordings.js
+  const express = require('express');
+  const multer = require('multer');
+  const db = require('../db');
+  const { requireAuth } = require('../auth');
+
+  const router = express.Router();
+  router.use(requireAuth);
+
+  // multer: store upload in memory (audio files are small)
+  const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 20 * 1024 * 1024 }, // 20MB max
+  });
+
+  // POST /api/recordings — upload audio blob
+  // Multipart fields: audio (file), studentId, sessionId, durationMs
+  router.post('/', upload.single('audio'), async (req, res) => {
+    if (!req.file) return res.status(400).json({ error: 'No audio file' });
+
+    const { studentId, sessionId, durationMs } = req.body;
+
+    // Verify student belongs to this family
+    const { rows: studentRows } = await db.query(
+      'select id from students where id = $1 and family_id = $2',
+      [studentId, req.familyId]
+    );
+    if (!studentRows.length) return res.status(403).json({ error: 'Forbidden' });
+
+    const { rows } = await db.query(
+      `insert into recordings
+         (session_id, student_id, family_id, audio_data, mime_type, duration_ms)
+       values ($1, $2, $3, $4, $5, $6)
+       returning id`,
+      [sessionId ?? null, studentId, req.familyId,
+       req.file.buffer, req.file.mimetype, durationMs ? parseInt(durationMs) : null]
+    );
+    res.json({ id: rows[0].id });
+  });
+
+  // GET /api/recordings — list metadata (no audio data)
+  router.get('/', async (req, res) => {
+    const { rows } = await db.query(
+      `select id, session_id, student_id, mime_type, duration_ms, created_at
+       from recordings
+       where family_id = $1
+       order by created_at desc`,
+      [req.familyId]
+    );
+    res.json(rows);
+  });
+
+  // GET /api/recordings/:id — stream audio
+  router.get('/:id', async (req, res) => {
+    const { rows } = await db.query(
+      'select audio_data, mime_type from recordings where id = $1 and family_id = $2',
+      [req.params.id, req.familyId]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Not found' });
+
+    const { audio_data, mime_type } = rows[0];
+    res.set('Content-Type', mime_type);
+    res.set('Cache-Control', 'private, max-age=3600');
+    res.send(audio_data);
+  });
+
+  module.exports = router;
+  ```
+
+- [ ] **Step 2: Test locally**
+
+  ```bash
+  cd "/Users/wengleong/Claude Workspace/chinese-reading/api"
+  node src/index.js &
+  TOKEN="eyJ..."
+
+  # Upload a test audio file (use any small webm/wav you have)
+  curl -s -X POST http://localhost:3001/api/recordings \
+    -H "Authorization: Bearer $TOKEN" \
+    -F "audio=@/tmp/test.webm" \
+    -F "studentId=stu-1" \
+    -F "durationMs=5000" | jq .
+  # Expected: {"id":"uuid-..."}
+
+  # List recordings
+  curl -s http://localhost:3001/api/recordings \
+    -H "Authorization: Bearer $TOKEN" | jq .
+  # Expected: [{id, session_id, student_id, mime_type, duration_ms, created_at}]
+
+  kill %1
+  ```
+
+- [ ] **Step 3: Commit**
+
+  ```bash
+  cd "/Users/wengleong/Claude Workspace/chinese-reading"
+  git add api/src/routes/recordings.js
+  git commit -m "feat: recordings routes (upload, list, stream)"
+  ```
+
+---
+
+## Task 6: Generate Route (Anthropic Proxy)
+
+**Files:**
+- Create: `api/src/routes/generate.js`
+
+- [ ] **Step 1: Create generate.js**
+
+  ```js
+  // api/src/routes/generate.js
+  const express = require('express');
+  const db = require('../db');
+  const { requireAuth } = require('../auth');
+
+  const router = express.Router();
+  router.use(requireAuth);
+
+  // POST /api/generate — proxy to Anthropic using the family's stored API key
+  router.post('/', async (req, res) => {
+    const { rows } = await db.query(
+      'select anthropic_key from families where id = $1',
+      [req.familyId]
+    );
+    const apiKey = rows[0]?.anthropic_key;
+    if (!apiKey) return res.status(400).json({ error: 'No API key configured. Add one in Settings.' });
+
+    const upstream = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify(req.body),
+    });
+
+    const data = await upstream.json();
+    res.status(upstream.status).json(data);
+  });
+
+  module.exports = router;
+  ```
+
+- [ ] **Step 2: Verify (requires a valid Anthropic API key saved in the DB)**
+
+  ```bash
+  cd "/Users/wengleong/Claude Workspace/chinese-reading/api"
+  node src/index.js &
+  TOKEN="eyJ..."
+
+  # First save an API key
+  curl -s -X PUT http://localhost:3001/api/families/apikey \
+    -H "Authorization: Bearer $TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '{"key":"sk-ant-YOUR_KEY"}' | jq .
+  # Expected: {"ok":true}
+
+  # Test generate proxy
+  curl -s -X POST http://localhost:3001/api/generate \
+    -H "Authorization: Bearer $TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '{"model":"claude-haiku-4-5-20251001","max_tokens":50,"messages":[{"role":"user","content":"Say hi"}]}' | jq .
+  # Expected: Anthropic response with content array
+
+  kill %1
+  ```
+
+- [ ] **Step 3: Commit**
+
+  ```bash
+  cd "/Users/wengleong/Claude Workspace/chinese-reading"
+  git add api/src/routes/generate.js
+  git commit -m "feat: generate route (anthropic proxy)"
+  ```
+
+---
+
+## Task 7: Deploy API to Railway
+
+- [ ] **Step 1: Create Railway service**
+
+  In [Railway dashboard](https://railway.app):
+  1. New Project → Deploy from GitHub repo → select `chinese-reading` repo
+  2. Root Directory: `api`
+  3. Add PostgreSQL plugin to the project
+  4. Set env vars on the service:
+     - `DATABASE_URL` — copy from PostgreSQL plugin (Railway sets this automatically if you use the plugin reference)
+     - `JWT_SECRET` — generate: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
+     - `ALLOWED_ORIGIN` — your GitHub Pages URL (e.g. `https://wengleong.github.io`)
+     - `PORT` — `3001` (Railway overrides this with its own PORT automatically)
+
+- [ ] **Step 2: Run migration against Railway DB**
+
+  Copy the `DATABASE_URL` from Railway PostgreSQL plugin:
+  ```bash
+  export DATABASE_URL="postgresql://postgres:...@...railway.app:..."
+  psql "$DATABASE_URL" -f "/Users/wengleong/Claude Workspace/chinese-reading/api/migrations/001_initial.sql"
+  ```
+
+- [ ] **Step 3: Note the Railway service URL**
+
+  From Railway → your service → Settings → Domains. It will be something like `https://chinese-reading-api-production.up.railway.app`. Save this as `API_BASE_URL`.
+
+- [ ] **Step 4: Verify health endpoint**
+
+  ```bash
+  curl https://YOUR_RAILWAY_URL/health
+  # Expected: {"ok":true}
+  ```
+
+- [ ] **Step 5: Commit**
+
+  No code change. The Railway service deploys automatically on git push to main.
+
+---
+
+## Task 8: Frontend API Module
+
+**Files:**
+- Create: `src/lib/api.js`
+
+- [ ] **Step 1: Create api.js**
+
+  Replace `YOUR_RAILWAY_URL` with the actual Railway URL from Task 7.
+
+  ```js
+  // src/lib/api.js
+  // Thin fetch wrapper for the Chinese Reading API.
+  // Token is stored in localStorage as 'cr-token'.
+
+  const API_BASE = 'https://YOUR_RAILWAY_URL';
+  const TOKEN_KEY = 'cr-token';
+
+  export function getToken() {
+    return localStorage.getItem(TOKEN_KEY);
+  }
+
+  export function setToken(token) {
+    if (token) localStorage.setItem(TOKEN_KEY, token);
+    else localStorage.removeItem(TOKEN_KEY);
+  }
+
+  export function isLoggedIn() {
+    return !!getToken();
+  }
+
+  async function req(method, path, body, isFormData = false) {
+    const token = getToken();
+    const headers = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    if (body && !isFormData) headers['Content-Type'] = 'application/json';
+
+    const res = await fetch(`${API_BASE}${path}`, {
+      method,
+      headers,
+      body: isFormData ? body : (body ? JSON.stringify(body) : undefined),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `API error ${res.status}`);
+    }
+    return res.json();
+  }
+
+  // Families
+  export const createFamily   = ()          => req('POST', '/api/families');
+  export const joinFamily     = (code)      => req('POST', '/api/families/join', { code });
+  export const saveApiKey     = (key)       => req('PUT',  '/api/families/apikey', { key });
+  export const getApiKey      = ()          => req('GET',  '/api/families/apikey');
+
+  // Students
+  export const listStudents   = ()          => req('GET',  '/api/students');
+  export const upsertStudent  = (student)   => req('POST', '/api/students', student);
+  export const removeStudent  = (id)        => req('DELETE', `/api/students/${id}`);
+
+  // Sessions
+  export const listSessions   = ()          => req('GET',  '/api/sessions');
+  export const saveSession    = (session)   => req('POST', '/api/sessions', session);
+
+  // Recordings
+  export const listRecordings = ()          => req('GET',  '/api/recordings');
+  export async function uploadRecording({ blob, mimeType, studentId, sessionId, durationMs }) {
+    const form = new FormData();
+    form.append('audio', blob, `recording.${mimeType.includes('mp4') ? 'mp4' : 'webm'}`);
+    form.append('studentId', studentId);
+    if (sessionId) form.append('sessionId', sessionId);
+    if (durationMs) form.append('durationMs', String(durationMs));
+    return req('POST', '/api/recordings', form, true);
+  }
+  export async function fetchRecordingBlob(id) {
+    const token = getToken();
+    const res = await fetch(`${API_BASE}/api/recordings/${id}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) throw new Error('Recording not found');
+    return res.blob();
+  }
+
+  // Generate (Anthropic proxy)
+  export const generateViaApi = (body)      => req('POST', '/api/generate', body);
+  ```
+
+- [ ] **Step 2: Verify in browser console**
+
+  Open the app, then in DevTools console:
+  ```js
+  import('/src/lib/api.js').then(m => console.log('api.js OK', Object.keys(m)))
+  ```
+  Expected: logs all exported function names.
+
+- [ ] **Step 3: Commit**
+
+  ```bash
+  cd "/Users/wengleong/Claude Workspace/chinese-reading"
+  git add src/lib/api.js
+  git commit -m "feat: frontend api module"
+  ```
+
+---
+
+## Task 9: Cloud Sync Module
 
 **Files:**
 - Create: `src/lib/cloud.js`
@@ -240,687 +860,251 @@
 
   ```js
   // src/lib/cloud.js
-  // Cloud sync helpers. All functions are no-ops when unauthenticated.
-  // localStorage is the primary store — cloud is write-through and pulls on login.
+  // Write-through cloud sync. All functions are no-ops when not logged in.
+  // localStorage is the primary store; cloud is async best-effort.
 
-  import { supabase, getFamilyId } from './supabase.js';
+  import {
+    isLoggedIn, listStudents, upsertStudent, removeStudent,
+    listSessions, saveSession, uploadRecording as apiUpload,
+    getApiKey,
+  } from './api.js';
 
   // ---- Students ----
 
   export async function pushStudent(student) {
-    const familyId = await getFamilyId();
-    if (!familyId) return;
-    await supabase.from('students').upsert({
-      id: student.id,
-      family_id: familyId,
-      name: student.name,
-      level: student.level,
-      color: student.color,
-      created_at: new Date(student.createdAt).toISOString(),
-    }, { onConflict: 'id' }).throwOnError().catch(() => {});
+    if (!isLoggedIn()) return;
+    upsertStudent(student).catch(() => {});
   }
 
-  export async function deleteStudentCloud(studentId) {
-    const familyId = await getFamilyId();
-    if (!familyId) return;
-    await supabase.from('students').delete().eq('id', studentId).catch(() => {});
+  export async function deleteStudentCloud(id) {
+    if (!isLoggedIn()) return;
+    removeStudent(id).catch(() => {});
   }
 
   // ---- Sessions ----
 
   export async function pushSession(session, studentId) {
-    const familyId = await getFamilyId();
-    if (!familyId) return;
-    await supabase.from('progress_sessions').upsert({
-      id: session.id,
-      student_id: studentId,
-      family_id: familyId,
-      story_id: session.storyId,
-      story_title: session.storyTitle,
-      date: session.date,
-      score: session.score,
-      passed: session.passed,
-      points_earned: session.pointsEarned ?? 0,
-      transcript: session.transcript ?? '',
-      recording_url: session.recordingUrl ?? null,
-      completed_at: session.completedAt ?? null,
-    }, { onConflict: 'id' }).throwOnError().catch(() => {});
-  }
-
-  export async function updateSessionRecordingUrl(sessionId, url) {
-    await supabase.from('progress_sessions')
-      .update({ recording_url: url })
-      .eq('id', sessionId)
-      .catch(() => {});
+    if (!isLoggedIn()) return;
+    saveSession({ ...session, studentId }).catch(() => {});
   }
 
   // ---- Recordings ----
 
-  /**
-   * Upload a recording blob to Supabase Storage.
-   * Returns the public URL string, or null on failure.
-   */
-  export async function uploadRecording(blob, mimeType, studentId, sessionId) {
-    const familyId = await getFamilyId();
-    if (!familyId) return null;
-    const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
-    const path = `${familyId}/${studentId}/${sessionId}.${ext}`;
-    const { data, error } = await supabase.storage
-      .from('recordings')
-      .upload(path, blob, { contentType: mimeType, upsert: true });
-    if (error) { console.warn('Recording upload failed:', error.message); return null; }
-    const { data: { publicUrl } } = supabase.storage.from('recordings').getPublicUrl(path);
-    return publicUrl;
+  export async function pushRecording({ blob, mimeType, studentId, sessionId, durationMs }) {
+    if (!isLoggedIn()) return null;
+    try {
+      const { id } = await apiUpload({ blob, mimeType, studentId, sessionId, durationMs });
+      return id;
+    } catch { return null; }
   }
 
   // ---- API Key ----
 
-  export async function saveApiKeyCloud(key) {
-    const familyId = await getFamilyId();
-    if (!familyId) return false;
-    const { error } = await supabase.from('families')
-      .update({ anthropic_key: key })
-      .eq('id', familyId);
-    return !error;
-  }
-
-  export async function getApiKeyCloud() {
-    const familyId = await getFamilyId();
-    if (!familyId) return null;
-    const { data } = await supabase.from('families')
-      .select('anthropic_key')
-      .eq('id', familyId)
-      .single();
-    return data?.anthropic_key ?? null;
+  export async function pullApiKey() {
+    if (!isLoggedIn()) return null;
+    try {
+      const { key } = await getApiKey();
+      if (key) localStorage.setItem('anthropicApiKey', key);
+      return key;
+    } catch { return null; }
   }
 
   // ---- Sync Down (call on login) ----
 
-  /**
-   * Pull all family data from cloud and merge into localStorage.
-   * Merges by ID — adds missing records, does not overwrite newer local data.
-   */
   export async function syncDown() {
-    const familyId = await getFamilyId();
-    if (!familyId) return;
+    if (!isLoggedIn()) return;
 
-    // Pull students
-    const { data: cloudStudents } = await supabase
-      .from('students').select('*').eq('family_id', familyId);
-    if (cloudStudents?.length) {
-      const localRaw = localStorage.getItem('cr-students');
-      const local = localRaw ? JSON.parse(localRaw) : [];
-      const localIds = new Set(local.map(s => s.id));
-      const toAdd = cloudStudents.filter(s => !localIds.has(s.id)).map(s => ({
-        id: s.id, name: s.name, level: s.level, color: s.color,
-        createdAt: new Date(s.created_at).getTime(),
-      }));
-      if (toAdd.length) {
-        localStorage.setItem('cr-students', JSON.stringify([...local, ...toAdd]));
-      }
-    }
-
-    // Pull sessions
-    const { data: cloudSessions } = await supabase
-      .from('progress_sessions').select('*').eq('family_id', familyId);
-    if (cloudSessions?.length) {
-      // Group by student_id
-      const byStudent = {};
-      for (const s of cloudSessions) {
-        if (!byStudent[s.student_id]) byStudent[s.student_id] = [];
-        byStudent[s.student_id].push(s);
-      }
-      for (const [studentId, sessions] of Object.entries(byStudent)) {
-        const key = `cr-progress-${studentId}`;
-        const localRaw = localStorage.getItem(key);
-        const local = localRaw ? JSON.parse(localRaw) : { totalPoints: 0, sessions: [] };
-        const localIds = new Set(local.sessions.map(s => s.id));
-        const toAdd = sessions
+    // Students
+    try {
+      const students = await listStudents();
+      if (students.length) {
+        const local = JSON.parse(localStorage.getItem('cr-students') || '[]');
+        const localIds = new Set(local.map(s => s.id));
+        const toAdd = students
           .filter(s => !localIds.has(s.id))
           .map(s => ({
-            id: s.id,
-            date: s.date,
-            storyId: s.story_id,
-            storyTitle: s.story_title,
-            score: s.score,
-            passed: s.passed,
-            pointsEarned: s.points_earned,
-            transcript: s.transcript ?? '',
-            recordingUrl: s.recording_url ?? null,
-            completedAt: s.completed_at,
+            id: s.id, name: s.name, level: s.level, color: s.color,
+            createdAt: new Date(s.created_at).getTime(),
           }));
         if (toAdd.length) {
-          local.sessions = [...local.sessions, ...toAdd]
-            .sort((a, b) => (b.completedAt ?? 0) - (a.completedAt ?? 0));
-          local.totalPoints = local.sessions
-            .filter(s => s.passed)
-            .reduce((sum, s) => sum + (s.pointsEarned ?? 0), 0);
-          localStorage.setItem(key, JSON.stringify(local));
+          localStorage.setItem('cr-students', JSON.stringify([...local, ...toAdd]));
         }
       }
-    }
+    } catch {}
+
+    // Sessions
+    try {
+      const sessions = await listSessions();
+      if (sessions.length) {
+        const byStudent = {};
+        for (const s of sessions) {
+          (byStudent[s.student_id] = byStudent[s.student_id] || []).push(s);
+        }
+        for (const [studentId, rows] of Object.entries(byStudent)) {
+          const key = `cr-progress-${studentId}`;
+          const local = JSON.parse(localStorage.getItem(key) || '{"totalPoints":0,"sessions":[]}');
+          const localIds = new Set(local.sessions.map(s => s.id));
+          const toAdd = rows.filter(s => !localIds.has(s.id)).map(s => ({
+            id: s.id, date: s.date, storyId: s.story_id, storyTitle: s.story_title,
+            score: s.score, passed: s.passed, pointsEarned: s.points_earned,
+            transcript: s.transcript ?? '', completedAt: s.completed_at,
+          }));
+          if (toAdd.length) {
+            local.sessions = [...local.sessions, ...toAdd]
+              .sort((a, b) => (b.completedAt ?? 0) - (a.completedAt ?? 0));
+            local.totalPoints = local.sessions
+              .filter(s => s.passed)
+              .reduce((sum, s) => sum + (s.pointsEarned ?? 0), 0);
+            localStorage.setItem(key, JSON.stringify(local));
+          }
+        }
+      }
+    } catch {}
+
+    // API key
+    await pullApiKey();
   }
   ```
 
-- [ ] **Step 2: Verify module parses**
-
-  ```bash
-  node --input-type=module <<'EOF'
-  import('/Users/wengleong/Claude Workspace/chinese-reading/src/lib/cloud.js')
-    .then(() => console.log('cloud.js OK'))
-    .catch(e => console.error('FAIL:', e.message))
-  EOF
-  ```
-
-  Expected: `cloud.js OK` (or a fetch error for the supabase CDN import — that's fine in Node, it's a browser module).
-
-- [ ] **Step 3: Commit**
+- [ ] **Step 2: Commit**
 
   ```bash
   git add src/lib/cloud.js
-  git commit -m "feat: add cloud sync module"
+  git commit -m "feat: cloud sync module"
   ```
 
 ---
 
-## Task 5: Edge Function — create-family
-
-**Files:**
-- Create: `supabase/functions/create-family/index.ts`
-
-- [ ] **Step 1: Create the function**
-
-  ```bash
-  mkdir -p supabase/functions/create-family
-  ```
-
-  ```typescript
-  // supabase/functions/create-family/index.ts
-  import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-  import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-
-  const CORS = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  };
-
-  const ANIMALS = [
-    'TIGER', 'PANDA', 'DRAGON', 'EAGLE', 'LION',
-    'WOLF', 'BEAR', 'CRANE', 'DEER', 'HAWK',
-    'FOX', 'OWL', 'SEAL', 'LYNX', 'DOVE',
-  ];
-
-  function generateCode(): string {
-    const animal = ANIMALS[Math.floor(Math.random() * ANIMALS.length)];
-    const digits = String(Math.floor(Math.random() * 9000) + 1000);
-    return `${animal}-${digits}`;
-  }
-
-  serve(async (req) => {
-    if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
-
-    const admin = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-    );
-
-    // Generate unique code (retry up to 5 times on collision)
-    let code = '';
-    for (let i = 0; i < 5; i++) {
-      code = generateCode();
-      const { data } = await admin.from('families').select('id').eq('code', code).maybeSingle();
-      if (!data) break;
-    }
-
-    const password = crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '');
-    const email = `${code.toLowerCase()}@cr.app`;
-
-    // Create Supabase auth user
-    const { data: authData, error: authErr } = await admin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-    });
-    if (authErr) {
-      return new Response(JSON.stringify({ error: authErr.message }), {
-        status: 500, headers: { ...CORS, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Insert family record
-    const { error: dbErr } = await admin.from('families').insert({
-      id: authData.user.id,
-      code,
-      auth_password: password,
-    });
-    if (dbErr) {
-      // Rollback: delete auth user
-      await admin.auth.admin.deleteUser(authData.user.id);
-      return new Response(JSON.stringify({ error: dbErr.message }), {
-        status: 500, headers: { ...CORS, 'Content-Type': 'application/json' },
-      });
-    }
-
-    return new Response(JSON.stringify({ code, email, password }), {
-      headers: { ...CORS, 'Content-Type': 'application/json' },
-    });
-  });
-  ```
-
-- [ ] **Step 2: Deploy function**
-
-  ```bash
-  supabase functions deploy create-family --no-verify-jwt
-  ```
-
-  Expected: `Function create-family deployed`
-
-- [ ] **Step 3: Test in terminal**
-
-  ```bash
-  curl -X POST https://YOUR_PROJECT.supabase.co/functions/v1/create-family \
-    -H "apikey: YOUR_ANON_KEY" \
-    -H "Content-Type: application/json"
-  ```
-
-  Expected response:
-  ```json
-  {"code":"TIGER-2847","email":"tiger-2847@cr.app","password":"..."}
-  ```
-
-- [ ] **Step 4: Commit**
-
-  ```bash
-  git add supabase/functions/create-family/
-  git commit -m "feat: create-family edge function"
-  ```
-
----
-
-## Task 6: Edge Function — join-family
-
-**Files:**
-- Create: `supabase/functions/join-family/index.ts`
-
-- [ ] **Step 1: Create the function**
-
-  ```bash
-  mkdir -p supabase/functions/join-family
-  ```
-
-  ```typescript
-  // supabase/functions/join-family/index.ts
-  import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-  import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-
-  const CORS = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  };
-
-  serve(async (req) => {
-    if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
-
-    let code: string;
-    try {
-      ({ code } = await req.json());
-    } catch {
-      return new Response(JSON.stringify({ error: 'Missing code' }), {
-        status: 400, headers: { ...CORS, 'Content-Type': 'application/json' },
-      });
-    }
-
-    const admin = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-    );
-
-    const { data: family, error } = await admin
-      .from('families')
-      .select('auth_password')
-      .eq('code', code.toUpperCase().trim())
-      .maybeSingle();
-
-    if (error || !family) {
-      return new Response(JSON.stringify({ error: 'Invalid family code' }), {
-        status: 404, headers: { ...CORS, 'Content-Type': 'application/json' },
-      });
-    }
-
-    const email = `${code.toLowerCase().trim()}@cr.app`;
-    return new Response(JSON.stringify({ email, password: family.auth_password }), {
-      headers: { ...CORS, 'Content-Type': 'application/json' },
-    });
-  });
-  ```
-
-- [ ] **Step 2: Deploy**
-
-  ```bash
-  supabase functions deploy join-family --no-verify-jwt
-  ```
-
-- [ ] **Step 3: Test**
-
-  Replace `TIGER-2847` with the code returned in Task 5 Step 3.
-
-  ```bash
-  curl -X POST https://YOUR_PROJECT.supabase.co/functions/v1/join-family \
-    -H "apikey: YOUR_ANON_KEY" \
-    -H "Content-Type: application/json" \
-    -d '{"code":"TIGER-2847"}'
-  ```
-
-  Expected: `{"email":"tiger-2847@cr.app","password":"..."}` matching what was returned in Task 5.
-
-- [ ] **Step 4: Commit**
-
-  ```bash
-  git add supabase/functions/join-family/
-  git commit -m "feat: join-family edge function"
-  ```
-
----
-
-## Task 7: Edge Function — generate-story (Anthropic Proxy)
-
-**Files:**
-- Create: `supabase/functions/generate-story/index.ts`
-
-- [ ] **Step 1: Create the function**
-
-  ```bash
-  mkdir -p supabase/functions/generate-story
-  ```
-
-  ```typescript
-  // supabase/functions/generate-story/index.ts
-  import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-  import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-
-  const CORS = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  };
-
-  serve(async (req) => {
-    if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
-
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...CORS, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Verify the user session
-    const userClient = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_ANON_KEY')!,
-      { global: { headers: { Authorization: authHeader } } },
-    );
-    const { data: { user } } = await userClient.auth.getUser();
-    if (!user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...CORS, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Get family's API key via service role
-    const admin = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-    );
-    const { data: family } = await admin
-      .from('families')
-      .select('anthropic_key')
-      .eq('id', user.id)
-      .single();
-
-    if (!family?.anthropic_key) {
-      return new Response(JSON.stringify({ error: 'No API key configured for this family' }), {
-        status: 400, headers: { ...CORS, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Proxy to Anthropic
-    const body = await req.json();
-    const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': family.anthropic_key,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    });
-
-    const data = await anthropicRes.json();
-    return new Response(JSON.stringify(data), {
-      status: anthropicRes.status,
-      headers: { ...CORS, 'Content-Type': 'application/json' },
-    });
-  });
-  ```
-
-- [ ] **Step 2: Deploy**
-
-  ```bash
-  supabase functions deploy generate-story
-  # Note: no --no-verify-jwt here — this function requires auth
-  ```
-
-- [ ] **Step 3: Commit**
-
-  ```bash
-  git add supabase/functions/generate-story/
-  git commit -m "feat: generate-story edge function (anthropic proxy)"
-  ```
-
----
-
-## Task 8: Family Onboarding UI
+## Task 10: Family Onboarding UI
 
 **Files:**
 - Create: `src/components/familyOnboarding.js`
 
-- [ ] **Step 1: Create the component**
+- [ ] **Step 1: Create familyOnboarding.js**
 
   ```js
   // src/components/familyOnboarding.js
-  // Shown on first visit (no Supabase session). Lets a family create or join.
-
-  import { supabase } from '../lib/supabase.js';
+  import { createFamily, joinFamily, setToken } from '../lib/api.js';
   import { syncDown } from '../lib/cloud.js';
 
-  const EDGE_BASE = 'https://YOUR_PROJECT.supabase.co/functions/v1';
-  const ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
-
-  async function callEdge(fn, body = {}) {
-    const res = await fetch(`${EDGE_BASE}/${fn}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'apikey': ANON_KEY },
-      body: JSON.stringify(body),
-    });
-    return res.json();
-  }
-
-  /**
-   * Show the onboarding overlay. Calls onDone() when the family is signed in.
-   * Calls onSkip() if the user dismisses without signing in (offline mode).
-   */
   export function showFamilyOnboarding({ onDone, onSkip }) {
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay onboarding-overlay';
     overlay.innerHTML = `
       <div class="modal-card onboarding-card" role="dialog" aria-modal="true">
         <div class="onboarding-logo">📚</div>
-        <h2 class="modal-title">每日华文阅读</h2>
-        <p class="modal-hint" style="text-align:center">
-          Daily Chinese Reading · Sync your progress across devices
-        </p>
+        <h2 class="modal-title" style="text-align:center">每日华文阅读</h2>
+        <p class="modal-hint" style="text-align:center">Save your progress across all devices</p>
 
         <div class="onboarding-tabs">
-          <button class="onboarding-tab active" id="tab-join">Enter Code</button>
+          <button class="onboarding-tab active" id="tab-join">Have a Code</button>
           <button class="onboarding-tab" id="tab-create">New Family</button>
         </div>
 
-        <!-- Join panel -->
         <div id="panel-join">
-          <p class="modal-hint">Enter your family code to restore your progress on this device.</p>
+          <p class="modal-hint">Enter your family code to restore progress on this device.</p>
           <input class="modal-input onboarding-code-input" id="ob-code"
             type="text" placeholder="TIGER-2310"
             autocomplete="off" autocapitalize="characters" spellcheck="false" />
-          <div class="modal-error" id="ob-join-error" hidden></div>
+          <div class="modal-error" id="ob-join-err" hidden></div>
           <div class="modal-actions">
             <button class="secondary" id="ob-skip">Use without code</button>
             <button class="primary" id="ob-join-btn">Join →</button>
           </div>
         </div>
 
-        <!-- Create panel (hidden initially) -->
         <div id="panel-create" hidden>
-          <p class="modal-hint">We'll generate a unique code for your family. Write it down — you'll need it to add more devices.</p>
-          <div class="modal-error" id="ob-create-error" hidden></div>
+          <p class="modal-hint">We'll generate a unique code for your family. Write it down — you'll need it on other devices.</p>
+          <div class="modal-error" id="ob-create-err" hidden></div>
           <div class="modal-actions">
             <button class="secondary" id="ob-back">← Back</button>
             <button class="primary" id="ob-create-btn">✨ Create Family</button>
           </div>
         </div>
 
-        <!-- Code reveal panel (hidden initially) -->
         <div id="panel-code" hidden>
           <p class="modal-hint" style="text-align:center">Your family code is:</p>
           <div class="onboarding-code-display" id="ob-code-display"></div>
           <p class="modal-hint" style="text-align:center;color:var(--danger)">
-            ⚠️ Save this code! You'll need it to sign in on other devices.
+            ⚠️ Write this down! You need it to sign in on other devices.
           </p>
-          <button class="secondary" id="ob-copy-btn" style="width:100%">📋 Copy Code</button>
-          <div class="modal-actions" style="margin-top:8px">
-            <button class="primary" id="ob-done-btn" style="width:100%">Start Reading →</button>
-          </div>
+          <button class="secondary" id="ob-copy" style="width:100%;margin-bottom:8px">📋 Copy Code</button>
+          <button class="primary" id="ob-done" style="width:100%">Start Reading →</button>
         </div>
-      </div>
-    `;
+      </div>`;
 
     document.body.appendChild(overlay);
 
-    const tabJoin = overlay.querySelector('#tab-join');
-    const tabCreate = overlay.querySelector('#tab-create');
-    const panelJoin = overlay.querySelector('#panel-join');
-    const panelCreate = overlay.querySelector('#panel-create');
-    const panelCode = overlay.querySelector('#panel-code');
+    const panels = { join: overlay.querySelector('#panel-join'), create: overlay.querySelector('#panel-create'), code: overlay.querySelector('#panel-code') };
+    const tabs = { join: overlay.querySelector('#tab-join'), create: overlay.querySelector('#tab-create') };
 
-    function showPanel(name) {
-      panelJoin.hidden = name !== 'join';
-      panelCreate.hidden = name !== 'create';
-      panelCode.hidden = name !== 'code';
-      tabJoin.classList.toggle('active', name === 'join');
-      tabCreate.classList.toggle('active', name === 'create');
+    function show(name) {
+      Object.entries(panels).forEach(([k, el]) => el.hidden = k !== name);
+      tabs.join?.classList.toggle('active', name === 'join');
+      tabs.create?.classList.toggle('active', name === 'create');
     }
 
-    tabJoin.addEventListener('click', () => showPanel('join'));
-    tabCreate.addEventListener('click', () => showPanel('create'));
-    overlay.querySelector('#ob-back').addEventListener('click', () => showPanel('join'));
+    tabs.join.addEventListener('click', () => show('join'));
+    tabs.create.addEventListener('click', () => show('create'));
+    overlay.querySelector('#ob-back').addEventListener('click', () => show('join'));
+    overlay.querySelector('#ob-skip').addEventListener('click', () => { overlay.remove(); onSkip?.(); });
 
     // Join flow
-    const codeInput = overlay.querySelector('#ob-code');
-    const joinError = overlay.querySelector('#ob-join-error');
+    const joinErr = overlay.querySelector('#ob-join-err');
     const joinBtn = overlay.querySelector('#ob-join-btn');
-
-    overlay.querySelector('#ob-skip').addEventListener('click', () => {
-      overlay.remove();
-      onSkip?.();
-    });
-
     joinBtn.addEventListener('click', async () => {
-      const code = codeInput.value.trim().toUpperCase();
-      if (!code) { joinError.textContent = 'Please enter your family code.'; joinError.hidden = false; return; }
-      joinBtn.disabled = true; joinBtn.textContent = '⏳ Joining…';
-      joinError.hidden = true;
-
-      const result = await callEdge('join-family', { code }).catch(() => ({ error: 'Network error' }));
-      if (result.error) {
-        joinError.textContent = result.error === 'Invalid family code'
-          ? 'Code not found. Check spelling and try again.'
-          : result.error;
-        joinError.hidden = false;
+      const code = overlay.querySelector('#ob-code').value.trim();
+      if (!code) { joinErr.textContent = 'Please enter your family code.'; joinErr.hidden = false; return; }
+      joinBtn.disabled = true; joinBtn.textContent = '⏳ Joining…'; joinErr.hidden = true;
+      try {
+        const { token } = await joinFamily(code);
+        setToken(token);
+        await syncDown();
+        overlay.remove();
+        onDone?.();
+      } catch (err) {
+        joinErr.textContent = err.message.includes('Invalid') ? 'Code not found. Check spelling.' : err.message;
+        joinErr.hidden = false;
         joinBtn.disabled = false; joinBtn.textContent = 'Join →';
-        return;
       }
-
-      const { error: signInErr } = await supabase.auth.signInWithPassword({
-        email: result.email, password: result.password,
-      });
-      if (signInErr) {
-        joinError.textContent = 'Sign-in failed. Please try again.';
-        joinError.hidden = false;
-        joinBtn.disabled = false; joinBtn.textContent = 'Join →';
-        return;
-      }
-
-      await syncDown();
-      overlay.remove();
-      onDone?.();
     });
 
     // Create flow
-    const createError = overlay.querySelector('#ob-create-error');
+    const createErr = overlay.querySelector('#ob-create-err');
     const createBtn = overlay.querySelector('#ob-create-btn');
-
     createBtn.addEventListener('click', async () => {
-      createBtn.disabled = true; createBtn.textContent = '⏳ Creating…';
-      createError.hidden = true;
-
-      const result = await callEdge('create-family').catch(() => ({ error: 'Network error' }));
-      if (result.error) {
-        createError.textContent = result.error;
-        createError.hidden = false;
+      createBtn.disabled = true; createBtn.textContent = '⏳ Creating…'; createErr.hidden = true;
+      try {
+        const { code, token } = await createFamily();
+        setToken(token);
+        overlay.querySelector('#ob-code-display').textContent = code;
+        show('code');
+      } catch (err) {
+        createErr.textContent = err.message;
+        createErr.hidden = false;
         createBtn.disabled = false; createBtn.textContent = '✨ Create Family';
-        return;
       }
-
-      const { error: signInErr } = await supabase.auth.signInWithPassword({
-        email: result.email, password: result.password,
-      });
-      if (signInErr) {
-        createError.textContent = 'Account created but sign-in failed. Use code: ' + result.code;
-        createError.hidden = false;
-        createBtn.disabled = false; createBtn.textContent = '✨ Create Family';
-        return;
-      }
-
-      // Show code reveal
-      overlay.querySelector('#ob-code-display').textContent = result.code;
-      showPanel('code');
     });
 
-    // Copy code
-    overlay.querySelector('#ob-copy-btn').addEventListener('click', () => {
-      const code = overlay.querySelector('#ob-code-display').textContent;
-      navigator.clipboard?.writeText(code).catch(() => {});
-      overlay.querySelector('#ob-copy-btn').textContent = '✓ Copied!';
+    overlay.querySelector('#ob-copy').addEventListener('click', function () {
+      navigator.clipboard?.writeText(overlay.querySelector('#ob-code-display').textContent).catch(() => {});
+      this.textContent = '✓ Copied!';
     });
 
-    overlay.querySelector('#ob-done-btn').addEventListener('click', () => {
-      overlay.remove();
-      onDone?.();
-    });
+    overlay.querySelector('#ob-done').addEventListener('click', () => { overlay.remove(); onDone?.(); });
 
     setTimeout(() => overlay.querySelector('#ob-code')?.focus(), 50);
   }
   ```
 
-  Replace `YOUR_PROJECT` and `YOUR_SUPABASE_ANON_KEY` with real values.
-
-- [ ] **Step 2: Add CSS to `styles.css`**
+- [ ] **Step 2: Add CSS to styles.css**
 
   Append to `styles.css`:
 
   ```css
   /* ---- Family onboarding ---- */
   .onboarding-overlay { z-index: 200; }
-  .onboarding-card { max-width: 400px; text-align: left; }
+  .onboarding-card { max-width: 400px; }
   .onboarding-logo { font-size: 48px; text-align: center; margin-bottom: 4px; }
 
   .onboarding-tabs {
@@ -929,93 +1113,55 @@
     margin-bottom: 16px;
   }
   .onboarding-tab {
-    flex: 1;
-    background: none;
-    border: none;
-    border-bottom: 3px solid transparent;
-    margin-bottom: -2px;
-    padding: 10px;
-    font: inherit;
-    font-weight: 600;
-    color: var(--muted);
-    cursor: pointer;
+    flex: 1; background: none; border: none;
+    border-bottom: 3px solid transparent; margin-bottom: -2px;
+    padding: 10px; font: inherit; font-weight: 600; color: var(--muted); cursor: pointer;
   }
-  .onboarding-tab.active {
-    color: var(--accent);
-    border-bottom-color: var(--accent);
-  }
+  .onboarding-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 
   .onboarding-code-input {
-    text-align: center;
-    font-size: 22px;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
+    text-align: center; font-size: 22px; font-weight: 700;
+    letter-spacing: 0.1em; text-transform: uppercase;
   }
-
   .onboarding-code-display {
-    font-size: 36px;
-    font-weight: 900;
-    text-align: center;
-    color: var(--accent);
-    letter-spacing: 0.08em;
-    background: var(--accent-soft);
-    border-radius: 12px;
-    padding: 16px;
-    margin: 8px 0;
+    font-size: 36px; font-weight: 900; text-align: center;
+    color: var(--accent); letter-spacing: 0.08em;
+    background: var(--accent-soft); border-radius: 12px;
+    padding: 16px; margin: 8px 0;
   }
   ```
 
-- [ ] **Step 3: Test manually in browser**
-
-  Open the app. Temporarily add to `index.html` just before `</body>`:
-  ```html
-  <script type="module">
-    import { showFamilyOnboarding } from './src/components/familyOnboarding.js';
-    showFamilyOnboarding({ onDone: () => console.log('done'), onSkip: () => console.log('skip') });
-  </script>
-  ```
-  Verify:
-  - Onboarding modal appears
-  - Tab switching works
-  - "Use without code" dismisses it
-  - Create family → generates code → shows code panel
-  - Join with valid code → signs in (check Supabase Auth dashboard for the new user)
-
-  Remove the test script after verifying.
-
-- [ ] **Step 4: Commit**
+- [ ] **Step 3: Commit**
 
   ```bash
   git add src/components/familyOnboarding.js styles.css
-  git commit -m "feat: family onboarding UI (create/join)"
+  git commit -m "feat: family onboarding UI"
   ```
 
 ---
 
-## Task 9: Wire Auth Into App Boot
+## Task 11: Wire Auth into App Boot
 
 **Files:**
 - Modify: `src/app.js`
 
-- [ ] **Step 1: Add auth boot to app.js**
+- [ ] **Step 1: Add imports to top of app.js**
 
-  At the top of `src/app.js`, add these imports after the existing ones:
+  After the last existing import line, add:
 
   ```js
-  import { supabase, isAuthenticated } from './lib/supabase.js';
-  import { syncDown } from './lib/cloud.js';
+  import { isLoggedIn } from './lib/api.js';
+  import { syncDown, pullApiKey } from './lib/cloud.js';
   import { showFamilyOnboarding } from './components/familyOnboarding.js';
   ```
 
-  Replace the bottom `(async function init() { ... })()` block with:
+- [ ] **Step 2: Replace the init IIFE at the bottom of app.js**
+
+  Replace the existing `(async function init() { ... })();` block with:
 
   ```js
   (async function init() {
-    // Check for existing Supabase session
-    const authed = await isAuthenticated();
-    if (!authed) {
-      // Show onboarding; proceed to load stories regardless of outcome
+    if (!isLoggedIn()) {
       await new Promise(resolve => {
         showFamilyOnboarding({
           onDone: async () => { await syncDown(); resolve(); },
@@ -1023,11 +1169,9 @@
         });
       });
     } else {
-      // Silently sync in background
       syncDown().catch(() => {});
     }
 
-    // Existing story loading
     try {
       stories = await loadIndex();
     } catch (err) {
@@ -1045,35 +1189,35 @@
   })();
   ```
 
-- [ ] **Step 2: Verify in browser**
+- [ ] **Step 3: Verify in browser**
 
-  Open the app fresh (clear localStorage first: `localStorage.clear()` in console, reload). Onboarding should appear. Click "Use without code" — app should load normally. Reload → onboarding appears again (no session). Create a family → code appears → click "Start Reading" → app loads → Supabase Auth dashboard should show 1 user.
+  Clear localStorage (`localStorage.clear()` in console, reload). Onboarding should appear. Click "Use without code" — app loads normally. Create a family — code shows — click "Start Reading" — app loads. Check Railway PostgreSQL: `select * from families;` should show 1 row.
 
-- [ ] **Step 3: Commit**
+- [ ] **Step 4: Commit**
 
   ```bash
   git add src/app.js
-  git commit -m "feat: wire supabase auth into app boot"
+  git commit -m "feat: auth boot — show onboarding on first visit"
   ```
 
 ---
 
-## Task 10: Sync Students to Cloud
+## Task 12: Sync Students and Sessions
 
 **Files:**
 - Modify: `src/lib/students.js`
 
 - [ ] **Step 1: Add cloud imports at top of students.js**
 
-  Add after the existing constants at the top:
+  After the existing constants, add:
 
   ```js
-  import { pushStudent, deleteStudentCloud } from './cloud.js';
+  import { pushStudent, deleteStudentCloud, pushSession } from './cloud.js';
   ```
 
-- [ ] **Step 2: Update createStudent to push to cloud**
+- [ ] **Step 2: Update createStudent**
 
-  Find the `createStudent` function and add a cloud push at the end, before `return student`:
+  Find `createStudent` and add cloud push before `return student`:
 
   ```js
   export function createStudent(name, level) {
@@ -1082,52 +1226,25 @@
     const student = { id: `stu-${Date.now()}`, name: name.trim(), level, color, createdAt: Date.now() };
     students.push(student);
     localStorage.setItem(STUDENTS_KEY, JSON.stringify(students));
-    pushStudent(student).catch(() => {});  // async cloud push, non-blocking
+    pushStudent(student);  // async, non-blocking
     return student;
   }
   ```
 
-- [ ] **Step 3: Update deleteStudent to delete from cloud**
-
-  Find `deleteStudent` and add cloud delete:
+- [ ] **Step 3: Update deleteStudent**
 
   ```js
   export function deleteStudent(id) {
     localStorage.setItem(STUDENTS_KEY, JSON.stringify(getStudents().filter(s => s.id !== id)));
     localStorage.removeItem(PROGRESS_PREFIX + id);
     if (getActiveStudentId() === id) localStorage.removeItem(ACTIVE_KEY);
-    deleteStudentCloud(id).catch(() => {});  // async cloud delete, non-blocking
+    deleteStudentCloud(id);  // async, non-blocking
   }
   ```
 
-- [ ] **Step 4: Verify in browser**
+- [ ] **Step 4: Update addSession**
 
-  Create a new student. Check Supabase Dashboard → Table Editor → students. The new student should appear within a few seconds.
-
-- [ ] **Step 5: Commit**
-
-  ```bash
-  git add src/lib/students.js
-  git commit -m "feat: sync students to cloud on create/delete"
-  ```
-
----
-
-## Task 11: Sync Sessions to Cloud
-
-**Files:**
-- Modify: `src/lib/students.js`
-- Modify: `src/components/scoreModal.js`
-
-- [ ] **Step 1: Update addSession in students.js to push session**
-
-  Add `pushSession` to the import line added in Task 10:
-
-  ```js
-  import { pushStudent, deleteStudentCloud, pushSession } from './cloud.js';
-  ```
-
-  Find `addSession` and add cloud push:
+  Find the `addSession` function and add cloud push:
 
   ```js
   export function addSession(studentId, session) {
@@ -1135,133 +1252,234 @@
     progress.sessions.unshift(session);
     progress.totalPoints = (progress.totalPoints || 0) + (session.pointsEarned || 0);
     saveProgress(studentId, progress);
-    pushSession(session, studentId).catch(() => {});  // async cloud push
+    pushSession(session, studentId);  // async, non-blocking
   }
   ```
 
-- [ ] **Step 2: Verify in browser**
+- [ ] **Step 5: Verify in browser**
 
-  Complete a reading session. Check Supabase Dashboard → progress_sessions. The session row should appear.
+  Create a student. Check Railway DB: `select * from students;`. Complete a reading. Check `select * from progress_sessions;`.
 
-- [ ] **Step 3: Commit**
+- [ ] **Step 6: Commit**
 
   ```bash
   git add src/lib/students.js
-  git commit -m "feat: sync sessions to cloud on save"
+  git commit -m "feat: sync students and sessions to cloud"
   ```
 
 ---
 
-## Task 12: Cloud Recording Upload
+## Task 13: Audio-Only Recorder Rewrite
 
 **Files:**
-- Modify: `src/lib/storage.js`
-- Modify: `src/components/recorder.js`
+- Modify: `src/components/recorder.js` (full rewrite)
+- Modify: `src/lib/storage.js` (add sessionId, add upload call)
+- Modify: `src/components/recordingsList.js` (audio player)
+- Modify: `src/app.js` (pass getActiveStudent, forward sessionId)
+- Modify: `styles.css` (sticky bar + mobile, remove old recorder CSS)
 
-- [ ] **Step 1: Update saveRecording in storage.js to accept sessionId**
+- [ ] **Step 1: Rewrite recorder.js**
 
-  The function signature needs `sessionId` added. Find `saveRecording` and update:
+  Replace the entire file:
 
   ```js
-  export async function saveRecording({ storyId, storyTitle, blob, mimeType, durationMs, sessionId }) {
-    const db = await openDb();
-    return new Promise((resolve, reject) => {
-      const store = tx(db, 'readwrite');
-      const record = {
-        storyId, storyTitle, blob, mimeType, durationMs,
-        sessionId: sessionId ?? null,
-        createdAt: Date.now(),
+  // Audio recorder with SpeechRecognition for scoring.
+  // No camera/canvas — the story reader is the teleprompter.
+
+  import { saveRecording } from '../lib/storage.js';
+
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+
+  function pickMimeType() {
+    for (const t of ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4']) {
+      if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported?.(t)) return t;
+    }
+    return '';
+  }
+
+  export function renderRecorder({ root, getCurrentStory, getActiveStudent, onSaved, onActiveChange, onComplete }) {
+    root.innerHTML = '';
+
+    const card = document.createElement('div');
+    card.className = 'recorder-audio';
+
+    const indicator = document.createElement('div');
+    indicator.className = 'recording-indicator';
+    indicator.style.visibility = 'hidden';
+    indicator.innerHTML = '<span class="dot"></span><span>录制中 REC</span>';
+
+    const timer = document.createElement('span');
+    timer.className = 'recording-timer';
+    timer.textContent = '0:00';
+
+    const note = document.createElement('p');
+    note.className = 'privacy-note';
+    note.textContent = 'Audio stays on this device. Tap Record, read aloud, then tap Stop.';
+
+    card.appendChild(indicator);
+    card.appendChild(timer);
+    card.appendChild(note);
+    root.appendChild(card);
+
+    // Sticky bar with Start / Stop buttons (mobile: fixed at bottom; desktop: inline)
+    const stickyBar = document.createElement('div');
+    stickyBar.className = 'recorder-sticky-bar';
+
+    const startBtn = document.createElement('button');
+    startBtn.className = 'primary recorder-start-btn';
+    startBtn.textContent = '🎙️ 开始录音 Record';
+
+    const stopBtn = document.createElement('button');
+    stopBtn.className = 'danger recorder-stop-btn';
+    stopBtn.textContent = '■ 停止 Stop & Score';
+    stopBtn.disabled = true;
+
+    stickyBar.appendChild(startBtn);
+    stickyBar.appendChild(stopBtn);
+    document.body.appendChild(stickyBar);
+
+    let mediaRecorder = null, chunks = [], startedAt = 0, mimeType = '';
+    let recognition = null, transcript = '';
+    let timerInterval = null;
+
+    function updateTimer() {
+      const secs = Math.floor((Date.now() - startedAt) / 1000);
+      timer.textContent = `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
+    }
+
+    async function start() {
+      const story = getCurrentStory?.();
+      if (!story) { alert('请先选择一个故事 (Pick a story first).'); return; }
+
+      let stream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch (err) {
+        alert('Could not access microphone: ' + err.message);
+        return;
+      }
+
+      mimeType = pickMimeType();
+      mediaRecorder = mimeType
+        ? new MediaRecorder(stream, { mimeType })
+        : new MediaRecorder(stream);
+
+      transcript = '';
+      if (SR) {
+        try {
+          recognition = new SR();
+          recognition.lang = 'zh-CN';
+          recognition.continuous = true;
+          recognition.interimResults = false;
+          recognition.onresult = (e) => {
+            for (let i = e.resultIndex; i < e.results.length; i++) {
+              if (e.results[i].isFinal) transcript += e.results[i][0].transcript;
+            }
+          };
+          recognition.onerror = () => {};
+          recognition.start();
+        } catch { recognition = null; }
+      }
+
+      chunks = [];
+      mediaRecorder.ondataavailable = (e) => { if (e.data?.size > 0) chunks.push(e.data); };
+      mediaRecorder.onstop = async () => {
+        try { recognition?.stop(); } catch {}
+        recognition = null;
+        stream.getTracks().forEach(t => t.stop());
+        clearInterval(timerInterval);
+
+        const story = getCurrentStory?.();
+        const student = getActiveStudent?.();
+        const blob = new Blob(chunks, { type: mimeType || 'audio/webm' });
+        const durationMs = Date.now() - startedAt;
+        const sessionId = `sess-${Date.now()}`;
+
+        try {
+          await saveRecording({
+            storyId: story?.id, storyTitle: story?.title,
+            blob, mimeType: blob.type, durationMs,
+            studentId: student?.id ?? null, sessionId,
+          });
+          onSaved?.();
+        } catch (err) { console.warn('Save failed:', err.message); }
+
+        indicator.style.visibility = 'hidden';
+        timer.textContent = '0:00';
+        startBtn.disabled = false; stopBtn.disabled = true;
+        onActiveChange?.(false);
+        onComplete?.({ transcript, story, sessionId });
       };
+
+      mediaRecorder.start();
+      startedAt = Date.now();
+      startBtn.disabled = true; stopBtn.disabled = false;
+      indicator.style.visibility = 'visible';
+      timerInterval = setInterval(updateTimer, 500);
+      onActiveChange?.(true);
+    }
+
+    function stop() {
+      if (mediaRecorder?.state !== 'inactive') mediaRecorder?.stop();
+    }
+
+    startBtn.addEventListener('click', start);
+    stopBtn.addEventListener('click', stop);
+
+    // Clean up sticky bar if component is ever re-rendered
+    root._cleanupStickyBar = () => stickyBar.remove();
+  }
+  ```
+
+- [ ] **Step 2: Update storage.js to add sessionId and cloud upload**
+
+  At the top of `storage.js`, add import:
+
+  ```js
+  import { pushRecording } from './cloud.js';
+  ```
+
+  Update `saveRecording` signature and add cloud upload:
+
+  ```js
+  export async function saveRecording({ storyId, storyTitle, blob, mimeType, durationMs, studentId, sessionId }) {
+    const db = await openDb();
+    const localId = await new Promise((resolve, reject) => {
+      const store = tx(db, 'readwrite');
+      const record = { storyId, storyTitle, blob, mimeType, durationMs, sessionId: sessionId ?? null, createdAt: Date.now() };
       const req = store.add(record);
       req.onsuccess = () => resolve(req.result);
       req.onerror = () => reject(req.error);
     });
-  }
-  ```
 
-- [ ] **Step 2: Add cloud upload trigger to storage.js**
-
-  Add this import at the top of `storage.js`:
-
-  ```js
-  import { uploadRecording, updateSessionRecordingUrl } from './cloud.js';
-  ```
-
-  Add a new exported function below `saveRecording`:
-
-  ```js
-  /**
-   * Save recording locally AND upload to cloud.
-   * Returns the local IndexedDB id.
-   */
-  export async function saveAndUploadRecording({ storyId, storyTitle, blob, mimeType, durationMs, studentId, sessionId }) {
-    // Always save locally first
-    const localId = await saveRecording({ storyId, storyTitle, blob, mimeType, durationMs, sessionId });
-
-    // Upload to cloud in background
-    if (studentId && sessionId) {
-      uploadRecording(blob, mimeType, studentId, sessionId)
-        .then(url => {
-          if (url) updateSessionRecordingUrl(sessionId, url);
-        })
-        .catch(() => {});
+    // Upload to cloud in background (non-blocking)
+    if (studentId && blob) {
+      pushRecording({ blob, mimeType, studentId, sessionId, durationMs }).catch(() => {});
     }
 
     return localId;
   }
   ```
 
-- [ ] **Step 3: Update recorder.js to use saveAndUploadRecording**
+- [ ] **Step 3: Update recordingsList.js to use audio player**
 
-  In `recorder.js`, update the import at the top:
-
-  ```js
-  import { saveAndUploadRecording } from '../lib/storage.js';
-  ```
-
-  Update the `renderRecorder` function signature to accept `getActiveStudent`:
+  Open `src/components/recordingsList.js`, find where it creates the playback element (likely a `<video>` or download link), and replace with `<audio controls>`. The blob URL creation logic from IndexedDB stays the same — just change the element tag from `video` to `audio`:
 
   ```js
-  export function renderRecorder({ root, getCurrentStory, getActiveStudent, onSaved, onActiveChange, onComplete }) {
+  // Find: document.createElement('video')
+  // Replace with:
+  const audioEl = document.createElement('audio');
+  audioEl.controls = true;
+  audioEl.style.width = '100%';
+  // Set src from blob URL (same as before):
+  // audioEl.src = URL.createObjectURL(blob);
   ```
 
-  Inside `recorder.onstop`, replace the `saveRecording` call:
+  Read the full file first to find the exact lines, then make the targeted replacement.
 
-  ```js
-  recorder.onstop = async () => {
-    try { recognition?.stop(); } catch {}
-    recognition = null;
-    const story = getCurrentStory?.();
-    const student = getActiveStudent?.();
-    const blob = new Blob(chunks, { type: mimeType || 'video/webm' });
-    const durationMs = Date.now() - startedAt;
-    const sessionId = `sess-${Date.now()}`;  // provisional ID for recording upload
-    try {
-      await saveAndUploadRecording({
-        storyId: story?.id,
-        storyTitle: story?.title,
-        blob,
-        mimeType: blob.type,
-        durationMs,
-        studentId: student?.id ?? null,
-        sessionId,
-      });
-      onSaved?.();
-    } catch (err) { console.warn('Save failed:', err.message); }
+- [ ] **Step 4: Update app.js to pass getActiveStudent and sessionId**
 
-    stopStream();
-    overlay = null;
-    indicator.style.visibility = 'hidden';
-    startBtn.disabled = false; stopBtn.disabled = true;
-    nextBtn.disabled = true; nextBtn.hidden = true;
-    onActiveChange?.(false);
-    onComplete?.({ transcript, story, sessionId });
-  };
-  ```
-
-- [ ] **Step 4: Update app.js to pass getActiveStudent and forward sessionId**
-
-  In `app.js`, update the `renderRecorder` call:
+  In `app.js`, update the `renderRecorder` call to:
 
   ```js
   renderRecorder({
@@ -1284,199 +1502,126 @@
   });
   ```
 
-- [ ] **Step 5: Verify in browser**
+- [ ] **Step 5: Update styles.css — mobile sticky + remove old recorder CSS**
 
-  Complete a recording session. Check Supabase Dashboard → Storage → recordings. A `.webm` file should appear under `{family_id}/{student_id}/`.
+  **Remove** the old recorder CSS block (`.recorder { ... }` with `grid-template-columns: minmax(200px, 280px) 1fr` and the `@media (max-width: 800px)` override for `.recorder`). Also remove `.recorder-canvas` and `.recorder video` styles.
 
-- [ ] **Step 6: Commit**
+  **Remove** `.reader-toolbar` sticky rules from the mobile media query (`position: sticky; bottom: ...; z-index: 5; order: 99;`).
+
+  **Add** new styles:
+
+  ```css
+  /* ---- Audio recorder ---- */
+  .recorder-audio {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: var(--shadow);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+
+  .recording-timer {
+    font-size: 20px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--danger);
+    min-width: 3ch;
+  }
+
+  /* Sticky bar: inline on desktop, fixed at bottom on mobile */
+  .recorder-sticky-bar {
+    display: flex;
+    gap: 10px;
+    padding: 10px 0;
+  }
+  .recorder-sticky-bar button { flex: 1; }
+
+  @media (max-width: 800px) {
+    .recorder-sticky-bar {
+      position: fixed;
+      bottom: 0;
+      bottom: env(safe-area-inset-bottom, 0px);
+      left: 0; right: 0;
+      z-index: 50;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.10);
+      padding: 10px 16px;
+    }
+    .app-main {
+      padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+    }
+    /* reader toolbar is no longer sticky — recorder bar takes that role */
+    .reader-toolbar {
+      position: static;
+    }
+  }
+  ```
+
+- [ ] **Step 6: Test on mobile and desktop**
+
+  Desktop: recorder shows pulsing indicator + timer, no camera, story text stays readable. Record → stop → score modal appears.
+
+  Mobile: Record/Stop buttons fixed at bottom. Story text scrolls freely. Record while scrolling works.
+
+- [ ] **Step 7: Commit**
 
   ```bash
-  git add src/lib/storage.js src/components/recorder.js src/app.js
-  git commit -m "feat: upload recordings to supabase storage after each session"
+  git add src/components/recorder.js src/lib/storage.js src/components/recordingsList.js src/app.js styles.css
+  git commit -m "feat: audio-only recorder with sticky mobile bar"
   ```
 
 ---
 
-## Task 13: API Key Cloud Migration
+## Task 14: API Key Migration
 
 **Files:**
 - Modify: `src/components/settings.js`
 - Modify: `src/components/storyGenerator.js`
 - Modify: `src/components/scoreModal.js`
 
-- [ ] **Step 1: Update settings.js to save key to cloud**
+- [ ] **Step 1: Update settings.js**
 
-  Replace the entire file:
-
+  Add import at top:
   ```js
-  // Settings modal — configure Anthropic API key stored in cloud (falls back to localStorage).
+  import { isLoggedIn, saveApiKey as apiSaveKey } from '../lib/api.js';
+  ```
 
-  import { saveApiKeyCloud, getApiKeyCloud } from '../lib/cloud.js';
-  import { isAuthenticated } from '../lib/supabase.js';
-
-  const API_KEY_STORAGE = 'anthropicApiKey';
-
-  export function getApiKey() {
-    return localStorage.getItem(API_KEY_STORAGE) || '';
-  }
-
-  export function renderSettingsButton({ root }) {
-    const btn = document.createElement('button');
-    btn.className = 'secondary settings-btn';
-    btn.title = 'Settings';
-    btn.innerHTML = '⚙️';
-    btn.addEventListener('click', openSettingsModal);
-    root.appendChild(btn);
-  }
-
-  function openSettingsModal() {
-    const existing = getApiKey();
-    const hasKey = existing.length > 0;
-
-    const overlay = document.createElement('div');
-    overlay.className = 'modal-overlay';
-    overlay.innerHTML = `
-      <div class="modal-card" role="dialog" aria-modal="true">
-        <h2 class="modal-title">⚙️ Settings</h2>
-
-        <div class="settings-section">
-          <div class="settings-section-title">Anthropic API Key</div>
-          <p class="modal-hint">Used for AI reading feedback and story generation. Saved to your family account — works on all your devices.</p>
-          <div class="settings-key-row">
-            <input class="modal-input settings-key-input" id="settings-key"
-              type="password" placeholder="sk-ant-…"
-              value="${existing}" autocomplete="off" />
-            <button class="secondary settings-show-btn" id="settings-show" title="Show/hide key">👁</button>
-          </div>
-          <div class="settings-key-status" id="settings-status">
-            ${hasKey
-              ? `<span style="color:var(--good)">✓ API key configured</span>`
-              : `<span style="color:var(--muted)">No key set — AI feedback and story generation unavailable</span>`}
-          </div>
-        </div>
-
-        <div class="settings-section">
-          <div class="settings-section-title">About</div>
-          <p class="modal-hint">
-            每日华文阅读 · Daily Chinese Reading<br>
-            Aligned with Singapore MOE PSLE Chinese curriculum (P1–P6).
-          </p>
-        </div>
-
-        <div class="modal-error" id="settings-error" hidden></div>
-        <div class="modal-actions">
-          <button class="secondary" id="settings-clear">Clear Key</button>
-          <button class="secondary" id="settings-cancel">Cancel</button>
-          <button class="primary" id="settings-save">Save</button>
-        </div>
-      </div>`;
-
-    document.body.appendChild(overlay);
-
-    const keyEl = overlay.querySelector('#settings-key');
-    const statusEl = overlay.querySelector('#settings-status');
-    const showBtn = overlay.querySelector('#settings-show');
-    const errorEl = overlay.querySelector('#settings-error');
-
-    showBtn.addEventListener('click', () => {
-      keyEl.type = keyEl.type === 'password' ? 'text' : 'password';
-    });
-
-    keyEl.addEventListener('input', () => {
-      statusEl.innerHTML = keyEl.value.trim()
-        ? `<span style="color:var(--accent)">Key entered — click Save to apply</span>`
-        : `<span style="color:var(--muted)">No key set</span>`;
-      errorEl.hidden = true;
-    });
-
-    function close() {
-      document.removeEventListener('keydown', handleEsc);
-      overlay.remove();
-    }
-    function handleEsc(e) { if (e.key === 'Escape') close(); }
-    document.addEventListener('keydown', handleEsc);
-
-    overlay.querySelector('#settings-cancel').addEventListener('click', close);
-    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
-
-    overlay.querySelector('#settings-clear').addEventListener('click', () => {
-      localStorage.removeItem(API_KEY_STORAGE);
-      saveApiKeyCloud(null).catch(() => {});
-      keyEl.value = '';
-      statusEl.innerHTML = `<span style="color:var(--muted)">Key cleared</span>`;
-    });
-
-    overlay.querySelector('#settings-save').addEventListener('click', async () => {
-      const key = keyEl.value.trim();
-      if (key && !key.startsWith('sk-ant-')) {
-        errorEl.textContent = "That doesn't look like an Anthropic API key (should start with sk-ant-).";
-        errorEl.hidden = false;
-        return;
-      }
-      const saveBtn = overlay.querySelector('#settings-save');
-      saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
-
-      if (key) {
-        localStorage.setItem(API_KEY_STORAGE, key);
-        const authed = await isAuthenticated();
-        if (authed) {
-          const ok = await saveApiKeyCloud(key);
-          statusEl.innerHTML = ok
-            ? `<span style="color:var(--good)">✓ API key saved to family account</span>`
-            : `<span style="color:var(--good)">✓ API key saved locally</span>`;
-        } else {
-          statusEl.innerHTML = `<span style="color:var(--good)">✓ API key saved locally</span>`;
-        }
-      } else {
-        localStorage.removeItem(API_KEY_STORAGE);
-        await saveApiKeyCloud(null).catch(() => {});
-      }
-      errorEl.hidden = true;
-      saveBtn.disabled = false; saveBtn.textContent = 'Save';
-      setTimeout(close, 700);
-    });
-
-    setTimeout(() => keyEl.focus(), 50);
+  In the save handler, after `localStorage.setItem(API_KEY_STORAGE, key)`, add:
+  ```js
+  if (isLoggedIn()) {
+    apiSaveKey(key).catch(() => {});
+    statusEl.innerHTML = `<span style="color:var(--good)">✓ Saved to family account</span>`;
+  } else {
+    statusEl.innerHTML = `<span style="color:var(--good)">✓ Saved locally</span>`;
   }
   ```
 
-- [ ] **Step 2: Update storyGenerator.js to use Edge Function proxy**
+  Update the hint text to: `"Saved to your family account — available on all devices."`
 
-  In `storyGenerator.js`, update the `callClaudeAPI` function to use the Edge Function when authenticated:
+- [ ] **Step 2: Update storyGenerator.js to use proxy**
 
-  Add import at the top:
+  Add import at top:
   ```js
-  import { isAuthenticated, supabase } from '../lib/supabase.js';
+  import { isLoggedIn, generateViaApi } from '../lib/api.js';
   ```
 
-  Replace the `callClaudeAPI` fetch call (the `fetch("https://api.anthropic.com/v1/messages", ...)` block) with:
+  In `callClaudeAPI`, replace the `fetch("https://api.anthropic.com/...")` call with:
 
   ```js
-  async function callClaudeAPI(apiKey, level, theme) {
-    // ... (keep existing prompt construction code) ...
+  const body = {
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 4096,
+    messages: [{ role: 'user', content: prompt }],
+  };
 
-    const authed = await isAuthenticated();
-    let res;
-
-    if (authed) {
-      // Use server-side proxy (API key stays server-side)
-      const { data: { session } } = await supabase.auth.getSession();
-      res = await fetch('https://YOUR_PROJECT.supabase.co/functions/v1/generate-story', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001',
-          max_tokens: 4096,
-          messages: [{ role: 'user', content: prompt }],
-        }),
-      });
-    } else {
-      // Fallback: direct browser call (requires apiKey from localStorage)
-      if (!apiKey) throw new Error('No API key configured. Please enter one in Settings.');
-      res = await fetch('https://api.anthropic.com/v1/messages', {
+  const res = isLoggedIn()
+    ? await generateViaApi(body).then(data => ({ ok: true, _data: data })).catch(err => { throw err; })
+    : await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
           'x-api-key': apiKey,
@@ -1484,242 +1629,65 @@
           'content-type': 'application/json',
           'anthropic-dangerous-direct-browser-access': 'true',
         },
-        body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001',
-          max_tokens: 4096,
-          messages: [{ role: 'user', content: prompt }],
-        }),
+        body: JSON.stringify(body),
       });
-    }
+  ```
 
-    // ... (keep existing response parsing code unchanged) ...
+  Then for parsing: when logged in, `data` is already the parsed object; when not, parse with `res.json()`. Simplify by making `generateViaApi` and the direct fetch both resolve to the parsed JSON object:
+
+  ```js
+  let data;
+  if (isLoggedIn()) {
+    data = await generateViaApi(body);
+  } else {
+    if (!apiKey) throw new Error('No API key. Add one in Settings.');
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': apiKey, 'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify(body),
+    });
+    if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.error?.message || `API error ${r.status}`); }
+    data = await r.json();
   }
+  let text = data.content[0].text.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
   ```
 
-  Replace `YOUR_PROJECT` with your Supabase project reference.
+- [ ] **Step 3: Update scoreModal.js getAiFeedback similarly**
 
-- [ ] **Step 3: Update scoreModal.js API call similarly**
-
-  In `scoreModal.js`, update `getAiFeedback` to use the proxy when authenticated:
-
-  Add import at top:
+  Add import:
   ```js
-  import { isAuthenticated, supabase } from '../lib/supabase.js';
+  import { isLoggedIn, generateViaApi } from '../lib/api.js';
   ```
 
-  Replace the `getAiFeedback` fetch call:
+  In `getAiFeedback`, replace the direct Anthropic fetch with:
 
   ```js
-  async function getAiFeedback(storyTitle, storyText, transcript, score) {
+  const body = { model: 'claude-haiku-4-5-20251001', max_tokens: 220, messages: [{ role: 'user', content: `...` }] };
+  let data;
+  if (isLoggedIn()) {
+    data = await generateViaApi(body);
+  } else {
     const apiKey = localStorage.getItem('anthropicApiKey');
-    const authed = await isAuthenticated();
-    if (!authed && !apiKey) return null;
-
-    const body = {
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 220,
-      messages: [{ role: 'user', content: `A Singapore primary school student just read this Chinese story aloud.
-
-Story: ${storyTitle}
-Story text: ${storyText}
-Speech recognition transcript: ${transcript || '(not captured)'}
-Computed accuracy: ${score}/100
-
-Write a SHORT, warm assessment for a young student. Return JSON only — no code fences:
-{"feedback": "1-2 encouraging sentences in English", "tip": "one short specific improvement tip or empty string if score >= 85"}` }],
-    };
-
-    try {
-      let res;
-      if (authed) {
-        const { data: { session } } = await supabase.auth.getSession();
-        res = await fetch('https://YOUR_PROJECT.supabase.co/functions/v1/generate-story', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'content-type': 'application/json',
-          },
-          body: JSON.stringify(body),
-        });
-      } else {
-        res = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: {
-            'x-api-key': apiKey,
-            'anthropic-version': '2023-06-01',
-            'content-type': 'application/json',
-            'anthropic-dangerous-direct-browser-access': 'true',
-          },
-          body: JSON.stringify(body),
-        });
-      }
-      if (!res.ok) return null;
-      const data = await res.json();
-      let text = data.content[0].text.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
-      return JSON.parse(text);
-    } catch { return null; }
+    if (!apiKey) return null;
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify(body),
+    });
+    if (!r.ok) return null;
+    data = await r.json();
   }
   ```
-
-- [ ] **Step 4: On app start, pull API key from cloud into localStorage**
-
-  In `src/app.js`, in the `init` function, after `await syncDown()`, add:
-
-  ```js
-  // Pull API key from cloud into localStorage for offline fallback
-  getApiKeyCloud().then(key => {
-    if (key) localStorage.setItem('anthropicApiKey', key);
-  }).catch(() => {});
-  ```
-
-  Add the import at the top of `app.js`:
-  ```js
-  import { getApiKeyCloud } from './lib/cloud.js';
-  ```
-
-- [ ] **Step 5: Commit**
-
-  ```bash
-  git add src/components/settings.js src/components/storyGenerator.js src/components/scoreModal.js src/app.js
-  git commit -m "feat: API key stored in cloud, Anthropic calls proxied via edge function"
-  ```
-
----
-
-## Task 14: Mobile Sticky Record Button
-
-**Files:**
-- Modify: `styles.css`
-- Modify: `src/components/recorder.js`
-
-- [ ] **Step 1: Update styles.css — remove toolbar sticky, add recorder sticky**
-
-  Find the `@media (max-width: 800px)` block containing `.reader-toolbar` (around line 757):
-
-  ```css
-  @media (max-width: 800px) {
-    .reader-toolbar {
-      position: sticky;
-      bottom: env(safe-area-inset-bottom);
-      z-index: 5;
-      order: 99;
-      margin-top: 8px;
-      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.08);
-    }
-    ...
-  }
-  ```
-
-  Remove ONLY the `.reader-toolbar` rules inside that block (keep other rules in the block). The `.reader-toolbar` should become a regular non-sticky element on mobile:
-
-  ```css
-  @media (max-width: 800px) {
-    /* reader-toolbar is NOT sticky on mobile — recorder bar takes that role */
-    .reader-pane {
-      display: flex;
-      flex-direction: column;
-    }
-    .controls {
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-    .speed-slider input {
-      width: 80px;
-    }
-  }
-  ```
-
-  Then add the sticky recorder bar styles (append to the mobile media query or add a new one):
-
-  ```css
-  @media (max-width: 800px) {
-    .recorder-sticky-bar {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      bottom: env(safe-area-inset-bottom, 0px);
-      z-index: 50;
-      background: var(--surface);
-      border-top: 1px solid var(--border);
-      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.10);
-      padding: 10px 16px;
-      display: flex;
-      gap: 10px;
-      align-items: center;
-    }
-
-    .recorder-sticky-bar button {
-      flex: 1;
-    }
-
-    /* Push main content above the sticky bar */
-    .app-main {
-      padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
-    }
-  }
-
-  @media (min-width: 801px) {
-    .recorder-sticky-bar { display: none; }
-  }
-  ```
-
-- [ ] **Step 2: Update recorder.js to add sticky bar elements**
-
-  In `recorder.js`, after creating `startBtn` and `stopBtn`, create a sticky bar element:
-
-  ```js
-  // Sticky mobile bar — contains clones of start/stop for mobile sticky UX
-  const stickyBar = document.createElement('div');
-  stickyBar.className = 'recorder-sticky-bar';
-
-  const stickyStart = document.createElement('button');
-  stickyStart.className = 'primary';
-  stickyStart.textContent = '🎬 开始录像 Record';
-
-  const stickyStop = document.createElement('button');
-  stickyStop.className = 'danger';
-  stickyStop.textContent = '■ 停止 Stop & Score';
-  stickyStop.disabled = true;
-
-  stickyBar.appendChild(stickyStart);
-  stickyBar.appendChild(stickyStop);
-  document.body.appendChild(stickyBar);
-
-  // Mirror start/stop state to sticky bar
-  stickyStart.addEventListener('click', start);
-  stickyStop.addEventListener('click', stop);
-  ```
-
-  Then in the `start` function, after `startBtn.disabled = true; stopBtn.disabled = false;`:
-  ```js
-  stickyStart.disabled = true; stickyStop.disabled = false;
-  ```
-
-  In `recorder.onstop`, after `startBtn.disabled = false; stopBtn.disabled = true;`:
-  ```js
-  stickyStart.disabled = false; stickyStop.disabled = true;
-  ```
-
-  Clean up the sticky bar when recorder section is destroyed (add to `stopStream`):
-  ```js
-  // Note: stickyBar lives on body; clean up on page unload only
-  // (it's a single-page app, so this is fine)
-  ```
-
-- [ ] **Step 3: Test on mobile**
-
-  Open the app on a mobile device or use Chrome DevTools device simulation (iPhone 12 Pro). Verify:
-  - Story text is readable in the scrollable content area
-  - Record/Stop buttons appear fixed at the bottom of the screen
-  - Playback controls (Read button) scroll with content
-  - No overlap between sticky bar and content at the bottom
 
 - [ ] **Step 4: Commit**
 
   ```bash
-  git add styles.css src/components/recorder.js
-  git commit -m "feat: sticky record button on mobile"
+  git add src/components/settings.js src/components/storyGenerator.js src/components/scoreModal.js
+  git commit -m "feat: API key stored in cloud, Anthropic calls proxied via Railway"
   ```
 
 ---
@@ -1730,35 +1698,34 @@ Write a SHORT, warm assessment for a young student. Return JSON only — no code
 - Modify: `src/components/scoreModal.js`
 - Modify: `styles.css`
 
-- [ ] **Step 1: Add badge definitions to scoreModal.js**
+- [ ] **Step 1: Add constants and helpers to scoreModal.js**
 
-  Add this constant near the top of `scoreModal.js` after the imports:
+  Add after the existing imports:
 
   ```js
   const BADGES = [
-    { id: 'first_pass',  icon: '🌟', label: 'First Pass',      check: (prog)         => prog.sessions.filter(s => s.passed).length >= 1 },
-    { id: 'stories_5',  icon: '📚', label: '5 Stories',        check: (prog)         => new Set(prog.sessions.filter(s => s.passed).map(s => s.storyId)).size >= 5 },
-    { id: 'perfect',    icon: '💯', label: 'Perfect Score',    check: (prog)         => prog.sessions.some(s => s.score >= 100) },
-    { id: 'streak_7',   icon: '🔥', label: '7-Day Streak',     check: (prog, streak) => streak >= 7 },
-    { id: 'streak_30',  icon: '🏆', label: '30-Day Streak',    check: (prog, streak) => streak >= 30 },
-    { id: 'pts_100',    icon: '💎', label: '100 Points',        check: (prog)         => prog.totalPoints >= 100 },
-    { id: 'pts_500',    icon: '👑', label: '500 Points',        check: (prog)         => prog.totalPoints >= 500 },
-    { id: 'pts_1000',   icon: '🎯', label: '1000 Points',       check: (prog)         => prog.totalPoints >= 1000 },
+    { id: 'first_pass',  icon: '🌟', label: 'First Pass',     check: (p)    => p.sessions.filter(s => s.passed).length >= 1 },
+    { id: 'stories_5',  icon: '📚', label: '5 Stories',       check: (p)    => new Set(p.sessions.filter(s => s.passed).map(s => s.storyId)).size >= 5 },
+    { id: 'perfect',    icon: '💯', label: 'Perfect Score',   check: (p)    => p.sessions.some(s => s.score >= 100) },
+    { id: 'streak_7',   icon: '🔥', label: '7-Day Streak',    check: (p, k) => k >= 7 },
+    { id: 'streak_30',  icon: '🏆', label: '30-Day Streak',   check: (p, k) => k >= 30 },
+    { id: 'pts_100',    icon: '💎', label: '100 Points',       check: (p)    => p.totalPoints >= 100 },
+    { id: 'pts_500',    icon: '👑', label: '500 Points',       check: (p)    => p.totalPoints >= 500 },
+    { id: 'pts_1000',   icon: '🎯', label: '1000 Points',      check: (p)    => p.totalPoints >= 1000 },
   ];
 
-  function getEarnedBadges(progress, streak) {
-    return BADGES.filter(b => b.check(progress, streak)).map(b => b.id);
+  function getEarnedBadgeIds(progress, streak) {
+    return new Set(BADGES.filter(b => b.check(progress, streak)).map(b => b.id));
   }
 
   function animateCount(el, to, duration = 900) {
     const start = performance.now();
-    function step(now) {
+    function tick(now) {
       const t = Math.min((now - start) / duration, 1);
-      const eased = 1 - Math.pow(1 - t, 3);
-      el.textContent = Math.round(to * eased);
-      if (t < 1) requestAnimationFrame(step);
+      el.textContent = Math.round(to * (1 - Math.pow(1 - t, 3)));
+      if (t < 1) requestAnimationFrame(tick);
     }
-    requestAnimationFrame(step);
+    requestAnimationFrame(tick);
   }
 
   function spawnConfetti(container) {
@@ -1769,123 +1736,89 @@ Write a SHORT, warm assessment for a young student. Return JSON only — no code
       p.textContent = GLYPHS[i % GLYPHS.length];
       const angle = (i / 22) * 360;
       const dist = 120 + Math.random() * 120;
-      const dx = Math.round(Math.cos((angle * Math.PI) / 180) * dist);
-      const dy = Math.round(Math.sin((angle * Math.PI) / 180) * dist - 80);
-      p.style.cssText = `--dx:${dx}px; --dy:${dy}px; animation-delay:${(i * 0.03).toFixed(2)}s`;
+      p.style.cssText = `--dx:${Math.round(Math.cos(angle * Math.PI / 180) * dist)}px;--dy:${Math.round(Math.sin(angle * Math.PI / 180) * dist - 80)}px;animation-delay:${(i * 0.03).toFixed(2)}s`;
       container.appendChild(p);
     }
   }
   ```
 
-- [ ] **Step 2: Rewrite openScoreModal**
+  Also add `getProgress` to the existing import from `../lib/students.js`.
 
-  Replace the `openScoreModal` function body with the new animated version:
+- [ ] **Step 2: Replace openScoreModal with animated version**
+
+  Replace the entire `openScoreModal` function:
 
   ```js
   export function openScoreModal({ student, story, score, transcript, sessionId, onRetry, onDone }) {
     const passed = score >= 60;
     const today = todayIso();
 
-    // Gamification context (before saving this session)
-    const { getProgress } = await import('../lib/students.js').catch(() => ({}));
     const todayAttempts = getTodayAttempts(student.id, story.id);
     const wasFailedBefore = todayAttempts.some(s => !s.passed);
     const isRepeat = hasPassedStoryBefore(student.id, story.id);
     const alreadyCompletedToday = hasCompletedToday(student.id);
     const currentStreak = getStudentStreak(student.id);
     const streakDays = passed && !alreadyCompletedToday ? currentStreak + 1 : currentStreak;
-
     const { total: pointsEarned, breakdown } = calculatePoints({ score, isRepeat, wasFailedBefore, streakDays });
 
-    // Capture badges BEFORE saving (to detect newly unlocked)
     const progressBefore = getProgress(student.id);
-    const badgesBefore = new Set(getEarnedBadges(progressBefore, currentStreak));
+    const badgesBefore = getEarnedBadgeIds(progressBefore, currentStreak);
 
-    // Save session
-    const session = {
+    addSession(student.id, {
       id: sessionId ?? `sess-${Date.now()}`,
-      date: today,
-      storyId: story.id,
-      storyTitle: story.title,
-      score,
-      passed,
-      pointsEarned,
-      transcript: transcript || '',
+      date: today, storyId: story.id, storyTitle: story.title,
+      score, passed, pointsEarned, transcript: transcript || '',
       completedAt: Date.now(),
-    };
-    addSession(student.id, session);
+    });
 
-    // Badges AFTER saving
     const progressAfter = getProgress(student.id);
-    const newBadges = BADGES.filter(b =>
-      !badgesBefore.has(b.id) && b.check(progressAfter, streakDays)
-    );
+    const newBadges = BADGES.filter(b => !badgesBefore.has(b.id) && b.check(progressAfter, streakDays));
 
     const ringColor = score >= 80 ? 'var(--good)' : score >= 60 ? 'var(--accent)' : 'var(--danger)';
-    const scoreLabel = score >= 90 ? '优秀 Excellent! ⭐'
-      : score >= 80 ? '很好 Great Job! 🎊'
-      : score >= 60 ? '及格 Passed ✓'
-      : '继续努力 Keep Trying! 💪';
-
-    const CIRCUMFERENCE = 2 * Math.PI * 50;
+    const label = score >= 90 ? '优秀 Excellent! ⭐' : score >= 80 ? '很好 Great Job! 🎊' : score >= 60 ? '及格 Passed ✓' : '继续努力 Keep Trying! 💪';
+    const C = (2 * Math.PI * 50).toFixed(1);
 
     const overlay = document.createElement('div');
-    overlay.className = 'modal-overlay score-overlay-v2';
+    overlay.className = 'modal-overlay';
     overlay.innerHTML = `
-      <div class="score-confetti-layer" id="score-confetti"></div>
+      <div class="confetti-stage" id="score-confetti"></div>
       <div class="modal-card score-modal-v2" role="dialog" aria-modal="true">
-
         <div class="score-hero">
           <svg class="score-ring-svg" viewBox="0 0 120 120" aria-hidden="true">
             <circle class="score-ring-track" cx="60" cy="60" r="50"/>
-            <circle class="score-ring-fill" id="score-ring-arc" cx="60" cy="60" r="50"
-              style="stroke:${ringColor}; stroke-dasharray:${CIRCUMFERENCE.toFixed(1)}; stroke-dashoffset:${CIRCUMFERENCE.toFixed(1)}"/>
+            <circle class="score-ring-arc" id="score-arc" cx="60" cy="60" r="50"
+              style="stroke:${ringColor};stroke-dasharray:${C};stroke-dashoffset:${C}"/>
           </svg>
           <div class="score-hero-center">
-            <span class="score-big-number" id="score-big-num">0</span>
-            <span class="score-pct-label">/100</span>
+            <span class="score-big-num" id="score-num">0</span>
+            <span class="score-pct">/100</span>
           </div>
         </div>
-
-        <div class="score-label-banner" style="color:${ringColor}" id="score-label-banner">${scoreLabel}</div>
-        <div class="score-story-byline">${story.title} · ${student.name}</div>
-
+        <div class="score-label" style="color:${ringColor}">${label}</div>
+        <div class="score-byline">${story.title} · ${student.name}</div>
         ${passed ? `
-          <div class="score-pass-section">
-            <div class="score-pts-big">+<span id="score-pts-counter">0</span> 💎</div>
-            <div class="score-breakdown-list">
+          <div class="score-pass-block">
+            <div class="score-pts-big">+<span id="score-pts">0</span> 💎</div>
+            <div class="score-breakdown">
               ${breakdown.map((b, i) => `
-                <div class="score-breakdown-row" style="animation-delay:${(1.2 + i * 0.12).toFixed(2)}s">
-                  <span>${b.label}</span>
-                  <span class="score-breakdown-pts">+${b.pts}</span>
+                <div class="score-bd-row" style="animation-delay:${(1.1 + i * 0.12).toFixed(2)}s">
+                  <span>${b.label}</span><span class="score-bd-pts">+${b.pts}</span>
                 </div>`).join('')}
             </div>
-            ${streakDays > 0 ? `
-              <div class="score-streak-banner">
-                <span class="score-streak-flame">🔥</span>
-                <span>${streakDays}-day streak!</span>
-              </div>` : ''}
+            ${streakDays > 0 ? `<div class="score-streak"><span class="streak-flame">🔥</span>${streakDays}-day streak!</div>` : ''}
             ${newBadges.length ? `
-              <div class="score-new-badges">
-                <div class="score-new-badges-title">🏅 Badge${newBadges.length > 1 ? 's' : ''} Unlocked!</div>
-                ${newBadges.map(b => `
-                  <div class="score-badge-unlock">
-                    <span class="score-badge-icon">${b.icon}</span>
-                    <span>${b.label}</span>
-                  </div>`).join('')}
+              <div class="score-badge-block">
+                <div class="score-badge-title">🏅 Badge Unlocked!</div>
+                ${newBadges.map(b => `<div class="score-badge-row"><span>${b.icon}</span><span>${b.label}</span></div>`).join('')}
               </div>` : ''}
           </div>
         ` : `
-          <div class="score-fail-section">
-            <div class="score-fail-msg">Score at least <strong>60</strong> to complete today's reading.</div>
-            <div class="score-fail-hint">Pass next time for a <strong>+25 perseverance bonus! 💪</strong></div>
+          <div class="score-fail-block">
+            <p>Score at least <strong>60</strong> to complete today's reading.</p>
+            <p>Pass next time for a <strong>+25 perseverance bonus! 💪</strong></p>
           </div>
         `}
-
-        <div class="score-feedback-area" id="score-feedback">
-          <span class="score-feedback-loading">✨ Getting feedback…</span>
-        </div>
-
+        <div class="score-feedback" id="score-feedback"><span class="score-feedback-loading">✨ Getting feedback…</span></div>
         <div class="modal-actions">
           <button class="secondary" id="score-retry">🔄 Try Again</button>
           <button class="primary" id="score-done">Done ✓</button>
@@ -1894,252 +1827,121 @@ Write a SHORT, warm assessment for a young student. Return JSON only — no code
 
     document.body.appendChild(overlay);
 
-    // Animate score ring after a tick
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        const arc = overlay.querySelector('#score-ring-arc');
-        if (arc) arc.style.strokeDashoffset = (CIRCUMFERENCE * (1 - score / 100)).toFixed(1);
-        animateCount(overlay.querySelector('#score-big-num'), score);
-        if (passed) {
-          setTimeout(() => animateCount(overlay.querySelector('#score-pts-counter'), pointsEarned), 800);
-        }
-        if (passed && score >= 60) {
-          setTimeout(() => spawnConfetti(overlay.querySelector('#score-confetti')), 200);
-        }
-      });
-    });
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const arc = overlay.querySelector('#score-arc');
+      if (arc) arc.style.strokeDashoffset = (parseFloat(C) * (1 - score / 100)).toFixed(1);
+      animateCount(overlay.querySelector('#score-num'), score);
+      if (passed) {
+        setTimeout(() => animateCount(overlay.querySelector('#score-pts'), pointsEarned), 800);
+        setTimeout(() => spawnConfetti(overlay.querySelector('#score-confetti')), 200);
+      }
+    }));
 
     function close() { overlay.remove(); }
-
     overlay.querySelector('#score-retry').addEventListener('click', () => { close(); onRetry?.(); });
     overlay.querySelector('#score-done').addEventListener('click', () => { close(); onDone?.(); });
 
-    // AI Feedback
     const storyText = story.tokens.filter(t => t.pinyin).map(t => t.char).join('');
-    const feedbackEl = overlay.querySelector('#score-feedback');
     getAiFeedback(story.title, storyText, transcript, score).then(result => {
       if (!overlay.isConnected) return;
-      feedbackEl.innerHTML = result
-        ? `<p class="score-feedback-text">✨ ${result.feedback}</p>` +
-          (result.tip ? `<p class="score-feedback-tip">💡 ${result.tip}</p>` : '')
-        : `<p class="score-feedback-text">${passed
-            ? '🎉 Great job! Keep reading every day!'
-            : '💪 Don\'t give up — practice makes perfect!'}</p>`;
+      const el = overlay.querySelector('#score-feedback');
+      el.innerHTML = result
+        ? `<p class="score-feedback-text">✨ ${result.feedback}</p>${result.tip ? `<p class="score-feedback-tip">💡 ${result.tip}</p>` : ''}`
+        : `<p class="score-feedback-text">${passed ? '🎉 Great job! Keep reading every day!' : '💪 Don\'t give up — practice makes perfect!'}</p>`;
     });
   }
   ```
 
-  Note: Since `openScoreModal` uses `await import(...)` inside a non-async function, change it to be `async`:
-  ```js
-  export async function openScoreModal({ ... }) {
-  ```
-  And update `app.js` accordingly: `await openScoreModal(...)` or keep as fire-and-forget (the function already works either way since it renders synchronously and awaits internally).
+- [ ] **Step 3: Add CSS for score modal v2**
 
-  Actually, simplify: instead of dynamic import, just add `getProgress` to the existing import line at the top of `scoreModal.js`:
-  ```js
-  import {
-    addSession, calculatePoints, getProgress,
-    hasPassedStoryBefore, getTodayAttempts,
-    hasCompletedToday, getStudentStreak,
-  } from '../lib/students.js';
-  ```
-  And remove the `await import(...)` line. Make `openScoreModal` a regular (non-async) function again.
-
-- [ ] **Step 3: Add CSS for the new score modal**
-
-  Append to `styles.css`:
+  Remove the old `/* ---- Score modal ---- */` block from `styles.css` (`.score-modal` through `.score-feedback-tip`) and replace with:
 
   ```css
   /* ---- Score modal v2 ---- */
-  .score-overlay-v2 { z-index: 100; }
-
-  .score-confetti-layer {
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    z-index: 101;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  .confetti-stage {
+    position: fixed; inset: 0; pointer-events: none; z-index: 101;
+    display: flex; align-items: center; justify-content: center;
   }
-
   .confetti-particle {
-    position: absolute;
-    font-size: 26px;
+    position: absolute; font-size: 26px; pointer-events: none;
     animation: confetti-fly 1.4s ease-out forwards;
-    pointer-events: none;
   }
-
   @keyframes confetti-fly {
-    0%   { transform: translate(0, 0) scale(1.2); opacity: 1; }
-    100% { transform: translate(var(--dx), var(--dy)) scale(0.4); opacity: 0; }
+    0%   { transform: translate(0,0) scale(1.2); opacity: 1; }
+    100% { transform: translate(var(--dx),var(--dy)) scale(0.4); opacity: 0; }
   }
 
   .score-modal-v2 { max-width: 480px; padding: 28px 24px; }
 
-  .score-hero {
-    position: relative;
-    display: flex;
-    justify-content: center;
-    margin-bottom: 4px;
-  }
-
+  .score-hero { position: relative; display: flex; justify-content: center; margin-bottom: 4px; }
   .score-ring-svg { width: 160px; height: 160px; }
-
-  .score-ring-track {
-    fill: none;
-    stroke: var(--border);
-    stroke-width: 10;
+  .score-ring-track { fill: none; stroke: var(--border); stroke-width: 10; }
+  .score-ring-arc {
+    fill: none; stroke-width: 10; stroke-linecap: round;
+    transform: rotate(-90deg); transform-origin: 60px 60px;
+    transition: stroke-dashoffset 1.4s cubic-bezier(.17,.67,.29,1.05);
   }
-
-  .score-ring-fill {
-    fill: none;
-    stroke-width: 10;
-    stroke-linecap: round;
-    transform: rotate(-90deg);
-    transform-origin: 60px 60px;
-    transition: stroke-dashoffset 1.4s cubic-bezier(0.17, 0.67, 0.29, 1.05);
-  }
-
   .score-hero-center {
-    position: absolute;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    text-align: center;
-    line-height: 1;
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%,-50%); text-align: center; line-height: 1;
   }
+  .score-big-num { display: block; font-size: 64px; font-weight: 900; line-height: 1; }
+  .score-pct { font-size: 16px; color: var(--muted); font-weight: 600; }
 
-  .score-big-number {
-    display: block;
-    font-size: 64px;
-    font-weight: 900;
-    line-height: 1;
-  }
-
-  .score-pct-label {
-    font-size: 16px;
-    color: var(--muted);
-    font-weight: 600;
-  }
-
-  .score-label-banner {
-    font-size: 26px;
-    font-weight: 800;
-    text-align: center;
-    margin: 8px 0 2px;
-    animation: pop-in 0.4s 1s both;
-  }
+  .score-label { font-size: 26px; font-weight: 800; text-align: center; margin: 8px 0 2px; animation: pop-in .4s 1s both; }
+  .score-byline { text-align: center; color: var(--muted); font-size: 14px; margin-bottom: 16px; }
 
   @keyframes pop-in {
-    0%   { transform: scale(0.5); opacity: 0; }
-    70%  { transform: scale(1.1); }
-    100% { transform: scale(1);   opacity: 1; }
+    0%  { transform: scale(.5); opacity: 0; }
+    70% { transform: scale(1.1); }
+    100%{ transform: scale(1);   opacity: 1; }
   }
 
-  .score-story-byline {
-    text-align: center;
-    color: var(--muted);
-    font-size: 14px;
-    margin-bottom: 16px;
-  }
-
-  .score-pass-section { display: flex; flex-direction: column; gap: 10px; }
-
-  .score-pts-big {
-    font-size: 44px;
-    font-weight: 900;
-    text-align: center;
-    color: var(--accent);
-    animation: slide-up 0.4s 0.9s both;
-  }
-
+  .score-pass-block { display: flex; flex-direction: column; gap: 10px; }
+  .score-pts-big { font-size: 44px; font-weight: 900; text-align: center; color: var(--accent); animation: slide-up .4s .9s both; }
   @keyframes slide-up {
     from { transform: translateY(16px); opacity: 0; }
     to   { transform: translateY(0);    opacity: 1; }
   }
 
-  .score-breakdown-list { display: flex; flex-direction: column; gap: 4px; }
-
-  .score-breakdown-row {
-    display: flex;
-    justify-content: space-between;
-    font-size: 14px;
-    padding: 6px 10px;
-    background: var(--bg);
-    border-radius: 8px;
-    animation: slide-up 0.3s both;
-    opacity: 0;
-    animation-fill-mode: both;
+  .score-breakdown { display: flex; flex-direction: column; gap: 4px; }
+  .score-bd-row {
+    display: flex; justify-content: space-between; font-size: 14px;
+    padding: 6px 10px; background: var(--bg); border-radius: 8px;
+    animation: slide-up .3s both; opacity: 0; animation-fill-mode: both;
   }
+  .score-bd-pts { font-weight: 700; color: var(--accent); }
 
-  .score-breakdown-pts { font-weight: 700; color: var(--accent); }
-
-  .score-streak-banner {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    font-size: 20px;
-    font-weight: 700;
-    color: #e67700;
-    background: #fff3bf;
-    border-radius: 12px;
-    padding: 10px;
+  .score-streak {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    font-size: 20px; font-weight: 700; color: #e67700;
+    background: #fff3bf; border-radius: 12px; padding: 10px;
   }
+  .streak-flame { font-size: 28px; animation: flame .8s ease-in-out infinite alternate; }
+  @keyframes flame { from { transform: scale(1); } to { transform: scale(1.25); } }
 
-  .score-streak-flame { font-size: 28px; animation: flame-pulse 0.8s ease-in-out infinite alternate; }
-  @keyframes flame-pulse {
-    from { transform: scale(1);    }
-    to   { transform: scale(1.25); }
-  }
+  .score-badge-block { background: linear-gradient(135deg,#fff9c4,#ffe066); border-radius: 12px; padding: 12px; animation: pop-in .4s 1.6s both; }
+  .score-badge-title { font-weight: 700; font-size: 15px; margin-bottom: 8px; }
+  .score-badge-row { display: flex; align-items: center; gap: 8px; font-size: 15px; margin-top: 4px; }
 
-  .score-new-badges {
-    background: linear-gradient(135deg, #fff9c4, #ffe066);
-    border-radius: 12px;
-    padding: 12px;
-    animation: pop-in 0.4s 1.6s both;
-  }
-  .score-new-badges-title { font-weight: 700; font-size: 15px; margin-bottom: 8px; }
-  .score-badge-unlock { display: flex; align-items: center; gap: 8px; font-size: 15px; margin-top: 4px; }
-  .score-badge-icon { font-size: 24px; }
+  .score-fail-block { background: var(--bg); border-radius: 12px; padding: 16px; text-align: center; }
+  .score-fail-block p { margin: 4px 0; font-size: 15px; }
 
-  .score-fail-section {
-    background: var(--bg);
-    border-radius: 12px;
-    padding: 16px;
-    text-align: center;
-  }
-  .score-fail-msg { font-size: 16px; margin-bottom: 6px; }
-  .score-fail-hint { font-size: 14px; color: var(--muted); }
-
-  .score-feedback-area {
-    background: var(--bg);
-    border-radius: 12px;
-    padding: 12px 14px;
-    font-size: 14px;
-    min-height: 44px;
-  }
+  .score-feedback { background: var(--bg); border-radius: 12px; padding: 12px 14px; font-size: 14px; min-height: 44px; }
   .score-feedback-loading { color: var(--muted); }
   .score-feedback-text, .score-feedback-tip { margin: 0 0 4px; }
   .score-feedback-tip { color: var(--muted); }
   ```
 
-- [ ] **Step 4: Remove old score modal CSS**
+- [ ] **Step 4: Test — complete a reading, verify animation**
 
-  In `styles.css`, find and remove the old score modal block (the section starting with `/* ---- Score modal ---- */` and the old `.score-modal`, `.score-header`, `.score-ring`, etc. classes — approximately lines 435–551). The new classes above replace them entirely.
+  - Ring counts up ✓
+  - Confetti fires on pass ✓
+  - Points animate ✓
+  - Streak flame if streak > 0 ✓
+  - Badge unlocks show if newly earned ✓
 
-- [ ] **Step 5: Test in browser**
-
-  Complete a reading session. Verify:
-  - Score ring animates from 0 to score
-  - Number counts up
-  - Points animate in with stagger
-  - Confetti fires on pass
-  - Streak flame pulses if streak > 0
-  - Badge unlocks show if newly earned
-  - Fail state shows without confetti
-
-- [ ] **Step 6: Commit**
+- [ ] **Step 5: Commit**
 
   ```bash
   git add src/components/scoreModal.js styles.css
@@ -2154,370 +1956,135 @@ Write a SHORT, warm assessment for a young student. Return JSON only — no code
 - Modify: `src/components/studentDashboard.js`
 - Modify: `styles.css`
 
-- [ ] **Step 1: Rewrite openStudentDashboard**
+- [ ] **Step 1: Add BADGES constant to studentDashboard.js**
 
-  Replace the entire file content:
+  At the top of the file, add the same BADGES array used in scoreModal.js (copy it):
 
   ```js
-  // Student dashboard — full stats, badge wall, activity grid, history.
-
-  import {
-    getProgress, getStudentStreak, getBestStreak,
-    getActivityDays, deleteStudent, setActiveStudentId, getActiveStudentId,
-  } from '../lib/students.js';
-
-  const MONTH_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-
   const BADGES = [
-    { id: 'first_pass',  icon: '🌟', label: 'First Pass',      check: (prog, streak) => prog.sessions.filter(s => s.passed).length >= 1 },
-    { id: 'stories_5',  icon: '📚', label: '5 Stories',        check: (prog)         => new Set(prog.sessions.filter(s => s.passed).map(s => s.storyId)).size >= 5 },
-    { id: 'perfect',    icon: '💯', label: 'Perfect Score',    check: (prog)         => prog.sessions.some(s => s.score >= 100) },
-    { id: 'streak_7',   icon: '🔥', label: '7-Day Streak',     check: (prog, streak) => streak >= 7 },
-    { id: 'streak_30',  icon: '🏆', label: '30-Day Streak',    check: (prog, streak) => streak >= 30 },
-    { id: 'pts_100',    icon: '💎', label: '100 Points',        check: (prog)         => prog.totalPoints >= 100 },
-    { id: 'pts_500',    icon: '👑', label: '500 Points',        check: (prog)         => prog.totalPoints >= 500 },
-    { id: 'pts_1000',   icon: '🎯', label: '1000 Points',       check: (prog)         => prog.totalPoints >= 1000 },
+    { id: 'first_pass',  icon: '🌟', label: 'First Pass',     check: (p)    => p.sessions.filter(s => s.passed).length >= 1 },
+    { id: 'stories_5',  icon: '📚', label: '5 Stories',       check: (p)    => new Set(p.sessions.filter(s => s.passed).map(s => s.storyId)).size >= 5 },
+    { id: 'perfect',    icon: '💯', label: 'Perfect Score',   check: (p)    => p.sessions.some(s => s.score >= 100) },
+    { id: 'streak_7',   icon: '🔥', label: '7-Day Streak',    check: (p, k) => k >= 7 },
+    { id: 'streak_30',  icon: '🏆', label: '30-Day Streak',   check: (p, k) => k >= 30 },
+    { id: 'pts_100',    icon: '💎', label: '100 Points',       check: (p)    => p.totalPoints >= 100 },
+    { id: 'pts_500',    icon: '👑', label: '500 Points',       check: (p)    => p.totalPoints >= 500 },
+    { id: 'pts_1000',   icon: '🎯', label: '1000 Points',      check: (p)    => p.totalPoints >= 1000 },
   ];
-
-  function sgTime(ts) {
-    return new Date(ts).toLocaleTimeString('en-SG', {
-      timeZone: 'Asia/Singapore', hour: '2-digit', minute: '2-digit', hour12: true,
-    });
-  }
-
-  function fmtIsoDate(iso) {
-    const [, m, d] = iso.split('-').map(Number);
-    return `${d} ${MONTH_SHORT[m - 1]}`;
-  }
-
-  function scoreColor(score) {
-    return score >= 80 ? 'var(--good)' : score >= 60 ? 'var(--accent)' : 'var(--danger)';
-  }
-
-  export function openStudentDashboard({ student, onDeleted, onClose }) {
-    const overlay = document.createElement('div');
-    overlay.className = 'modal-overlay dash-overlay';
-
-    const progress = getProgress(student.id);
-    const sessions = progress.sessions;
-    const totalPts = progress.totalPoints || 0;
-    const streak = getStudentStreak(student.id);
-    const bestStreak = getBestStreak(student.id);
-    const passSessions = sessions.filter(s => s.passed);
-    const avgScore = passSessions.length
-      ? Math.round(passSessions.reduce((s, x) => s + x.score, 0) / passSessions.length)
-      : 0;
-
-    const joinedMonth = new Date(student.createdAt);
-    const joinedStr = `${MONTH_SHORT[joinedMonth.getMonth()]} ${joinedMonth.getFullYear()}`;
-
-    const MILESTONE = 500;
-    const milestoneProgress = Math.min((totalPts % MILESTONE) / MILESTONE * 100, 100);
-    const nextMilestone = Math.ceil((totalPts + 1) / MILESTONE) * MILESTONE;
-
-    const earnedBadgeIds = new Set(
-      BADGES.filter(b => b.check(progress, streak)).map(b => b.id)
-    );
-
-    overlay.innerHTML = `
-      <div class="modal-card dash-card-v2" role="dialog" aria-modal="true">
-        <!-- Header -->
-        <div class="dash-header-v2">
-          <div class="student-avatar dash-avatar-v2" style="background:${student.color}">
-            ${student.name[0].toUpperCase()}
-          </div>
-          <div class="dash-header-info">
-            <div class="dash-name-v2">${student.name}</div>
-            <div class="dash-sub">${student.level} · Since ${joinedStr}</div>
-          </div>
-          <button class="dash-close" id="dash-close" aria-label="Close">✕</button>
-        </div>
-
-        <!-- Points hero -->
-        <div class="dash-points-hero">
-          <div class="dash-pts-number">${totalPts.toLocaleString()} 💎</div>
-          <div class="dash-pts-label">Total Points</div>
-          <div class="dash-progress-bar-wrap">
-            <div class="dash-progress-bar" style="width:${milestoneProgress}%"></div>
-          </div>
-          <div class="dash-progress-label">${totalPts % MILESTONE} / ${MILESTONE} to next milestone</div>
-        </div>
-
-        <!-- Stat cards -->
-        <div class="dash-stat-cards">
-          <div class="dash-stat-card">
-            <span class="dash-stat-card-val">🔥 ${streak}</span>
-            <span class="dash-stat-card-lbl">Streak</span>
-          </div>
-          <div class="dash-stat-card">
-            <span class="dash-stat-card-val">🏆 ${bestStreak}</span>
-            <span class="dash-stat-card-lbl">Best Streak</span>
-          </div>
-          <div class="dash-stat-card">
-            <span class="dash-stat-card-val">📖 ${sessions.length}</span>
-            <span class="dash-stat-card-lbl">Sessions</span>
-          </div>
-          <div class="dash-stat-card">
-            <span class="dash-stat-card-val">⭐ ${avgScore}</span>
-            <span class="dash-stat-card-lbl">Avg Score</span>
-          </div>
-        </div>
-
-        <!-- Badge wall -->
-        <div class="dash-section-title">Badges</div>
-        <div class="dash-badge-wall">
-          ${BADGES.map(b => `
-            <div class="dash-badge ${earnedBadgeIds.has(b.id) ? 'earned' : 'locked'}"
-              title="${b.label}">
-              <span class="dash-badge-icon">${b.icon}</span>
-              <span class="dash-badge-label">${b.label}</span>
-            </div>`).join('')}
-        </div>
-
-        <!-- Activity grid -->
-        <div class="dash-section-title">Last 30 Days</div>
-        <div class="dash-activity-grid" id="dash-grid"></div>
-        <div class="dash-legend">
-          <span class="dash-legend-dot" style="background:var(--good)"></span> Passed
-          <span class="dash-legend-dot" style="background:#ffb300; margin-left:8px"></span> Attempted
-          <span class="dash-legend-dot" style="background:var(--danger); opacity:0.35; margin-left:8px"></span> Missed
-          <span class="dash-legend-dot" style="background:var(--border); margin-left:8px"></span> No reading
-        </div>
-
-        <!-- Reading history -->
-        <div class="dash-history-wrap">
-          <div class="dash-section-title">Reading History</div>
-          <div class="dash-history" id="dash-history"></div>
-        </div>
-
-        <!-- Delete -->
-        <div class="dash-footer">
-          <button class="danger dash-delete-btn" id="dash-delete">🗑️ Delete Student</button>
-        </div>
-      </div>`;
-
-    document.body.appendChild(overlay);
-
-    // Activity grid
-    const grid = overlay.querySelector('#dash-grid');
-    for (const day of getActivityDays(student.id, 30)) {
-      const cell = document.createElement('div');
-      cell.className = 'dash-day-cell';
-      cell.title = `${fmtIsoDate(day.iso)}${day.bestScore ? ` · ${day.bestScore}` : ''}`;
-      if (day.isToday && !day.passed) {
-        cell.style.cssText = 'background:var(--accent-soft); border:2px solid var(--accent)';
-      } else if (day.passed) {
-        cell.style.background = 'var(--good)';
-      } else if (day.attempted) {
-        cell.style.background = '#ffb300';
-      } else if (!day.isToday) {
-        cell.style.cssText = 'background:var(--danger); opacity:0.35';
-      } else {
-        cell.style.background = 'var(--border)';
-      }
-      const num = document.createElement('span');
-      num.className = 'dash-day-num';
-      num.textContent = day.iso.split('-')[2].replace(/^0/, '');
-      cell.appendChild(num);
-      grid.appendChild(cell);
-    }
-
-    // Reading history
-    const histEl = overlay.querySelector('#dash-history');
-    if (!sessions.length) {
-      histEl.innerHTML = `<p class="dash-empty">No reading sessions yet.</p>`;
-    } else {
-      for (const s of sessions.slice(0, 50)) {
-        const row = document.createElement('div');
-        row.className = 'dash-history-row';
-        const timeStr = s.completedAt ? sgTime(s.completedAt) : '';
-        row.innerHTML = `
-          <span class="dash-hist-date">${fmtIsoDate(s.date)} ${timeStr}</span>
-          <span class="dash-hist-story">${s.storyTitle || s.storyId}</span>
-          <span class="dash-hist-score" style="color:${scoreColor(s.score)}">${s.score}</span>
-          <span class="dash-hist-pass">${s.passed ? '✓' : '✗'}</span>
-          <span class="dash-hist-pts">${s.passed ? `+${s.pointsEarned}💎` : '—'}</span>`;
-        histEl.appendChild(row);
-      }
-    }
-
-    function close() {
-      document.removeEventListener('keydown', handleEsc);
-      overlay.remove();
-      onClose?.();
-    }
-    function handleEsc(e) { if (e.key === 'Escape') close(); }
-    document.addEventListener('keydown', handleEsc);
-    overlay.querySelector('#dash-close').addEventListener('click', close);
-    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
-
-    const deleteBtn = overlay.querySelector('#dash-delete');
-    let confirmPending = false;
-    deleteBtn.addEventListener('click', () => {
-      if (!confirmPending) {
-        confirmPending = true;
-        deleteBtn.textContent = '⚠️ Tap again to confirm delete';
-        deleteBtn.style.background = '#c00';
-        setTimeout(() => {
-          confirmPending = false;
-          deleteBtn.textContent = '🗑️ Delete Student';
-          deleteBtn.style.background = '';
-        }, 3000);
-        return;
-      }
-      if (getActiveStudentId() === student.id) setActiveStudentId(null);
-      deleteStudent(student.id);
-      close();
-      onDeleted?.();
-    });
-  }
   ```
 
-- [ ] **Step 2: Add CSS for dashboard v2**
+- [ ] **Step 2: Rewrite the openStudentDashboard HTML**
 
-  Append to `styles.css`:
+  In `openStudentDashboard`, replace the `overlay.innerHTML = ...` block with:
+
+  ```js
+  const totalPts = progress.totalPoints || 0;
+  const MILESTONE = 500;
+  const milestoneProgress = Math.min((totalPts % MILESTONE) / MILESTONE * 100, 100);
+  const earnedIds = new Set(BADGES.filter(b => b.check(progress, streak)).map(b => b.id));
+
+  overlay.innerHTML = `
+    <div class="modal-card dash-card-v2" role="dialog" aria-modal="true">
+      <div class="dash-hdr">
+        <div class="student-avatar" style="background:${student.color};width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;color:white;flex-shrink:0">${student.name[0].toUpperCase()}</div>
+        <div style="flex:1">
+          <div class="dash-name">${student.name}</div>
+          <div class="dash-sub">${student.level} · Since ${joinedStr}</div>
+        </div>
+        <button class="dash-close" id="dash-close" aria-label="Close">✕</button>
+      </div>
+
+      <div class="dash-pts-hero">
+        <div class="dash-pts-num">${totalPts.toLocaleString()} 💎</div>
+        <div class="dash-pts-lbl">Total Points</div>
+        <div class="dash-bar-wrap"><div class="dash-bar" style="width:${milestoneProgress}%"></div></div>
+        <div class="dash-bar-lbl">${totalPts % MILESTONE} / ${MILESTONE} to next milestone</div>
+      </div>
+
+      <div class="dash-stat-cards">
+        <div class="dash-sc"><span class="dash-sc-v">🔥 ${streak}</span><span class="dash-sc-l">Streak</span></div>
+        <div class="dash-sc"><span class="dash-sc-v">🏆 ${bestStreak}</span><span class="dash-sc-l">Best</span></div>
+        <div class="dash-sc"><span class="dash-sc-v">📖 ${sessions.length}</span><span class="dash-sc-l">Sessions</span></div>
+        <div class="dash-sc"><span class="dash-sc-v">⭐ ${avgScore}</span><span class="dash-sc-l">Avg</span></div>
+      </div>
+
+      <div class="dash-section-title" style="padding:0 16px 8px">Badges</div>
+      <div class="dash-badge-wall">
+        ${BADGES.map(b => `
+          <div class="dash-badge ${earnedIds.has(b.id) ? 'earned' : 'locked'}" title="${b.label}">
+            <span style="font-size:26px">${b.icon}</span>
+            <span class="dash-badge-lbl">${b.label}</span>
+          </div>`).join('')}
+      </div>
+
+      <div class="dash-section-title" style="padding:0 16px 8px">Last 30 Days</div>
+      <div class="dash-activity-grid" id="dash-grid"></div>
+      <div class="dash-legend">
+        <span class="dash-legend-dot" style="background:var(--good)"></span> Passed
+        <span class="dash-legend-dot" style="background:#ffb300;margin-left:8px"></span> Attempted
+        <span class="dash-legend-dot" style="background:var(--danger);opacity:.35;margin-left:8px"></span> Missed
+        <span class="dash-legend-dot" style="background:var(--border);margin-left:8px"></span> No reading
+      </div>
+
+      <div class="dash-history-wrap">
+        <div class="dash-section-title" style="padding:8px 16px">Reading History</div>
+        <div class="dash-history" id="dash-history"></div>
+      </div>
+      <div class="dash-footer">
+        <button class="danger dash-delete-btn" id="dash-delete">🗑️ Delete Student</button>
+      </div>
+    </div>`;
+  ```
+
+- [ ] **Step 3: Add CSS for dashboard v2**
+
+  Remove old `.dash-card`, `.dash-header`, `.dash-stats`, `.dash-stat` CSS. Append:
 
   ```css
   /* ---- Dashboard v2 ---- */
-  .dash-card-v2 {
-    max-width: 560px;
-    width: 100%;
-    max-height: 92vh;
-    overflow-y: auto;
-    padding: 0;
+  .dash-card-v2 { max-width: 560px; width: 100%; max-height: 92vh; overflow-y: auto; padding: 0; }
+
+  .dash-hdr {
+    display: flex; align-items: center; gap: 14px;
+    padding: 20px 20px 16px; border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; background: var(--surface); z-index: 1;
   }
+  .dash-name { font-size: 22px; font-weight: 800; }
 
-  .dash-header-v2 {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 20px 20px 16px;
-    border-bottom: 1px solid var(--border);
-    position: sticky;
-    top: 0;
-    background: var(--surface);
-    z-index: 1;
-  }
-
-  .dash-avatar-v2 {
-    width: 52px; height: 52px;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 24px; font-weight: 700; color: white;
-    flex-shrink: 0;
-  }
-
-  .dash-name-v2 { font-size: 22px; font-weight: 800; }
-
-  .dash-points-hero {
+  .dash-pts-hero {
     background: linear-gradient(135deg, var(--accent), #ae3ec9);
-    color: white;
-    padding: 20px;
-    text-align: center;
+    color: white; padding: 20px; text-align: center;
   }
+  .dash-pts-num { font-size: 48px; font-weight: 900; line-height: 1.1; }
+  .dash-pts-lbl { font-size: 14px; opacity: .85; margin-bottom: 12px; }
+  .dash-bar-wrap { background: rgba(255,255,255,.25); border-radius: 999px; height: 10px; overflow: hidden; margin-bottom: 4px; }
+  .dash-bar { height: 100%; background: white; border-radius: 999px; transition: width 1s ease-out; }
+  .dash-bar-lbl { font-size: 12px; opacity: .8; }
 
-  .dash-pts-number { font-size: 48px; font-weight: 900; line-height: 1.1; }
-  .dash-pts-label { font-size: 14px; opacity: 0.85; margin-bottom: 12px; }
+  .dash-stat-cards { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; padding: 16px; }
+  @media (max-width: 480px) { .dash-stat-cards { grid-template-columns: repeat(2,1fr); } }
+  .dash-sc { background: var(--bg); border-radius: 12px; padding: 14px 10px; display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; }
+  .dash-sc-v { font-size: 22px; font-weight: 800; }
+  .dash-sc-l { font-size: 12px; color: var(--muted); font-weight: 600; }
 
-  .dash-progress-bar-wrap {
-    background: rgba(255,255,255,0.25);
-    border-radius: 999px;
-    height: 10px;
-    overflow: hidden;
-    margin-bottom: 4px;
-  }
-  .dash-progress-bar {
-    height: 100%;
-    background: white;
-    border-radius: 999px;
-    transition: width 1s ease-out;
-  }
-  .dash-progress-label { font-size: 12px; opacity: 0.8; }
-
-  .dash-stat-cards {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
-    padding: 16px;
-  }
-
-  @media (max-width: 480px) {
-    .dash-stat-cards { grid-template-columns: repeat(2, 1fr); }
-  }
-
-  .dash-stat-card {
-    background: var(--bg);
-    border-radius: 12px;
-    padding: 14px 10px;
-    display: flex; flex-direction: column; align-items: center; gap: 4px;
-    text-align: center;
-  }
-  .dash-stat-card-val { font-size: 22px; font-weight: 800; }
-  .dash-stat-card-lbl { font-size: 12px; color: var(--muted); font-weight: 600; }
-
-  /* Badge wall */
-  .dash-badge-wall {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
-    padding: 0 16px 16px;
-  }
-
-  @media (max-width: 400px) {
-    .dash-badge-wall { grid-template-columns: repeat(3, 1fr); }
-  }
-
-  .dash-badge {
-    display: flex; flex-direction: column; align-items: center; gap: 4px;
-    padding: 10px 6px;
-    border-radius: 12px;
-    text-align: center;
-    font-size: 11px;
-    font-weight: 600;
-  }
-  .dash-badge.earned {
-    background: #fff9c4;
-    border: 2px solid #ffe066;
-  }
-  .dash-badge.locked {
-    background: var(--bg);
-    border: 2px solid var(--border);
-    opacity: 0.45;
-    filter: grayscale(0.6);
-  }
-  .dash-badge-icon { font-size: 26px; }
-  .dash-badge-label { line-height: 1.2; }
-
-  .dash-section-title {
-    font-size: 13px; font-weight: 700;
-    text-transform: uppercase; letter-spacing: 0.05em;
-    color: var(--muted);
-    padding: 0 16px 8px;
-  }
+  .dash-badge-wall { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; padding: 0 16px 16px; }
+  @media (max-width: 400px) { .dash-badge-wall { grid-template-columns: repeat(3,1fr); } }
+  .dash-badge { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 6px; border-radius: 12px; text-align: center; }
+  .dash-badge.earned { background: #fff9c4; border: 2px solid #ffe066; }
+  .dash-badge.locked { background: var(--bg); border: 2px solid var(--border); opacity: .45; filter: grayscale(.6); }
+  .dash-badge-lbl { font-size: 11px; font-weight: 600; line-height: 1.2; }
   ```
-
-  Remove the old dash CSS from `styles.css` (find the section with `.dash-card`, `.dash-header`, `.dash-stats`, `.dash-stat` etc. and remove those old rules — the new `.dash-card-v2` rules above replace them. Keep `.dash-activity-grid`, `.dash-day-cell`, `.dash-day-num`, `.dash-legend`, `.dash-history*`, `.dash-footer`, `.dash-empty`, `.dash-close` — those are reused).
-
-- [ ] **Step 3: Test in browser**
-
-  Click on a student avatar to open the dashboard. Verify:
-  - Big points hero with gradient
-  - Progress bar toward next 500-pt milestone
-  - 4 stat cards
-  - 8 badges (unlocked = yellow, locked = grey)
-  - Activity grid
-  - Reading history
 
 - [ ] **Step 4: Commit**
 
   ```bash
   git add src/components/studentDashboard.js styles.css
-  git commit -m "feat: student dashboard redesign with badge wall and points hero"
+  git commit -m "feat: dashboard redesign with points hero and badge wall"
   ```
 
 ---
 
-## Task 17: Bulk Story Generation Script
+## Task 17: Bulk Story Generation
 
 **Files:**
 - Create: `scripts/generate-stories.mjs`
@@ -2528,7 +2095,6 @@ Write a SHORT, warm assessment for a young student. Return JSON only — no code
   ```js
   // scripts/generate-stories.mjs
   // Run: ANTHROPIC_API_KEY=sk-ant-... node scripts/generate-stories.mjs
-  // Generates 4 stories per level (P1-P6) = 24 stories, saves to stories/ dir.
 
   import fs from 'fs';
   import path from 'path';
@@ -2541,104 +2107,77 @@ Write a SHORT, warm assessment for a young student. Return JSON only — no code
   const API_KEY = process.env.ANTHROPIC_API_KEY;
   if (!API_KEY) { console.error('Missing ANTHROPIC_API_KEY'); process.exit(1); }
 
-  const CHAR_RANGES = { P1: '40–60', P2: '60–90', P3: '90–130', P4: '120–170', P5: '160–220', P6: '200–280' };
+  const CHAR_RANGES = { P1:'40–60', P2:'60–90', P3:'90–130', P4:'120–170', P5:'160–220', P6:'200–280' };
 
   const PLAN = [
-    { level: 'P1', theme: '家人',     slug: 'jiaren'       },
-    { level: 'P1', theme: '动物',     slug: 'dongwu'       },
-    { level: 'P1', theme: '学校',     slug: 'xuexiao'      },
-    { level: 'P1', theme: '节日',     slug: 'jieri'        },
-    { level: 'P2', theme: '友谊',     slug: 'youyi'        },
-    { level: 'P2', theme: '自然',     slug: 'ziran'        },
-    { level: 'P2', theme: '帮助别人', slug: 'bangzhu'      },
-    { level: 'P2', theme: '好习惯',   slug: 'xiguan'       },
-    { level: 'P3', theme: '环境保护', slug: 'huanjing'     },
-    { level: 'P3', theme: '社区助人', slug: 'shequ'        },
-    { level: 'P3', theme: '运动健康', slug: 'yundong'      },
-    { level: 'P3', theme: '节约用水', slug: 'jieyue'       },
-    { level: 'P4', theme: '坚持不懈', slug: 'jianchi'      },
-    { level: 'P4', theme: '传统文化', slug: 'chuantong'    },
-    { level: 'P4', theme: '科技生活', slug: 'keji'         },
-    { level: 'P4', theme: '爱心服务', slug: 'aixin'        },
-    { level: 'P5', theme: '历史故事', slug: 'lishi'        },
-    { level: 'P5', theme: '品德修养', slug: 'pinde'        },
-    { level: 'P5', theme: '环球视野', slug: 'huanqiu'      },
-    { level: 'P5', theme: '逆境自强', slug: 'nijing'       },
-    { level: 'P6', theme: '民族和谐', slug: 'minzu'        },
-    { level: 'P6', theme: '社会责任', slug: 'zeren'        },
-    { level: 'P6', theme: '科学探索', slug: 'kexue'        },
-    { level: 'P6', theme: '生命价值', slug: 'shengming'    },
+    { level:'P1', theme:'家人',     slug:'jiaren'     },
+    { level:'P1', theme:'动物',     slug:'dongwu'     },
+    { level:'P1', theme:'学校',     slug:'xuexiao'    },
+    { level:'P1', theme:'节日',     slug:'jieri'      },
+    { level:'P2', theme:'友谊',     slug:'youyi'      },
+    { level:'P2', theme:'自然',     slug:'ziran'      },
+    { level:'P2', theme:'帮助别人', slug:'bangzhu'    },
+    { level:'P2', theme:'好习惯',   slug:'xiguan'     },
+    { level:'P3', theme:'环境保护', slug:'huanjing'   },
+    { level:'P3', theme:'社区助人', slug:'shequ'      },
+    { level:'P3', theme:'运动健康', slug:'yundong'    },
+    { level:'P3', theme:'节约用水', slug:'jieyue'     },
+    { level:'P4', theme:'坚持不懈', slug:'jianchi'    },
+    { level:'P4', theme:'传统文化', slug:'chuantong'  },
+    { level:'P4', theme:'科技生活', slug:'keji'       },
+    { level:'P4', theme:'爱心服务', slug:'aixin'      },
+    { level:'P5', theme:'历史故事', slug:'lishi'      },
+    { level:'P5', theme:'品德修养', slug:'pinde'      },
+    { level:'P5', theme:'坚强意志', slug:'yizhi'      },
+    { level:'P5', theme:'环球视野', slug:'huanqiu'    },
+    { level:'P6', theme:'民族和谐', slug:'minzu'      },
+    { level:'P6', theme:'社会责任', slug:'zeren'      },
+    { level:'P6', theme:'科学探索', slug:'kexue'      },
+    { level:'P6', theme:'生命价值', slug:'shengming'  },
   ];
 
-  async function generateStory(level, theme) {
-    const charCount = CHAR_RANGES[level];
+  async function generate(level, theme) {
     const levelNum = level.slice(1);
     const prompt = `Generate a short Chinese reading story for Singapore Primary ${levelNum} (${level}) students following MOE PSLE Chinese curriculum standards.
 
-Theme / topic: ${theme}
+Theme: ${theme}
+Length: approximately ${CHAR_RANGES[level]} Chinese characters (not counting punctuation).
 
-Story length: approximately ${charCount} Chinese characters (not counting punctuation).
-
-Return ONLY a valid JSON object — no markdown, no code fences, no explanation:
+Return ONLY valid JSON — no markdown, no code fences:
 {
-  "id": "gen-${level.toLowerCase()}-[3-4 syllable pinyin title slug]",
+  "id": "gen-${level.toLowerCase()}-[3-4 syllable pinyin slug]",
   "title": "[Chinese title, 2–6 characters]",
   "level": "${level}",
   "estMinutes": 3,
   "tags": ["tag1", "tag2"],
-  "tokens": [
-    {"char": "每", "pinyin": "měi"},
-    {"char": "天", "pinyin": "tiān"},
-    {"char": "，", "pinyin": ""}
-  ]
+  "tokens": [{"char": "每", "pinyin": "měi"}, {"char": "，", "pinyin": ""}]
 }
 
-CRITICAL RULES:
-1. Each token is exactly ONE Chinese character OR one punctuation mark.
-2. Pinyin MUST use Unicode tone diacritics (not numbers).
-3. Punctuation tokens (。！？，：；""''—…《》) have empty pinyin: "".
-4. Structural particles: 的→"de" 地→"de" 得→"de" 了→"le" 着→"zhe" 过→"guo" 吗→"ma" 呢→"ne" 吧→"ba"
-5. Story must be age-appropriate and aligned with Singapore PSLE ${level} vocabulary.
-6. End the story with 。`;
+RULES:
+1. Each token is ONE Chinese character OR one punctuation mark.
+2. Pinyin uses Unicode diacritics (ā á ǎ à, ē é ě è, etc.).
+3. Punctuation (。！？，：；""''—…《》) has empty pinyin "".
+4. Particles: 的→"de" 地→"de" 得→"de" 了→"le" 着→"zhe" 过→"guo" 吗→"ma" 呢→"ne" 吧→"ba"
+5. Age-appropriate, positive, aligned with Singapore PSLE ${level} vocabulary.
+6. End with 。`;
 
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: {
-        'x-api-key': API_KEY,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 4096,
-        messages: [{ role: 'user', content: prompt }],
-      }),
+      headers: { 'x-api-key': API_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 4096, messages: [{ role: 'user', content: prompt }] }),
     });
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error?.message || `API ${res.status}`);
-    }
+    if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error?.message || `API ${res.status}`); }
 
     const data = await res.json();
-    let text = data.content[0].text.trim()
-      .replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+    let text = data.content[0].text.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
     const story = JSON.parse(text);
+    if (!story.tokens?.length || !story.title) throw new Error('Invalid format');
 
-    if (!story.tokens || !Array.isArray(story.tokens) || !story.title) {
-      throw new Error('Invalid story format');
-    }
-    // Validate at least 80% of CJK tokens have pinyin
     const cjk = story.tokens.filter(t => /[\u4e00-\u9fff]/.test(t.char));
-    const withPinyin = cjk.filter(t => t.pinyin && t.pinyin.length > 0);
-    if (withPinyin.length / cjk.length < 0.8) {
-      throw new Error(`Too many tokens missing pinyin (${withPinyin.length}/${cjk.length})`);
-    }
-
+    const withPinyin = cjk.filter(t => t.pinyin);
+    if (withPinyin.length / cjk.length < 0.8) throw new Error(`Low pinyin: ${withPinyin.length}/${cjk.length}`);
     return story;
   }
-
-  async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
   async function main() {
     const index = JSON.parse(fs.readFileSync(INDEX_PATH, 'utf8'));
@@ -2646,80 +2185,62 @@ CRITICAL RULES:
     let generated = 0;
 
     for (const { level, theme, slug } of PLAN) {
-      const candidateId = `${level.toLowerCase()}-${slug}`;
-      if (existingIds.has(candidateId)) {
-        console.log(`  SKIP  ${candidateId} (already exists)`);
-        continue;
-      }
+      const id = `${level.toLowerCase()}-${slug}`;
+      if (existingIds.has(id)) { console.log(`  SKIP  ${id}`); continue; }
 
       process.stdout.write(`  GEN   ${level} ${theme} ... `);
       try {
-        const story = await generateStory(level, theme);
-        story.id = candidateId;
-
-        const filePath = path.join(STORIES_DIR, `${candidateId}.json`);
-        fs.writeFileSync(filePath, JSON.stringify(story, null, 2), 'utf8');
-
+        const story = await generate(level, theme);
+        story.id = id;
+        fs.writeFileSync(path.join(STORIES_DIR, `${id}.json`), JSON.stringify(story, null, 2), 'utf8');
         index.push({ id: story.id, title: story.title, level: story.level, estMinutes: story.estMinutes, tags: story.tags });
-        existingIds.add(story.id);
+        existingIds.add(id);
         generated++;
         console.log(`✓ "${story.title}" (${story.tokens.filter(t => t.pinyin).length} chars)`);
       } catch (err) {
         console.log(`✗ ${err.message}`);
       }
-
-      await sleep(1200); // Rate limit buffer
+      await new Promise(r => setTimeout(r, 1200));
     }
 
-    // Sort index: originals first, then by level, then alphabetically
-    index.sort((a, b) => {
-      const lvl = ['P1','P2','P3','P4','P5','P6'].indexOf(a.level) - ['P1','P2','P3','P4','P5','P6'].indexOf(b.level);
-      if (lvl !== 0) return lvl;
-      return a.id.localeCompare(b.id);
-    });
-
+    const LEVEL_ORDER = ['P1','P2','P3','P4','P5','P6'];
+    index.sort((a, b) => (LEVEL_ORDER.indexOf(a.level) - LEVEL_ORDER.indexOf(b.level)) || a.id.localeCompare(b.id));
     fs.writeFileSync(INDEX_PATH, JSON.stringify(index, null, 2) + '\n', 'utf8');
-    console.log(`\nDone. Generated ${generated} new stories. Total: ${index.length}`);
+    console.log(`\nDone. ${generated} new stories. Total: ${index.length}`);
   }
 
-  main().catch(err => { console.error(err); process.exit(1); });
+  main().catch(e => { console.error(e); process.exit(1); });
   ```
 
-- [ ] **Step 2: Run the script**
+- [ ] **Step 2: Run**
 
   ```bash
   cd "/Users/wengleong/Claude Workspace/chinese-reading"
   ANTHROPIC_API_KEY=sk-ant-YOUR_KEY node scripts/generate-stories.mjs
   ```
 
-  Expected output (24 lines like):
-  ```
-    GEN   P1 家人 ... ✓ "快乐的家" (52 chars)
-    GEN   P1 动物 ... ✓ "小猫的朋友" (48 chars)
-    ...
-  Done. Generated 24 new stories. Total: 28
-  ```
+  Expected: 24 lines of `✓ "title"`, then `Done. 24 new stories. Total: 28`.
 
-- [ ] **Step 3: Verify stories are valid**
+- [ ] **Step 3: Validate**
 
   ```bash
   node --input-type=module <<'EOF'
   import fs from 'fs';
-  const index = JSON.parse(fs.readFileSync('stories/index.json', 'utf8'));
-  console.log('Total stories:', index.length);
+  const index = JSON.parse(fs.readFileSync('stories/index.json','utf8'));
+  console.log('Total:', index.length);
+  let errors = 0;
   for (const s of index) {
-    const file = `stories/${s.id}.json`;
-    if (!fs.existsSync(file)) { console.error('MISSING:', file); continue; }
-    const story = JSON.parse(fs.readFileSync(file, 'utf8'));
+    if (!fs.existsSync(`stories/${s.id}.json`)) { console.error('MISSING:', s.id); errors++; continue; }
+    const story = JSON.parse(fs.readFileSync(`stories/${s.id}.json`,'utf8'));
     const cjk = story.tokens.filter(t => /[\u4e00-\u9fff]/.test(t.char));
     const ok = cjk.filter(t => t.pinyin).length;
-    if (ok / cjk.length < 0.9) console.warn(`LOW PINYIN: ${s.id} (${ok}/${cjk.length})`);
+    if (ok/cjk.length < 0.9) { console.warn('LOW PINYIN:', s.id, ok+'/'+cjk.length); errors++; }
   }
-  console.log('Validation complete');
+  console.log(errors ? `${errors} issues found` : 'All OK');
   EOF
   ```
 
-  Expected: `Total stories: 28` and `Validation complete` with no warnings.
+  Expected: `Total: 28` and `All OK`.
 
 - [ ] **Step 4: Commit**
 
@@ -2730,50 +2251,51 @@ CRITICAL RULES:
 
 ---
 
-## Task 18: Push to GitHub Pages
+## Task 18: Deploy and Verify
 
-- [ ] **Step 1: Final check — verify no console errors in browser**
-
-  Open the app (`python3 -m http.server 8080`). Check DevTools console. Expect no errors.
-
-- [ ] **Step 2: Push to main**
+- [ ] **Step 1: Push to main → deploys to GitHub Pages**
 
   ```bash
+  cd "/Users/wengleong/Claude Workspace/chinese-reading"
   git push origin main
   ```
 
-  GitHub Actions will deploy to GitHub Pages automatically (CI defined in `.github/workflows/pages.yml`).
+  GitHub Actions (`.github/workflows/pages.yml`) deploys automatically.
 
-- [ ] **Step 3: Verify live site**
+- [ ] **Step 2: Confirm Railway API is live**
 
-  Visit the GitHub Pages URL. Verify:
-  - App loads and shows onboarding on first visit
-  - Can create a family and get a code
-  - Can join with the code on a second browser tab (use incognito)
-  - Stories load — 28 stories in the picker
-  - Record a reading → score modal shows with animation
-  - Student dashboard opens with badge wall
-  - On mobile: sticky record button at bottom
+  ```bash
+  curl https://YOUR_RAILWAY_URL/health
+  # Expected: {"ok":true}
+  ```
+
+- [ ] **Step 3: End-to-end smoke test on live site**
+
+  1. Open GitHub Pages URL in fresh incognito window
+  2. Onboarding appears → Create Family → write down code
+  3. Add a student → opens app
+  4. Pick a story → verify 28 stories in list
+  5. Record audio → stop → score modal animates
+  6. Check Railway DB: `select count(*) from progress_sessions;` → 1 row
+  7. Open a second incognito tab → enter code → progress syncs
+  8. Open Settings → enter Anthropic API key → saved to family account
+  9. Mobile: open on phone → sticky record bar at bottom, story scrolls freely
+
+- [ ] **Step 4: Save API URL to memory**
+
+  Once Railway URL is known, update `src/lib/api.js` with the real URL and push again.
 
 ---
 
-## Self-Review Notes
+## Dependency Order
 
-**Spec coverage check:**
-- ✅ Cloud persistence (sessions, scores, recordings) — Tasks 10–12
-- ✅ Family code auth in-app — Tasks 5–9
-- ✅ API key stored server-side — Task 13
-- ✅ Mobile sticky record button — Task 14
-- ✅ Animated achievement screen — Task 15
-- ✅ Student dashboard redesign — Task 16
-- ✅ Bulk story generation — Task 17
-- ✅ GitHub Pages hosting unchanged — static files only, Task 18
-
-**Dependency order:**
-- Task 1 (Supabase setup) → must complete before Tasks 2–9
-- Task 3 (supabase.js) + Task 4 (cloud.js) → must complete before Tasks 10–13
-- Tasks 5–7 (Edge Functions) → must deploy before Task 9 (app boot) and Task 13 (API proxy)
-- Tasks 14–17 are fully independent of each other and of the cloud tasks
-- Task 18 (deploy) → last
-
-**Replace `YOUR_PROJECT` sentinel:** Search the codebase after Task 8 for all occurrences of `YOUR_PROJECT`, `YOUR_SUPABASE_URL`, `YOUR_SUPABASE_ANON_KEY` and replace with real values before testing.
+```
+Tasks 1–2  (scaffold + schema)     → must complete before 3–6
+Tasks 3–6  (routes)                → must complete before 7 (deploy)
+Task 7     (Railway deploy)        → must complete before 8 (api.js URL)
+Tasks 8–9  (api.js + cloud.js)     → must complete before 10–14
+Tasks 10–12 (sync data)            → can run in parallel after 9
+Tasks 13–16 (UI improvements)      → independent, can run in parallel
+Task 17    (stories)               → fully independent
+Task 18    (deploy + verify)       → last
+```
