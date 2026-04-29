@@ -1,7 +1,7 @@
 // Minimal offline-first service worker. Caches the shell + stories so the app
 // keeps working without network. Bumping CACHE_VERSION invalidates old caches.
 
-const CACHE_VERSION = "v11";
+const CACHE_VERSION = "v12";
 const CACHE_NAME = `chinese-reader-${CACHE_VERSION}`;
 const SHELL = [
   "./",
@@ -15,7 +15,6 @@ const SHELL = [
   "./src/app.js",
   "./src/lib/speech.js",
   "./src/lib/storage.js",
-  "./src/lib/progress.js",
   "./src/lib/stories.js",
   "./src/components/storyPicker.js",
   "./src/components/storyGenerator.js",
@@ -29,7 +28,6 @@ const SHELL = [
   "./src/components/playbackControls.js",
   "./src/components/recorder.js",
   "./src/components/recordingsList.js",
-  "./src/components/dailyTimer.js",
   "./stories/index.json",
   "./stories/p3-xiaomao-diaoyu.json",
   "./stories/p4-wuya-heshui.json",
