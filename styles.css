@@ -1014,37 +1014,33 @@ button.danger {
   min-width: 3ch;
 }
 
-/* Sticky bar: centered floating pill on desktop, fixed full-width on mobile */
+/* Desktop: inline button row anchored below the recorder card */
 .recorder-sticky-bar {
-  position: fixed;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 50;
   display: flex;
   gap: 10px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
-  padding: 10px 20px;
-  white-space: nowrap;
+  padding: 0;
+  margin-top: 12px;
 }
 
+/* Mobile: fixed full-width bar at bottom, one button at a time */
 @media (max-width: 800px) {
   .recorder-sticky-bar {
+    position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
-    transform: none;
-    border-radius: 0;
-    border: none;
+    z-index: 50;
+    background: var(--surface);
     border-top: 1px solid var(--border);
     box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.10);
     padding: 10px 16px;
     padding-bottom: max(10px, env(safe-area-inset-bottom));
+    margin-top: 0;
   }
   .recorder-sticky-bar button { flex: 1; }
+  /* Show only Stop when recording, only Record when idle */
+  .recorder-sticky-bar:not(.is-recording) .recorder-stop-btn { display: none; }
+  .recorder-sticky-bar.is-recording .recorder-start-btn { display: none; }
   .app-main {
     padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
   }
