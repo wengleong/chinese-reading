@@ -12,7 +12,7 @@ function pickMimeType() {
   return '';
 }
 
-export function renderRecorder({ root, getCurrentStory, getActiveStudent, onSaved, onActiveChange, onComplete, onStart }) {
+export function renderRecorder({ root, toolbarRoot, getCurrentStory, getActiveStudent, onSaved, onActiveChange, onComplete, onStart }) {
   root.innerHTML = '';
 
   const card = document.createElement('div');
@@ -51,7 +51,9 @@ export function renderRecorder({ root, getCurrentStory, getActiveStudent, onSave
 
   stickyBar.appendChild(startBtn);
   stickyBar.appendChild(stopBtn);
-  root.appendChild(stickyBar);
+  // On desktop the buttons live in the toolbar above the story; on mobile
+  // the bar is position:fixed so DOM location doesn't matter visually.
+  (toolbarRoot || root).appendChild(stickyBar);
 
   let mediaRecorder = null, chunks = [], startedAt = 0, mimeType = '';
   let recognition = null, transcript = '';
