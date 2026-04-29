@@ -100,7 +100,7 @@ renderRecorder({
   getActiveStudent: () => getActiveStudent(),
   onSaved: () => renderRecordingsList({ root: els.recordings }),
   onActiveChange: (active) => timerCtl.setActive(active),
-  onStart: () => els.reader.scrollIntoView({ behavior: 'smooth', block: 'center' }),
+  onStart: () => els.reader.scrollIntoView({ behavior: 'smooth', block: 'start' }),
   onComplete: ({ transcript, story, sessionId }) => {
     const student = getActiveStudent();
     if (!student || !story) return;

@@ -51,7 +51,7 @@ export function renderRecorder({ root, getCurrentStory, getActiveStudent, onSave
 
   stickyBar.appendChild(startBtn);
   stickyBar.appendChild(stopBtn);
-  document.body.appendChild(stickyBar);
+  root.appendChild(stickyBar);
 
   let mediaRecorder = null, chunks = [], startedAt = 0, mimeType = '';
   let recognition = null, transcript = '';
@@ -122,6 +122,7 @@ export function renderRecorder({ root, getCurrentStory, getActiveStudent, onSave
       indicator.style.visibility = 'hidden';
       timer.textContent = '0:00';
       startBtn.disabled = false; stopBtn.disabled = true;
+      stickyBar.classList.remove('is-recording');
       onActiveChange?.(false);
       onComplete?.({ transcript, story, sessionId });
     };
@@ -129,6 +130,7 @@ export function renderRecorder({ root, getCurrentStory, getActiveStudent, onSave
     mediaRecorder.start();
     startedAt = Date.now();
     startBtn.disabled = true; stopBtn.disabled = false;
+    stickyBar.classList.add('is-recording');
     indicator.style.visibility = 'visible';
     timerInterval = setInterval(updateTimer, 500);
     onActiveChange?.(true);
@@ -142,6 +144,5 @@ export function renderRecorder({ root, getCurrentStory, getActiveStudent, onSave
   startBtn.addEventListener('click', start);
   stopBtn.addEventListener('click', stop);
 
-  // Clean up sticky bar if component is ever re-rendered
   root._cleanupStickyBar = () => stickyBar.remove();
 }
