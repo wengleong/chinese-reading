@@ -1014,16 +1014,13 @@ button.danger {
   min-width: 3ch;
 }
 
-/* Desktop: inline button row in the reader toolbar above the story */
+/* Desktop: button row inside the recorder card, spanning its full width */
 .recorder-sticky-bar {
   display: flex;
   gap: 10px;
   padding: 0;
-  margin-top: 0;
-}
-
-.recorder-toolbar-btns {
-  margin-left: auto;
+  margin-top: 4px;
+  flex: 1 1 100%;
 }
 
 /* Mobile: fixed full-width bar at bottom, one button at a time */

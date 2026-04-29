@@ -45,7 +45,6 @@ const els = {
   highlightToggle: document.getElementById("highlight-toggle"),
   playback: document.getElementById("playback-controls"),
   recorder: document.getElementById("recorder"),
-  recorderBtns: document.getElementById("recorder-btns"),
   recordings: document.getElementById("recordings-list"),
   timer: document.getElementById("daily-timer"),
   settingsBtn: document.getElementById("settings-btn"),
@@ -97,7 +96,6 @@ renderPlaybackControls({
 
 renderRecorder({
   root: els.recorder,
-  toolbarRoot: els.recorderBtns,
   getCurrentStory: () => activeStory,
   getActiveStudent: () => getActiveStudent(),
   onSaved: () => renderRecordingsList({ root: els.recordings }),
