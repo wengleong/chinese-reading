@@ -2,9 +2,12 @@
 //
 // Tokens are grouped into sentence segments (breaking at 。！？) and each
 // segment is spoken as a single utterance for natural, flowing speech.
-// Per-character highlighting is driven by a timer using an estimated pace,
-// since SpeechSynthesisUtterance.onboundary is unreliable for zh-CN.
-// onstart is also unreliable on Safari — we use a 300ms fallback timer.
+// Highlighting uses a hybrid strategy:
+//   1. onboundary (Chrome/Firefox) snaps position to actual word boundaries.
+//   2. A timer fills in char-by-char between boundaries.
+//   3. Adaptive calibration measures actual ms/char from completed segments
+//      and adjusts the timer so it stays locked to the voice over time.
+// onstart fires ~80ms before audio on most engines, so we add a small delay.
 
 const synth = typeof window !== "undefined" ? window.speechSynthesis : null;
 
@@ -58,6 +61,11 @@ export function createPlayer({ tokens, onTokenStart, onEnd }) {
   let cancelled = false;
   let highlightTimer = null;
 
+  // Adaptive calibration: actual ms-per-char (rate-normalised) measured from
+  // completed segments. Starts conservative (slightly > 250ms) so highlights
+  // don't race ahead of the audio on the first segment.
+  let calibratedMsPerChar = 265;
+
   function clearHighlightTimer() {
     if (highlightTimer !== null) {
       clearTimeout(highlightTimer);
@@ -76,13 +84,18 @@ export function createPlayer({ tokens, onTokenStart, onEnd }) {
     const seg = segments[segIndex];
 
     // Build spoken text: Chinese chars + standard punctuation only.
-    // Exotic chars (curly quotes ""'' 《》—…) are stripped to avoid TTS reading
-    // them as symbol names. Standard punctuation (，。！？：；) creates natural pauses.
     const KEEP = /[\u4e00-\u9fff。，！？：；]/;
     const text = seg.map(({ token }) => KEEP.test(token.char) ? token.char : "").join("");
 
-    // At rate=1.0, zh-CN TTS is roughly 4 chars/sec → 250ms/char.
-    const msPerChar = 250 / rate;
+    // Count speakable chars (non-punctuation) for calibration.
+    const speakableCount = seg.filter(s => s.token.pinyin).length;
+
+    // Precompute stripped-text position → segment token index for onboundary.
+    const charPosToTokenIdx = new Map();
+    let textPos = 0;
+    for (let i = 0; i < seg.length; i++) {
+      if (KEEP.test(seg[i].token.char)) { charPosToTokenIdx.set(textPos, i); textPos++; }
+    }
 
     const u = new SpeechSynthesisUtterance(text);
     u.lang = "zh-CN";
@@ -93,6 +106,10 @@ export function createPlayer({ tokens, onTokenStart, onEnd }) {
     let charIdx = 0;
     let onStartFired = false;
     let startFallback = null;
+    let highlightStartMs = 0;
+
+    const SENT_END = new Set(['。', '！', '？']);
+    const CLAUSE    = new Set(['，', '；', '：']);
 
     function advanceHighlight() {
       if (cancelled || charIdx >= seg.length) return;
@@ -100,37 +117,61 @@ export function createPlayer({ tokens, onTokenStart, onEnd }) {
       onTokenStart && onTokenStart(globalIdx, token);
       charIdx++;
       if (charIdx < seg.length) {
-        // After punctuation the TTS pauses naturally — add extra delay so the
-        // highlight doesn't race ahead. Commas/colons ~300ms, keep proportional to rate.
-        const punctPause = !token.pinyin ? Math.round(280 / rate) : 0;
-        highlightTimer = setTimeout(advanceHighlight, msPerChar + punctPause);
+        // Sentence-ending punctuation pauses longer than clause punctuation.
+        let punctPause = 0;
+        if (SENT_END.has(token.char))  punctPause = Math.round(400 / rate);
+        else if (CLAUSE.has(token.char)) punctPause = Math.round(200 / rate);
+        highlightTimer = setTimeout(advanceHighlight, (calibratedMsPerChar / rate) + punctPause);
       }
     }
 
     function beginHighlight() {
       charIdx = 0;
+      highlightStartMs = Date.now();
       advanceHighlight();
     }
 
-    u.onstart = () => {
-      onStartFired = true;
-      if (startFallback) {
-        clearTimeout(startFallback);
-        startFallback = null;
+    // onboundary fires on Chrome/Firefox at word boundaries.
+    // Use it to snap the highlight position and reset the timer.
+    u.onboundary = (e) => {
+      if (cancelled || e.name !== 'word') return;
+      const mappedIdx = charPosToTokenIdx.get(e.charIndex);
+      if (mappedIdx !== undefined && mappedIdx >= charIdx) {
+        clearHighlightTimer();
+        charIdx = mappedIdx;
+        const { token, globalIdx } = seg[charIdx];
+        onTokenStart && onTokenStart(globalIdx, token);
+        charIdx++;
+        if (charIdx < seg.length) {
+          highlightTimer = setTimeout(advanceHighlight, calibratedMsPerChar / rate);
+        }
       }
-      if (cancelled) return;
-      beginHighlight();
     };
 
-    // Safari and some mobile browsers don't reliably fire onstart
+    u.onstart = () => {
+      onStartFired = true;
+      if (startFallback) { clearTimeout(startFallback); startFallback = null; }
+      if (cancelled) return;
+      // Audio output lags ~80ms after onstart fires on most engines.
+      setTimeout(beginHighlight, 80);
+    };
+
+    // Safari / mobile fallback — onstart fires late or not at all.
     startFallback = setTimeout(() => {
       if (!onStartFired && !cancelled && playing) beginHighlight();
-    }, 300);
+    }, 320);
 
     u.onend = () => {
       if (startFallback) { clearTimeout(startFallback); startFallback = null; }
       clearHighlightTimer();
       if (cancelled) return;
+      // Calibrate: update ms-per-char estimate from this segment's actual duration.
+      if (speakableCount >= 3 && highlightStartMs > 0) {
+        const actualMs = Date.now() - highlightStartMs;
+        const measured = (actualMs / speakableCount) * rate; // rate-normalise
+        // Exponential moving average — weight recent segments 60%.
+        calibratedMsPerChar = calibratedMsPerChar * 0.4 + measured * 0.6;
+      }
       segIndex++;
       speakSegment();
     };
