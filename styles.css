@@ -900,55 +900,198 @@ button.danger {
   padding: 6px 12px;
 }
 
-/* ---- Daily timer ---- */
-.daily-timer {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 14px;
+/* ---- Story picker level tabs ---- */
+.picker-level-tabs {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
 }
 
-.timer-ring {
-  --pct: 0;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: conic-gradient(
-    var(--accent) calc(var(--pct) * 1%),
-    var(--border) 0
-  );
+.picker-level-tab {
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 120ms, color 120ms, border-color 120ms;
+  min-height: unset;
+}
+
+.picker-level-tab:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.picker-level-tab.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+/* ---- Story tick (completed indicator) ---- */
+.story-tick { font-size: 14px; margin-right: 2px; }
+
+/* ---- Score categories ---- */
+.score-categories {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--bg);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.score-cat-row {
+  display: grid;
+  grid-template-columns: 120px 1fr 32px;
+  align-items: center;
+  gap: 8px;
+}
+
+.score-cat-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.score-cat-bar-wrap {
+  height: 8px;
+  background: var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.score-cat-bar {
+  height: 100%;
+  width: 0;
+  border-radius: 999px;
+  transition: width 0.8s cubic-bezier(.17,.67,.29,1.05);
+}
+
+.score-cat-val {
+  font-size: 12px;
+  font-weight: 700;
+  text-align: right;
+  color: var(--ink);
+}
+
+/* ---- Score feedback ---- */
+.score-feedback-highlight {
+  margin: 0 0 6px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+/* ---- Badge celebration overlay ---- */
+.badge-celebration-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: rgba(0, 0, 0, 0.6);
   display: grid;
   place-items: center;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--ink);
-  position: relative;
+  animation: cel-fade-in 0.3s ease;
 }
 
-.timer-ring::after {
-  content: "";
-  position: absolute;
-  inset: 4px;
-  border-radius: 50%;
+.badge-celebration-overlay.badge-cel-out {
+  animation: cel-fade-out 0.4s ease forwards;
+}
+
+@keyframes cel-fade-in  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes cel-fade-out { from { opacity: 1; } to { opacity: 0; } }
+
+.badge-cel-card {
   background: var(--surface);
-}
-
-.timer-ring span {
+  border-radius: 24px;
+  padding: 36px 32px 28px;
+  text-align: center;
+  max-width: 320px;
+  width: 90%;
   position: relative;
-  z-index: 1;
+  animation: cel-spring-in 0.5s cubic-bezier(.17,.67,.29,1.4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 16px 60px rgba(0,0,0,0.3);
 }
 
-.timer-ring.done {
-  background: var(--good);
+@keyframes cel-spring-in {
+  0%   { transform: scale(0.3); opacity: 0; }
+  70%  { transform: scale(1.08); }
+  100% { transform: scale(1);   opacity: 1; }
 }
 
-.streak-badge {
-  background: var(--accent-soft);
-  color: var(--accent);
-  border-radius: 999px;
-  padding: 4px 10px;
-  font-weight: 700;
+.badge-cel-sparkles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  border-radius: 24px;
+}
+
+.badge-sparkle {
+  position: absolute;
+  font-size: 22px;
+  top: 50%;
+  left: 50%;
+  animation: sparkle-orbit 2s linear infinite;
+  animation-delay: calc(var(--i) * 0.25s);
+  transform-origin: 0 0;
+}
+
+@keyframes sparkle-orbit {
+  0%   { transform: rotate(calc(var(--i) * 45deg)) translateX(90px) scale(0.6); opacity: 0.8; }
+  50%  { opacity: 1; }
+  100% { transform: rotate(calc(var(--i) * 45deg + 360deg)) translateX(90px) scale(0.6); opacity: 0.8; }
+}
+
+.badge-cel-mascot {
+  font-size: 52px;
+  animation: mascot-bounce 0.6s 0.3s cubic-bezier(.17,.67,.29,1.6) both;
+}
+
+@keyframes mascot-bounce {
+  0%   { transform: scale(0) rotate(-20deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+.badge-cel-icon {
+  font-size: 40px;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 3px solid;
+  display: grid;
+  place-items: center;
+  animation: cel-spring-in 0.4s 0.15s both;
+}
+
+.badge-cel-title {
   font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.badge-cel-name {
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.badge-cel-btn {
+  margin-top: 6px;
+  font-size: 15px;
+  padding: 12px 28px;
+  animation: slide-up 0.3s 0.5s both;
 }
 
 /* ---- Family onboarding ---- */

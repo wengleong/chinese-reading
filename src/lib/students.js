@@ -107,6 +107,12 @@ export function hasPassedStoryBefore(studentId, storyId) {
   return getProgress(studentId).sessions.some(s => s.storyId === storyId && s.passed && s.date !== today);
 }
 
+// Returns a Set of storyIds the student has ever passed (any day).
+export function getPassedStoryIds(studentId) {
+  const sessions = getProgress(studentId).sessions;
+  return new Set(sessions.filter(s => s.passed).map(s => s.storyId));
+}
+
 // ---- Dashboard analytics ----
 
 // Best (longest) streak ever achieved.
@@ -142,12 +148,16 @@ export function getActivityDays(studentId, n = 30) {
   return days;
 }
 
-// ---- Transcript scoring (LCS-based F1) ----
+// ---- Transcript scoring (LCS-based) ----
 
+// Returns { accuracy, coverage, overall } instead of a bare number.
+// accuracy  = F1 of LCS match (how correct the characters were)
+// coverage  = recall  — what fraction of the story was spoken
+// overall   = weighted score used for pass/fail (60% accuracy + 40% coverage)
 export function scoreTranscript(storyTokens, transcript) {
   const storyText = storyTokens.filter(t => t.pinyin).map(t => t.char).join("");
   const spoken = (transcript || "").replace(/[^\u4e00-\u9fff]/g, "");
-  if (!spoken || !storyText.length) return 0;
+  if (!spoken || !storyText.length) return { accuracy: 0, coverage: 0, overall: 0 };
   const m = storyText.length, n = spoken.length;
   let prev = new Array(n + 1).fill(0);
   for (let i = 1; i <= m; i++) {
@@ -158,10 +168,40 @@ export function scoreTranscript(storyTokens, transcript) {
     prev = curr;
   }
   const lcs = prev[n];
-  const coverage = lcs / m;
+  const coverageRaw = lcs / m;
   const precision = lcs / n;
-  const f1 = coverage + precision > 0 ? 2 * coverage * precision / (coverage + precision) : 0;
-  return Math.round(f1 * 100);
+  const f1 = coverageRaw + precision > 0 ? 2 * coverageRaw * precision / (coverageRaw + precision) : 0;
+  const accuracy = Math.round(f1 * 100);
+  const coverage = Math.round(coverageRaw * 100);
+  const overall = Math.round(accuracy * 0.6 + coverage * 0.4);
+  return { accuracy, coverage, overall };
+}
+
+// Compute a fluency score (0-100) from speech recognition quality signals.
+// avgConfidence: mean SpeechRecognition confidence (0-1, 0 = unavailable)
+// timingGaps:    ms between consecutive recognition results (pacing proxy)
+export function computeFluency({ avgConfidence, timingGaps, durationMs, storyLength }) {
+  let score = 50; // baseline when no signal available
+
+  // Confidence signal (0-1 → 0-50 contribution)
+  if (avgConfidence > 0) score = avgConfidence * 50;
+
+  // Timing regularity: low variance in gaps = smooth reading
+  if (timingGaps && timingGaps.length >= 2) {
+    const mean = timingGaps.reduce((a, b) => a + b, 0) / timingGaps.length;
+    const variance = timingGaps.reduce((a, b) => a + (b - mean) ** 2, 0) / timingGaps.length;
+    const cv = mean > 0 ? Math.sqrt(variance) / mean : 1; // coefficient of variation
+    const timingScore = Math.max(0, 1 - cv) * 50; // 0-50 contribution
+    score = (score + timingScore) / 2 * 2; // average both signals, keep 0-100
+  }
+
+  // Pace check: if reading was very fast (< 1s per 5 chars) it may be rushed
+  if (durationMs > 0 && storyLength > 0) {
+    const msPer5Chars = (durationMs / storyLength) * 5;
+    if (msPer5Chars < 600) score *= 0.85; // slight penalty for rushing
+  }
+
+  return Math.min(100, Math.max(0, Math.round(score)));
 }
 
 // ---- Points calculation ----

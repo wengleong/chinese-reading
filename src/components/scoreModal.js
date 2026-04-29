@@ -1,4 +1,4 @@
-// Post-recording score modal — shows AI score, points breakdown, and Claude feedback.
+// Post-recording score modal — 4 scoring categories, richer AI feedback, cute celebrations.
 
 import {
   addSession, calculatePoints,
@@ -10,14 +10,15 @@ import { isLoggedIn, generateViaApi } from '../lib/api.js';
 const API_KEY_STORAGE = "anthropicApiKey";
 
 const BADGES = [
-  { id: 'first_pass',  icon: '🌟', label: 'First Pass',     check: (p)    => p.sessions.filter(s => s.passed).length >= 1 },
-  { id: 'stories_5',  icon: '📚', label: '5 Stories',       check: (p)    => new Set(p.sessions.filter(s => s.passed).map(s => s.storyId)).size >= 5 },
-  { id: 'perfect',    icon: '💯', label: 'Perfect Score',   check: (p)    => p.sessions.some(s => s.score >= 100) },
-  { id: 'streak_7',   icon: '🔥', label: '7-Day Streak',    check: (p, k) => k >= 7 },
-  { id: 'streak_30',  icon: '🏆', label: '30-Day Streak',   check: (p, k) => k >= 30 },
-  { id: 'pts_100',    icon: '💎', label: '100 Points',       check: (p)    => p.totalPoints >= 100 },
-  { id: 'pts_500',    icon: '👑', label: '500 Points',       check: (p)    => p.totalPoints >= 500 },
-  { id: 'pts_1000',   icon: '🎯', label: '1000 Points',      check: (p)    => p.totalPoints >= 1000 },
+  { id: 'first_pass', icon: '🌟', label: 'First Pass',   mascot: '🐣', color: '#f59f00', check: (p)    => p.sessions.filter(s => s.passed).length >= 1 },
+  { id: 'stories_5',  icon: '📚', label: '5 Stories',    mascot: '🦉', color: '#1971c2', check: (p)    => new Set(p.sessions.filter(s => s.passed).map(s => s.storyId)).size >= 5 },
+  { id: 'stories_10', icon: '🎒', label: '10 Stories',   mascot: '🐨', color: '#2f9e44', check: (p)    => new Set(p.sessions.filter(s => s.passed).map(s => s.storyId)).size >= 10 },
+  { id: 'perfect',    icon: '💯', label: 'Perfect Score', mascot: '🌈', color: '#ae3ec9', check: (p)    => p.sessions.some(s => s.score >= 100) },
+  { id: 'streak_7',   icon: '🔥', label: '7-Day Streak', mascot: '🐯', color: '#e8590c', check: (p, k) => k >= 7 },
+  { id: 'streak_30',  icon: '🏆', label: '30-Day Streak', mascot: '🦁', color: '#e8590c', check: (p, k) => k >= 30 },
+  { id: 'pts_100',    icon: '💎', label: '100 Points',   mascot: '🐬', color: '#1971c2', check: (p)    => p.totalPoints >= 100 },
+  { id: 'pts_500',    icon: '👑', label: '500 Points',   mascot: '🦋', color: '#ae3ec9', check: (p)    => p.totalPoints >= 500 },
+  { id: 'pts_1000',   icon: '🎯', label: '1000 Points',  mascot: '🐉', color: '#e03131', check: (p)    => p.totalPoints >= 1000 },
 ];
 
 function getEarnedBadgeIds(progress, streak) {
@@ -34,31 +35,101 @@ function animateCount(el, to, duration = 900) {
   requestAnimationFrame(tick);
 }
 
-function spawnConfetti(container) {
-  const GLYPHS = ['🎉', '⭐', '✨', '🌟', '💫', '🎊', '🏅'];
-  for (let i = 0; i < 22; i++) {
+function animateBar(el, pct, delay = 0) {
+  setTimeout(() => {
+    el.style.width = `${pct}%`;
+  }, delay);
+}
+
+// ---- Cute confetti ----
+function spawnConfetti(container, score) {
+  const GREAT  = ['🌸', '🎀', '⭐', '✨', '🌟', '💫', '🎊', '🎉', '🍀', '🦋'];
+  const PASS   = ['🎉', '⭐', '✨', '🌟', '💫', '🎊'];
+  const glyphs = score >= 80 ? GREAT : PASS;
+  const count  = score >= 90 ? 36 : score >= 80 ? 28 : 18;
+  for (let i = 0; i < count; i++) {
     const p = document.createElement('span');
     p.className = 'confetti-particle';
-    p.textContent = GLYPHS[i % GLYPHS.length];
-    const angle = (i / 22) * 360;
-    const dist = 120 + Math.random() * 120;
-    p.style.cssText = `--dx:${Math.round(Math.cos(angle * Math.PI / 180) * dist)}px;--dy:${Math.round(Math.sin(angle * Math.PI / 180) * dist - 80)}px;animation-delay:${(i * 0.03).toFixed(2)}s`;
+    p.textContent = glyphs[i % glyphs.length];
+    const angle = (i / count) * 360 + (Math.random() * 20 - 10);
+    const dist  = 100 + Math.random() * 160;
+    const size  = 20 + Math.floor(Math.random() * 14);
+    p.style.cssText = [
+      `--dx:${Math.round(Math.cos(angle * Math.PI / 180) * dist)}px`,
+      `--dy:${Math.round(Math.sin(angle * Math.PI / 180) * dist - 100)}px`,
+      `font-size:${size}px`,
+      `animation-delay:${(i * 0.025).toFixed(2)}s`,
+      `animation-duration:${(1.2 + Math.random() * 0.6).toFixed(2)}s`,
+    ].join(';');
     container.appendChild(p);
   }
 }
 
-async function getAiFeedback(storyTitle, storyText, transcript, score) {
+// ---- Badge achievement overlay (shown after score modal appears) ----
+function showBadgeCelebration(badges) {
+  if (!badges.length) return;
+  let idx = 0;
+
+  function showOne(badge) {
+    const el = document.createElement('div');
+    el.className = 'badge-celebration-overlay';
+    el.innerHTML = `
+      <div class="badge-cel-card">
+        <div class="badge-cel-sparkles" aria-hidden="true"></div>
+        <div class="badge-cel-mascot">${badge.mascot}</div>
+        <div class="badge-cel-icon" style="background:${badge.color}20;border-color:${badge.color}">${badge.icon}</div>
+        <div class="badge-cel-title">Achievement Unlocked!</div>
+        <div class="badge-cel-name" style="color:${badge.color}">${badge.label}</div>
+        <button class="badge-cel-btn primary" style="background:${badge.color}">Awesome! 🎉</button>
+      </div>`;
+    document.body.appendChild(el);
+
+    // Spawn orbiting sparkles
+    const sparkleStage = el.querySelector('.badge-cel-sparkles');
+    const SPARKS = ['✨','⭐','🌟','💫','🎀','🌸'];
+    for (let i = 0; i < 8; i++) {
+      const s = document.createElement('span');
+      s.className = 'badge-sparkle';
+      s.textContent = SPARKS[i % SPARKS.length];
+      s.style.setProperty('--i', String(i));
+      sparkleStage.appendChild(s);
+    }
+
+    // Auto-dismiss after 4s, or on button click
+    const dismiss = () => {
+      el.classList.add('badge-cel-out');
+      setTimeout(() => { el.remove(); idx++; if (idx < badges.length) showOne(badges[idx]); }, 400);
+    };
+    el.querySelector('.badge-cel-btn').addEventListener('click', dismiss);
+    setTimeout(dismiss, 4000);
+  }
+
+  // Slight delay so the score modal confetti finishes first
+  setTimeout(() => showOne(badges[0]), 1800);
+}
+
+// ---- AI feedback (richer prompt) ----
+async function getAiFeedback(storyTitle, storyText, transcript, scoreResult, fluency) {
+  const { accuracy, coverage } = scoreResult;
   const prompt = `A Singapore primary school student just read this Chinese story aloud.
 
-Story: ${storyTitle}
+Story: "${storyTitle}"
 Story text: ${storyText}
-Speech recognition transcript: ${transcript || "(not captured — microphone may not be supported)"}
-Computed accuracy: ${score}/100
+Speech recognition transcript: ${transcript || "(not captured)"}
+Computed scores — Accuracy: ${accuracy}/100, Coverage: ${coverage}/100, Fluency: ${fluency}/100
 
-Write a SHORT, warm assessment for a young student. Return JSON only — no code fences:
-{"feedback": "1-2 encouraging sentences in English", "tip": "one short, specific improvement tip or empty string if score >= 85"}`;
+You are a warm, encouraging Chinese reading teacher for young students.
+Return JSON only (no code fences):
+{
+  "highlight": "one thing they did well, 1 sentence, in English",
+  "feedback": "overall encouraging comment, 1-2 sentences, in English",
+  "accuracy_tip": "specific tip to improve pronunciation/accuracy, or empty string if accuracy >= 80",
+  "coverage_tip": "tip if they skipped parts of the story, or empty string if coverage >= 80",
+  "fluency_tip": "tip about reading pace/flow, or empty string if fluency >= 75",
+  "expression_score": a number 0-100 estimating reading expression and confidence based on coverage and fluency
+}`;
   try {
-    const body = { model: 'claude-haiku-4-5-20251001', max_tokens: 220, messages: [{ role: 'user', content: prompt }] };
+    const body = { model: 'claude-haiku-4-5-20251001', max_tokens: 350, messages: [{ role: 'user', content: prompt }] };
     let data;
     if (isLoggedIn()) {
       data = await generateViaApi(body);
@@ -79,11 +150,15 @@ Write a SHORT, warm assessment for a young student. Return JSON only — no code
 }
 
 function todayIso() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Singapore" });
 }
 
-export function openScoreModal({ student, story, score, transcript, sessionId, onRetry, onDone }) {
+// scoreResult = { accuracy, coverage, overall }
+// fluency     = 0-100 from computeFluency()
+export function openScoreModal({ student, story, scoreResult, fluency = 50, transcript, sessionId, onRetry, onDone }) {
+  const score = scoreResult?.overall ?? scoreResult ?? 0; // backward-compat if bare number passed
+  const accuracy  = scoreResult?.accuracy  ?? score;
+  const coverage  = scoreResult?.coverage  ?? score;
   const passed = score >= 60;
   const today = todayIso();
 
@@ -112,6 +187,9 @@ export function openScoreModal({ student, story, score, transcript, sessionId, o
   const label = score >= 90 ? '优秀 Excellent! ⭐' : score >= 80 ? '很好 Great Job! 🎊' : score >= 60 ? '及格 Passed ✓' : '继续努力 Keep Trying! 💪';
   const C = (2 * Math.PI * 50).toFixed(1);
 
+  // Category bar colour helper
+  function barColor(v) { return v >= 80 ? 'var(--good)' : v >= 60 ? 'var(--accent)' : 'var(--danger)'; }
+
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
   overlay.innerHTML = `
@@ -130,6 +208,30 @@ export function openScoreModal({ student, story, score, transcript, sessionId, o
       </div>
       <div class="score-label" style="color:${ringColor}">${label}</div>
       <div class="score-byline">${story.title} · ${student.name}</div>
+
+      <div class="score-categories">
+        <div class="score-cat-row">
+          <span class="score-cat-label">准确性 Accuracy</span>
+          <div class="score-cat-bar-wrap"><div class="score-cat-bar" id="bar-acc" style="background:${barColor(accuracy)}"></div></div>
+          <span class="score-cat-val">${accuracy}</span>
+        </div>
+        <div class="score-cat-row">
+          <span class="score-cat-label">完整性 Coverage</span>
+          <div class="score-cat-bar-wrap"><div class="score-cat-bar" id="bar-cov" style="background:${barColor(coverage)}"></div></div>
+          <span class="score-cat-val">${coverage}</span>
+        </div>
+        <div class="score-cat-row">
+          <span class="score-cat-label">流利度 Fluency</span>
+          <div class="score-cat-bar-wrap"><div class="score-cat-bar" id="bar-flu" style="background:${barColor(fluency)}"></div></div>
+          <span class="score-cat-val">${fluency}</span>
+        </div>
+        <div class="score-cat-row">
+          <span class="score-cat-label">表达力 Expression</span>
+          <div class="score-cat-bar-wrap"><div class="score-cat-bar" id="bar-exp" style="background:var(--muted)"></div></div>
+          <span class="score-cat-val" id="exp-val">…</span>
+        </div>
+      </div>
+
       ${passed ? `
         <div class="score-pass-block">
           <div class="score-pts-big">+<span id="score-pts">0</span> 💎</div>
@@ -140,16 +242,10 @@ export function openScoreModal({ student, story, score, transcript, sessionId, o
               </div>`).join('')}
           </div>
           ${streakDays > 0 ? `<div class="score-streak"><span class="streak-flame">🔥</span>${streakDays}-day streak!</div>` : ''}
-          ${newBadges.length ? `
-            <div class="score-badge-block">
-              <div class="score-badge-title">🏅 Badge Unlocked!</div>
-              ${newBadges.map(b => `<div class="score-badge-row"><span>${b.icon}</span><span>${b.label}</span></div>`).join('')}
-            </div>` : ''}
         </div>
       ` : `
         <div class="score-fail-block">
-          <p>Score at least <strong>60</strong> to complete today's reading.</p>
-          <p>Pass next time for a <strong>+25 perseverance bonus! 💪</strong></p>
+          <p>Score at least <strong>60</strong> to pass. You've got this! 💪</p>
         </div>
       `}
       <div class="score-feedback" id="score-feedback"><span class="score-feedback-loading">✨ Getting feedback…</span></div>
@@ -167,20 +263,47 @@ export function openScoreModal({ student, story, score, transcript, sessionId, o
     animateCount(overlay.querySelector('#score-num'), score);
     if (passed) {
       setTimeout(() => animateCount(overlay.querySelector('#score-pts'), pointsEarned), 800);
-      setTimeout(() => spawnConfetti(overlay.querySelector('#score-confetti')), 200);
+      setTimeout(() => spawnConfetti(overlay.querySelector('#score-confetti'), score), 200);
     }
+    // Animate category bars with stagger
+    setTimeout(() => animateBar(overlay.querySelector('#bar-acc'), accuracy), 300);
+    setTimeout(() => animateBar(overlay.querySelector('#bar-cov'), coverage), 450);
+    setTimeout(() => animateBar(overlay.querySelector('#bar-flu'), fluency), 600);
   }));
 
   function close() { overlay.remove(); }
   overlay.querySelector('#score-retry').addEventListener('click', () => { close(); onRetry?.(); });
   overlay.querySelector('#score-done').addEventListener('click', () => { close(); onDone?.(); });
 
+  if (newBadges.length) showBadgeCelebration(newBadges);
+
+  // Fetch AI feedback — updates Expression bar + tips
   const storyText = story.tokens.filter(t => t.pinyin).map(t => t.char).join('');
-  getAiFeedback(story.title, storyText, transcript, score).then(result => {
-    if (!overlay.isConnected) return;
-    const el = overlay.querySelector('#score-feedback');
-    el.innerHTML = result
-      ? `<p class="score-feedback-text">✨ ${result.feedback}</p>${result.tip ? `<p class="score-feedback-tip">💡 ${result.tip}</p>` : ''}`
-      : `<p class="score-feedback-text">${passed ? '🎉 Great job! Keep reading every day!' : '💪 Don\'t give up — practice makes perfect!'}</p>`;
-  });
+  getAiFeedback(story.title, storyText, transcript, scoreResult ?? { accuracy: score, coverage: score, overall: score }, fluency)
+    .then(result => {
+      if (!overlay.isConnected) return;
+      const feedbackEl = overlay.querySelector('#score-feedback');
+      const expVal = overlay.querySelector('#exp-val');
+      const expBar = overlay.querySelector('#bar-exp');
+
+      if (result) {
+        const exp = Math.max(0, Math.min(100, result.expression_score ?? fluency));
+        if (expVal) expVal.textContent = exp;
+        if (expBar) {
+          expBar.style.background = barColor(exp);
+          animateBar(expBar, exp, 0);
+        }
+        const tips = [result.accuracy_tip, result.coverage_tip, result.fluency_tip].filter(Boolean);
+        feedbackEl.innerHTML = `
+          ${result.highlight ? `<p class="score-feedback-highlight">🌟 ${result.highlight}</p>` : ''}
+          <p class="score-feedback-text">✨ ${result.feedback}</p>
+          ${tips.map(t => `<p class="score-feedback-tip">💡 ${t}</p>`).join('')}`;
+      } else {
+        if (expVal) expVal.textContent = fluency;
+        if (expBar) { expBar.style.background = barColor(fluency); animateBar(expBar, fluency, 0); }
+        feedbackEl.innerHTML = `<p class="score-feedback-text">${passed
+          ? '🎉 Great reading! Keep practising every day!'
+          : '💪 Almost there — try again and you\'ll get it!'}</p>`;
+      }
+    });
 }

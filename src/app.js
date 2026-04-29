@@ -1,13 +1,12 @@
 import { loadIndex, loadStory } from "./lib/stories.js";
 import { createPlayer, isSupported as ttsSupported } from "./lib/speech.js";
-import { getActiveStudent, scoreTranscript } from "./lib/students.js";
+import { getActiveStudent, getActiveStudentId, scoreTranscript, computeFluency } from "./lib/students.js";
 import { renderStoryPicker } from "./components/storyPicker.js";
 import { renderStoryReader } from "./components/storyReader.js";
 import { renderPinyinToggle } from "./components/pinyinToggle.js";
 import { renderPlaybackControls } from "./components/playbackControls.js";
 import { renderRecorder } from "./components/recorder.js";
 import { renderRecordingsList } from "./components/recordingsList.js";
-import { renderDailyTimer } from "./components/dailyTimer.js";
 import { renderStudentPanel } from "./components/studentPanel.js";
 import { openScoreModal } from "./components/scoreModal.js";
 import { renderSettingsButton } from "./components/settings.js";
@@ -46,7 +45,6 @@ const els = {
   playback: document.getElementById("playback-controls"),
   recorder: document.getElementById("recorder"),
   recordings: document.getElementById("recordings-list"),
-  timer: document.getElementById("daily-timer"),
   settingsBtn: document.getElementById("settings-btn"),
 };
 
@@ -57,13 +55,23 @@ let player = null;
 let rate = 0.9;
 let highlightEnabled = true;
 
-const timerCtl = renderDailyTimer({ root: els.timer });
 renderSettingsButton({ root: els.settingsBtn });
 
-// Student panel — refresh on student change to update stats display
+function refreshPicker(activeId = activeStory?.id ?? null) {
+  if (!stories.length) return;
+  renderStoryPicker({
+    root: els.picker,
+    stories,
+    activeId,
+    activeStudentId: getActiveStudentId(),
+    onPick: pickStory,
+  });
+}
+
+// Student panel — refresh on student change; also re-render picker to update ticks.
 let studentPanelCtl = renderStudentPanel({
   root: els.studentPanel,
-  onStudentChange: () => studentPanelCtl?.refresh(),
+  onStudentChange: () => { studentPanelCtl?.refresh(); refreshPicker(); },
 });
 
 renderPinyinToggle({ root: els.pinyinToggle, readerRoot: els.reader });
@@ -88,8 +96,8 @@ renderPinyinToggle({ root: els.pinyinToggle, readerRoot: els.reader });
 
 renderPlaybackControls({
   root: els.playback,
-  onPlay: () => { timerCtl.setActive(true); player?.play(); },
-  onPause: () => { player?.pause(); timerCtl.setActive(false); },
+  onPlay: () => player?.play(),
+  onPause: () => player?.pause(),
   onRestart: () => { player?.restart(); readerCtl?.clearActive(); },
   onRateChange: (v) => { rate = v; player?.setRate(v); },
 });
@@ -99,16 +107,18 @@ renderRecorder({
   getCurrentStory: () => activeStory,
   getActiveStudent: () => getActiveStudent(),
   onSaved: () => renderRecordingsList({ root: els.recordings }),
-  onActiveChange: (active) => timerCtl.setActive(active),
+  onActiveChange: () => {},
   onStart: () => els.reader.scrollIntoView({ behavior: 'smooth', block: 'start' }),
-  onComplete: ({ transcript, story, sessionId }) => {
+  onComplete: ({ transcript, story, sessionId, avgConfidence, timingGaps, durationMs }) => {
     const student = getActiveStudent();
     if (!student || !story) return;
-    const score = scoreTranscript(story.tokens, transcript);
+    const scoreResult = scoreTranscript(story.tokens, transcript);
+    const storyLength = story.tokens.filter(t => t.pinyin).length;
+    const fluency = computeFluency({ avgConfidence, timingGaps, durationMs, storyLength });
     openScoreModal({
-      student, story, score, transcript, sessionId,
+      student, story, scoreResult, fluency, transcript, sessionId,
       onRetry: () => {},
-      onDone: () => studentPanelCtl?.refresh(),
+      onDone: () => { studentPanelCtl?.refresh(); refreshPicker(); },
     });
     studentPanelCtl?.refresh();
   },
@@ -134,7 +144,7 @@ renderRecordingsList({ root: els.recordings });
     els.picker.innerHTML = `<p class="privacy-note">Failed to load stories: ${err.message}</p>`;
     return;
   }
-  renderStoryPicker({ root: els.picker, stories, activeId: null, onPick: pickStory });
+  refreshPicker(null);
 
   if (!ttsSupported()) {
     const warn = document.createElement("p");
@@ -156,8 +166,8 @@ async function pickStory(id) {
   player = createPlayer({
     tokens: activeStory.tokens,
     onTokenStart: (i) => { if (highlightEnabled) readerCtl.setActiveIndex(i); },
-    onEnd: () => { readerCtl.clearActive(); timerCtl.setActive(false); },
+    onEnd: () => readerCtl.clearActive(),
   });
   player.setRate(rate);
-  renderStoryPicker({ root: els.picker, stories, activeId: id, onPick: pickStory });
+  refreshPicker(id);
 }

@@ -56,6 +56,8 @@ export function renderRecorder({ root, getCurrentStory, getActiveStudent, onSave
   let mediaRecorder = null, chunks = [], startedAt = 0, mimeType = '';
   let recognition = null, transcript = '';
   let timerInterval = null;
+  // Speech quality signals for richer scoring
+  let confidenceSum = 0, confidenceCount = 0, lastResultMs = 0, timingGaps = [];
 
   function updateTimer() {
     const secs = Math.floor((Date.now() - startedAt) / 1000);
@@ -80,15 +82,31 @@ export function renderRecorder({ root, getCurrentStory, getActiveStudent, onSave
       : new MediaRecorder(stream);
 
     transcript = '';
+    confidenceSum = 0; confidenceCount = 0; lastResultMs = 0; timingGaps = [];
     if (SR) {
       try {
         recognition = new SR();
         recognition.lang = 'zh-CN';
         recognition.continuous = true;
         recognition.interimResults = false;
+        recognition.maxAlternatives = 3;
         recognition.onresult = (e) => {
+          const now = Date.now();
           for (let i = e.resultIndex; i < e.results.length; i++) {
-            if (e.results[i].isFinal) transcript += e.results[i][0].transcript;
+            if (!e.results[i].isFinal) continue;
+            // Pick the alternative with highest confidence
+            let bestText = e.results[i][0].transcript;
+            let bestConf = e.results[i][0].confidence || 0;
+            for (let j = 1; j < e.results[i].length; j++) {
+              if ((e.results[i][j].confidence || 0) > bestConf) {
+                bestConf = e.results[i][j].confidence;
+                bestText = e.results[i][j].transcript;
+              }
+            }
+            transcript += bestText;
+            if (bestConf > 0) { confidenceSum += bestConf; confidenceCount++; }
+            if (lastResultMs > 0) timingGaps.push(now - lastResultMs);
+            lastResultMs = now;
           }
         };
         recognition.onerror = () => {};
@@ -124,7 +142,8 @@ export function renderRecorder({ root, getCurrentStory, getActiveStudent, onSave
       startBtn.disabled = false; stopBtn.disabled = true;
       stickyBar.classList.remove('is-recording');
       onActiveChange?.(false);
-      onComplete?.({ transcript, story, sessionId });
+      const avgConfidence = confidenceCount > 0 ? confidenceSum / confidenceCount : 0;
+      onComplete?.({ transcript, story, sessionId, avgConfidence, timingGaps, durationMs });
     };
 
     mediaRecorder.start();
