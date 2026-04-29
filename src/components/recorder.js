@@ -12,7 +12,7 @@ function pickMimeType() {
   return '';
 }
 
-export function renderRecorder({ root, toolbarRoot, getCurrentStory, getActiveStudent, onSaved, onActiveChange, onComplete, onStart }) {
+export function renderRecorder({ root, getCurrentStory, getActiveStudent, onSaved, onActiveChange, onComplete, onStart }) {
   root.innerHTML = '';
 
   const card = document.createElement('div');
@@ -29,14 +29,9 @@ export function renderRecorder({ root, toolbarRoot, getCurrentStory, getActiveSt
 
   const note = document.createElement('p');
   note.className = 'privacy-note';
-  note.textContent = 'Audio stays on this device. Tap Record, read aloud, then tap Stop.';
+  note.textContent = 'Tap Record, read aloud, then Stop to get your score.';
 
-  card.appendChild(indicator);
-  card.appendChild(timer);
-  card.appendChild(note);
-  root.appendChild(card);
-
-  // Sticky bar with Start / Stop buttons (mobile: fixed at bottom; desktop: inline)
+  // Sticky bar with Start / Stop buttons (mobile: fixed at bottom; desktop: inside card)
   const stickyBar = document.createElement('div');
   stickyBar.className = 'recorder-sticky-bar';
 
@@ -51,9 +46,12 @@ export function renderRecorder({ root, toolbarRoot, getCurrentStory, getActiveSt
 
   stickyBar.appendChild(startBtn);
   stickyBar.appendChild(stopBtn);
-  // On desktop the buttons live in the toolbar above the story; on mobile
-  // the bar is position:fixed so DOM location doesn't matter visually.
-  (toolbarRoot || root).appendChild(stickyBar);
+
+  card.appendChild(indicator);
+  card.appendChild(timer);
+  card.appendChild(note);
+  card.appendChild(stickyBar);
+  root.appendChild(card);
 
   let mediaRecorder = null, chunks = [], startedAt = 0, mimeType = '';
   let recognition = null, transcript = '';
