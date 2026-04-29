@@ -120,7 +120,7 @@ renderRecordingsList({ root: els.recordings });
   if (!isLoggedIn()) {
     await new Promise(resolve => {
       showFamilyOnboarding({
-        onDone: async () => { await syncDown(); resolve(); },
+        onDone: async () => { await syncDown(); studentPanelCtl?.refresh(); resolve(); },
         onSkip: resolve,
       });
     });

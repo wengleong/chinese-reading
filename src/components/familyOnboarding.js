@@ -19,7 +19,7 @@ export function showFamilyOnboarding({ onDone, onSkip }) {
       <div id="panel-join">
         <p class="modal-hint">Enter your family code to restore progress on this device.</p>
         <input class="modal-input onboarding-code-input" id="ob-code"
-          type="text" placeholder="TIGER-2310"
+          type="text" placeholder="ANIMAL-1234"
           autocomplete="off" autocapitalize="characters" spellcheck="false" />
         <div class="modal-error" id="ob-join-err" hidden></div>
         <div class="modal-actions">

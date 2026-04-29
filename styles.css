@@ -970,6 +970,7 @@ button.danger {
 .onboarding-code-input {
   text-align: center; font-size: 22px; font-weight: 700;
   letter-spacing: 0.1em; text-transform: uppercase;
+  max-width: 240px; display: block; margin: 0 auto;
 }
 .onboarding-code-display {
   font-size: 36px; font-weight: 900; text-align: center;
