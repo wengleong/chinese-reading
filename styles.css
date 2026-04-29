@@ -527,6 +527,7 @@ body {
   display: flex;
   gap: 10px;
   justify-content: flex-end;
+  flex-wrap: wrap;
 }
 
 /* ---- Story picker ---- */
@@ -952,8 +953,21 @@ button.danger {
 
 /* ---- Family onboarding ---- */
 .onboarding-overlay { z-index: 200; }
-.onboarding-card { max-width: 400px; }
+.onboarding-card {
+  max-width: 400px;
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
+}
 .onboarding-logo { font-size: 48px; text-align: center; margin-bottom: 4px; }
+
+/* Panel content spacing — prevents input/button overlap */
+#panel-join,
+#panel-create,
+#panel-code {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
 
 .onboarding-tabs {
   display: flex;
@@ -1000,26 +1014,37 @@ button.danger {
   min-width: 3ch;
 }
 
-/* Sticky bar: inline on desktop, fixed at bottom on mobile */
+/* Sticky bar: centered floating pill on desktop, fixed full-width on mobile */
 .recorder-sticky-bar {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
   display: flex;
   gap: 10px;
-  padding: 10px 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+  padding: 10px 20px;
+  white-space: nowrap;
 }
-.recorder-sticky-bar button { flex: 1; }
 
 @media (max-width: 800px) {
   .recorder-sticky-bar {
-    position: fixed;
     bottom: 0;
-    bottom: env(safe-area-inset-bottom, 0px);
-    left: 0; right: 0;
-    z-index: 50;
-    background: var(--surface);
+    left: 0;
+    right: 0;
+    transform: none;
+    border-radius: 0;
+    border: none;
     border-top: 1px solid var(--border);
-    box-shadow: 0 -2px 10px rgba(0,0,0,0.10);
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.10);
     padding: 10px 16px;
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
   }
+  .recorder-sticky-bar button { flex: 1; }
   .app-main {
     padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
   }
