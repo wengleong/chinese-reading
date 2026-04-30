@@ -7,14 +7,10 @@ import {
 import { getPassedStoryIds } from "../lib/students.js";
 
 const LEVEL_ORDER = ["P1", "P2", "P3", "P4", "P5", "P6"];
-const PICKER_LEVEL_KEY = "cr-picker-level";
 
 export function renderStoryPicker({ root, stories, activeId, activeStudentId, onPick }) {
   root.innerHTML = "";
   const passedIds = activeStudentId ? getPassedStoryIds(activeStudentId) : new Set();
-
-  // Persist selected level across renders
-  let activeLevel = localStorage.getItem(PICKER_LEVEL_KEY) || "All";
 
   // Header
   const header = document.createElement("div");
@@ -37,27 +33,7 @@ export function renderStoryPicker({ root, stories, activeId, activeStudentId, on
   header.appendChild(genBtn);
   root.appendChild(header);
 
-  // Level filter tabs
   const levelsInData = LEVEL_ORDER.filter(l => stories.some(s => s.level === l));
-  const tabs = document.createElement("div");
-  tabs.className = "picker-level-tabs";
-
-  function renderTabs() {
-    tabs.innerHTML = "";
-    for (const lbl of ["All", ...levelsInData]) {
-      const btn = document.createElement("button");
-      btn.className = "picker-level-tab" + (lbl === activeLevel ? " active" : "");
-      btn.textContent = lbl;
-      btn.addEventListener("click", () => {
-        activeLevel = lbl;
-        localStorage.setItem(PICKER_LEVEL_KEY, lbl);
-        renderTabs();
-        renderList();
-      });
-      tabs.appendChild(btn);
-    }
-  }
-
   const listWrap = document.createElement("div");
 
   function renderList() {
@@ -67,17 +43,14 @@ export function renderStoryPicker({ root, stories, activeId, activeStudentId, on
       return acc;
     }, {});
 
-    const levelsToShow = activeLevel === "All" ? levelsInData : [activeLevel];
-    for (const level of levelsToShow) {
+    for (const level of levelsInData) {
       const list = byLevel[level];
       if (!list || list.length === 0) continue;
       const group = document.createElement("div");
       group.className = "level-group";
-      if (activeLevel === "All") {
-        const h3 = document.createElement("h3");
-        h3.textContent = level;
-        group.appendChild(h3);
-      }
+      const h3 = document.createElement("h3");
+      h3.textContent = level;
+      group.appendChild(h3);
       for (const story of list) {
         const btn = document.createElement("button");
         btn.className = "story-button";
@@ -126,8 +99,6 @@ export function renderStoryPicker({ root, stories, activeId, activeStudentId, on
     }
   }
 
-  renderTabs();
   renderList();
-  root.appendChild(tabs);
   root.appendChild(listWrap);
 }
