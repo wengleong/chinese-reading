@@ -23,10 +23,6 @@ export function renderRecorder({ root, getCurrentStory, getActiveStudent, onSave
   indicator.style.visibility = 'hidden';
   indicator.innerHTML = '<span class="dot"></span><span>录制中 REC</span>';
 
-  const timer = document.createElement('span');
-  timer.className = 'recording-timer';
-  timer.textContent = '0:00';
-
   const note = document.createElement('p');
   note.className = 'privacy-note';
   note.textContent = 'Tap Record, read aloud, then Stop to get your score.';
@@ -48,21 +44,14 @@ export function renderRecorder({ root, getCurrentStory, getActiveStudent, onSave
   stickyBar.appendChild(stopBtn);
 
   card.appendChild(indicator);
-  card.appendChild(timer);
   card.appendChild(note);
   card.appendChild(stickyBar);
   root.appendChild(card);
 
   let mediaRecorder = null, chunks = [], startedAt = 0, mimeType = '';
   let recognition = null, transcript = '';
-  let timerInterval = null;
   // Speech quality signals for richer scoring
   let confidenceSum = 0, confidenceCount = 0, lastResultMs = 0, timingGaps = [];
-
-  function updateTimer() {
-    const secs = Math.floor((Date.now() - startedAt) / 1000);
-    timer.textContent = `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
-  }
 
   async function start() {
     const story = getCurrentStory?.();
@@ -120,7 +109,6 @@ export function renderRecorder({ root, getCurrentStory, getActiveStudent, onSave
       try { recognition?.stop(); } catch {}
       recognition = null;
       stream.getTracks().forEach(t => t.stop());
-      clearInterval(timerInterval);
 
       const story = getCurrentStory?.();
       const student = getActiveStudent?.();
@@ -138,7 +126,6 @@ export function renderRecorder({ root, getCurrentStory, getActiveStudent, onSave
       } catch (err) { console.warn('Save failed:', err.message); }
 
       indicator.style.visibility = 'hidden';
-      timer.textContent = '0:00';
       startBtn.disabled = false; stopBtn.disabled = true;
       stickyBar.classList.remove('is-recording');
       onActiveChange?.(false);
@@ -151,7 +138,6 @@ export function renderRecorder({ root, getCurrentStory, getActiveStudent, onSave
     startBtn.disabled = true; stopBtn.disabled = false;
     stickyBar.classList.add('is-recording');
     indicator.style.visibility = 'visible';
-    timerInterval = setInterval(updateTimer, 500);
     onActiveChange?.(true);
     onStart?.();  // scroll story into view
   }
