@@ -28,7 +28,7 @@ router.post('/', async (req, res) => {
      values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
      on conflict (id) do nothing`,
     [id, studentId, req.familyId, storyId, storyTitle, date, score,
-     passed, pointsEarned ?? 0, transcript ?? '', completedAt ?? null]
+     passed, pointsEarned ?? 0, transcript ?? '', completedAt ? new Date(Number(completedAt)) : null]
   );
   res.json({ ok: true });
 });
