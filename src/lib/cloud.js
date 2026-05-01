@@ -48,10 +48,39 @@ export async function pullApiKey() {
   } catch { return null; }
 }
 
+// ---- Sync Up (push local data not yet in cloud — runs once per device after login) ----
+// Handles the case where sessions were recorded before joining a family.
+// Server uses ON CONFLICT DO NOTHING so re-pushing is safe.
+
+const SYNC_UP_DONE_KEY = 'cr-synced-up';
+
+async function syncUp() {
+  if (!isLoggedIn()) return;
+  if (localStorage.getItem(SYNC_UP_DONE_KEY)) return;
+  try {
+    const students = JSON.parse(localStorage.getItem('cr-students') || '[]');
+    const pushes = [];
+    for (const student of students) {
+      pushes.push(upsertStudent(student).catch(() => {}));
+      const progress = JSON.parse(
+        localStorage.getItem(`cr-progress-${student.id}`) || '{"sessions":[]}'
+      );
+      for (const session of (progress.sessions || [])) {
+        pushes.push(saveSession({ ...session, studentId: student.id }).catch(() => {}));
+      }
+    }
+    await Promise.allSettled(pushes);
+    localStorage.setItem(SYNC_UP_DONE_KEY, '1');
+  } catch {}
+}
+
 // ---- Sync Down (call on login) ----
 
 export async function syncDown() {
   if (!isLoggedIn()) return;
+
+  // Push any local data that was created before the user joined a family
+  await syncUp();
 
   // Students
   try {

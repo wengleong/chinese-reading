@@ -135,7 +135,8 @@ renderRecordingsList({ root: els.recordings });
       });
     });
   } else {
-    syncDown().catch(() => {});
+    await syncDown().catch(() => {});
+    studentPanelCtl?.refresh();
   }
 
   try {
