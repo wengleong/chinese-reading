@@ -150,4 +150,13 @@ export function renderRecorder({ root, getCurrentStory, getActiveStudent, onSave
   stopBtn.addEventListener('click', stop);
 
   root._cleanupStickyBar = () => stickyBar.remove();
+
+  return {
+    rearm() {
+      indicator.style.visibility = 'hidden';
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+      stickyBar.classList.remove('is-recording');
+    },
+  };
 }

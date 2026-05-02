@@ -338,5 +338,27 @@
     "estMinutes": 6,
     "tags": ["picture", "community"],
     "type": "picture"
-  }
+  },
+  { "id": "p1-challenge-shijian", "title": "时间管理", "level": "P1", "tags": ["challenge", "time-management"], "estMinutes": 3 },
+  { "id": "p1-past-qinlao", "title": "勤劳的小红", "level": "P1", "tags": ["past-years", "diligence"], "estMinutes": 3 },
+  { "id": "p1-pic-jiaoshi", "title": "快乐的课室", "level": "P1", "tags": ["picture", "education"], "estMinutes": 3, "type": "picture" },
+  { "id": "p2-challenge-wenhua", "title": "文化传承", "level": "P2", "tags": ["challenge", "culture"], "estMinutes": 3 },
+  { "id": "p2-past-chengshi", "title": "诚实的阿明", "level": "P2", "tags": ["past-years", "honesty"], "estMinutes": 3 },
+  { "id": "p2-pic-caochang", "title": "运动会的早晨", "level": "P2", "tags": ["picture", "sports"], "estMinutes": 3, "type": "picture" },
+  { "id": "p3-challenge-jiankang", "title": "健康生活", "level": "P3", "tags": ["challenge", "healthy"], "estMinutes": 4 },
+  { "id": "p3-past-yundong", "title": "运动场上", "level": "P3", "tags": ["past-years", "sports"], "estMinutes": 4 },
+  { "id": "p3-pic-tushuguan", "title": "图书馆里", "level": "P3", "tags": ["picture", "education"], "estMinutes": 3, "type": "picture" },
+  { "id": "p4-challenge-zeren", "title": "负责任的小华", "level": "P4", "tags": ["challenge", "responsibility"], "estMinutes": 4 },
+  { "id": "p4-past-keji", "title": "科技与生活", "level": "P4", "tags": ["past-years", "technology"], "estMinutes": 4 },
+  { "id": "p4-pic-yiyuan", "title": "医院里的关怀", "level": "P4", "tags": ["picture", "community"], "estMinutes": 4, "type": "picture" },
+  { "id": "p5-challenge-chuangxin", "title": "创新精神", "level": "P5", "tags": ["challenge", "innovation"], "estMinutes": 5 },
+  { "id": "p5-past-zhiyuan", "title": "义工服务", "level": "P5", "tags": ["past-years", "community"], "estMinutes": 5 },
+  { "id": "p5-past-jiaoyu", "title": "教育的价值", "level": "P5", "tags": ["past-years", "education"], "estMinutes": 5 },
+  { "id": "p5-pic-huanbao", "title": "环保回收站", "level": "P5", "tags": ["picture", "environment"], "estMinutes": 4, "type": "picture" },
+  { "id": "p5-pic-jiaotong", "title": "安全过马路", "level": "P5", "tags": ["picture", "safety"], "estMinutes": 4, "type": "picture" },
+  { "id": "p6-challenge-weilai", "title": "展望未来", "level": "P6", "tags": ["challenge", "future"], "estMinutes": 5 },
+  { "id": "p6-past-huanjing", "title": "爱护环境", "level": "P6", "tags": ["past-years", "environment"], "estMinutes": 5 },
+  { "id": "p6-past-minzu", "title": "种族和谐", "level": "P6", "tags": ["past-years", "harmony"], "estMinutes": 5 },
+  { "id": "p6-pic-zhiyuan", "title": "义工服务日", "level": "P6", "tags": ["picture", "community"], "estMinutes": 4, "type": "picture" },
+  { "id": "p6-pic-keji", "title": "科技改变生活", "level": "P6", "tags": ["picture", "technology"], "estMinutes": 4, "type": "picture" }
 ]

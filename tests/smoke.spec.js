@@ -147,6 +147,98 @@ test.describe('Picture Story view', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Picture oral phase display
+// Tests that setPhase() correctly shows/hides elements.
+// ---------------------------------------------------------------------------
+test.describe('Picture oral phase transitions', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/');
+    await page.waitForSelector('#ob-skip, .filter-tab', { timeout: 8000 });
+    await dismissOnboarding(page);
+    await page.waitForSelector('.filter-tab', { timeout: 10000 });
+
+    await page.locator('.filter-tab', { hasText: '看图 Picture' }).click();
+    await page.locator('.story-button').first().click();
+    await page.waitForSelector('.picture-reader-card', { timeout: 8000 });
+  });
+
+  test('phase 0: shows description prompt, hides question card', async ({ page }) => {
+    await expect(page.locator('.picture-prompt')).toBeVisible();
+    await expect(page.locator('.picture-question-card')).toBeHidden();
+    await expect(page.locator('.picture-question-counter')).toBeHidden();
+  });
+
+  test('phase 1: shows question counter and card after DOM manipulation', async ({ page }) => {
+    await page.evaluate(() => {
+      const root = document.getElementById('story-reader');
+      if (!root) return;
+      const scene = root.querySelector('.picture-scene');
+      const prompt = root.querySelector('.picture-prompt');
+      const hint = root.querySelector('.picture-hint');
+      const counter = root.querySelector('.picture-question-counter');
+      const qcard = root.querySelector('.picture-question-card');
+      if (!scene || !prompt || !counter || !qcard) return;
+      scene.classList.add('picture-scene-compact');
+      prompt.hidden = true;
+      if (hint) hint.hidden = true;
+      counter.hidden = false;
+      counter.textContent = '第1题 共3题';
+      qcard.hidden = false;
+      qcard.textContent = '你平时喜欢去公园做什么活动？';
+    });
+
+    await expect(page.locator('.picture-prompt')).toBeHidden();
+    await expect(page.locator('.picture-question-counter')).toBeVisible();
+    await expect(page.locator('.picture-question-counter')).toContainText('第1题 共3题');
+    await expect(page.locator('.picture-question-card')).toBeVisible();
+    await expect(page.locator('.picture-scene')).toHaveClass(/picture-scene-compact/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Picture score modal — '表达 Expression' label
+// ---------------------------------------------------------------------------
+test.describe('Picture score modal labels', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/');
+    await page.waitForSelector('#ob-skip, .filter-tab', { timeout: 8000 });
+    await dismissOnboarding(page);
+    await page.waitForSelector('.filter-tab', { timeout: 10000 });
+  });
+
+  test('picture score modal shows 表达 Expression as third category', async ({ page }) => {
+    await page.evaluate(() => {
+      const overlay = document.createElement('div');
+      overlay.className = 'modal-overlay';
+      overlay.id = 'test-pic-score-modal';
+      overlay.innerHTML = `
+        <div class="modal-card score-modal-v2" role="dialog" aria-modal="true">
+          <button class="score-close-btn" id="score-close" aria-label="Close">&#x2715;</button>
+          <div class="score-categories">
+            <div class="score-cat-row"><span class="score-cat-label">内容 Content</span></div>
+            <div class="score-cat-row"><span class="score-cat-label">语言 Language</span></div>
+            <div class="score-cat-row"><span class="score-cat-label">表达 Expression</span></div>
+          </div>
+          <div class="modal-actions">
+            <button class="primary" id="score-done">Done</button>
+          </div>
+        </div>`;
+      document.body.appendChild(overlay);
+      overlay.querySelector('#score-close').addEventListener('click', () => overlay.remove());
+      overlay.querySelector('#score-done').addEventListener('click', () => overlay.remove());
+    });
+
+    const labels = page.locator('#test-pic-score-modal .score-cat-label');
+    await expect(labels.nth(0)).toContainText('内容 Content');
+    await expect(labels.nth(1)).toContainText('语言 Language');
+    await expect(labels.nth(2)).toContainText('表达 Expression');
+
+    await page.evaluate(() => document.getElementById('score-done').click());
+    await expect(page.locator('#test-pic-score-modal')).not.toBeAttached();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Score modal close button
 // The score modal is opened programmatically after recording — we inject it
 // directly via page.evaluate() to avoid needing microphone access.

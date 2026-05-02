@@ -1,0 +1,580 @@
+{
+  "id": "p3-past-yundong",
+  "title": "运动场上",
+  "level": "P3",
+  "estMinutes": 4,
+  "tags": [
+    "past-years",
+    "sports"
+  ],
+  "tokens": [
+    {
+      "char": "学",
+      "pinyin": "xué"
+    },
+    {
+      "char": "校",
+      "pinyin": "xiào"
+    },
+    {
+      "char": "运",
+      "pinyin": "yùn"
+    },
+    {
+      "char": "动",
+      "pinyin": "dòng"
+    },
+    {
+      "char": "会",
+      "pinyin": "huì"
+    },
+    {
+      "char": "快",
+      "pinyin": "kuài"
+    },
+    {
+      "char": "到",
+      "pinyin": "dào"
+    },
+    {
+      "char": "了",
+      "pinyin": "liǎo"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "同",
+      "pinyin": "tóng"
+    },
+    {
+      "char": "学",
+      "pinyin": "xué"
+    },
+    {
+      "char": "们",
+      "pinyin": "men"
+    },
+    {
+      "char": "都",
+      "pinyin": "dōu"
+    },
+    {
+      "char": "在",
+      "pinyin": "zài"
+    },
+    {
+      "char": "积",
+      "pinyin": "jī"
+    },
+    {
+      "char": "极",
+      "pinyin": "jí"
+    },
+    {
+      "char": "备",
+      "pinyin": "bèi"
+    },
+    {
+      "char": "战",
+      "pinyin": "zhàn"
+    },
+    {
+      "char": "。",
+      "pinyin": ""
+    },
+    {
+      "char": "小",
+      "pinyin": "xiǎo"
+    },
+    {
+      "char": "杰",
+      "pinyin": "jié"
+    },
+    {
+      "char": "报",
+      "pinyin": "bào"
+    },
+    {
+      "char": "名",
+      "pinyin": "míng"
+    },
+    {
+      "char": "参",
+      "pinyin": "cān"
+    },
+    {
+      "char": "加",
+      "pinyin": "jiā"
+    },
+    {
+      "char": "一",
+      "pinyin": "yī"
+    },
+    {
+      "char": "百",
+      "pinyin": "bǎi"
+    },
+    {
+      "char": "米",
+      "pinyin": "mǐ"
+    },
+    {
+      "char": "短",
+      "pinyin": "duǎn"
+    },
+    {
+      "char": "跑",
+      "pinyin": "pǎo"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "但",
+      "pinyin": "dàn"
+    },
+    {
+      "char": "他",
+      "pinyin": "tā"
+    },
+    {
+      "char": "从",
+      "pinyin": "cóng"
+    },
+    {
+      "char": "来",
+      "pinyin": "lái"
+    },
+    {
+      "char": "没",
+      "pinyin": "méi"
+    },
+    {
+      "char": "认",
+      "pinyin": "rèn"
+    },
+    {
+      "char": "真",
+      "pinyin": "zhēn"
+    },
+    {
+      "char": "练",
+      "pinyin": "liàn"
+    },
+    {
+      "char": "习",
+      "pinyin": "xí"
+    },
+    {
+      "char": "过",
+      "pinyin": "guò"
+    },
+    {
+      "char": "跑",
+      "pinyin": "pǎo"
+    },
+    {
+      "char": "步",
+      "pinyin": "bù"
+    },
+    {
+      "char": "。",
+      "pinyin": ""
+    },
+    {
+      "char": "第",
+      "pinyin": "dì"
+    },
+    {
+      "char": "一",
+      "pinyin": "yī"
+    },
+    {
+      "char": "次",
+      "pinyin": "cì"
+    },
+    {
+      "char": "试",
+      "pinyin": "shì"
+    },
+    {
+      "char": "跑",
+      "pinyin": "pǎo"
+    },
+    {
+      "char": "时",
+      "pinyin": "shí"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "他",
+      "pinyin": "tā"
+    },
+    {
+      "char": "跑",
+      "pinyin": "pǎo"
+    },
+    {
+      "char": "得",
+      "pinyin": "dé"
+    },
+    {
+      "char": "气",
+      "pinyin": "qì"
+    },
+    {
+      "char": "喘",
+      "pinyin": "chuǎn"
+    },
+    {
+      "char": "吁",
+      "pinyin": "xū"
+    },
+    {
+      "char": "吁",
+      "pinyin": "xū"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "成",
+      "pinyin": "chéng"
+    },
+    {
+      "char": "绩",
+      "pinyin": "jì"
+    },
+    {
+      "char": "很",
+      "pinyin": "hěn"
+    },
+    {
+      "char": "差",
+      "pinyin": "chà"
+    },
+    {
+      "char": "。",
+      "pinyin": ""
+    },
+    {
+      "char": "教",
+      "pinyin": "jiào"
+    },
+    {
+      "char": "练",
+      "pinyin": "liàn"
+    },
+    {
+      "char": "说",
+      "pinyin": "shuō"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "要",
+      "pinyin": "yào"
+    },
+    {
+      "char": "想",
+      "pinyin": "xiǎng"
+    },
+    {
+      "char": "在",
+      "pinyin": "zài"
+    },
+    {
+      "char": "比",
+      "pinyin": "bǐ"
+    },
+    {
+      "char": "赛",
+      "pinyin": "sài"
+    },
+    {
+      "char": "中",
+      "pinyin": "zhōng"
+    },
+    {
+      "char": "取",
+      "pinyin": "qǔ"
+    },
+    {
+      "char": "得",
+      "pinyin": "dé"
+    },
+    {
+      "char": "好",
+      "pinyin": "hǎo"
+    },
+    {
+      "char": "成",
+      "pinyin": "chéng"
+    },
+    {
+      "char": "绩",
+      "pinyin": "jì"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "就",
+      "pinyin": "jiù"
+    },
+    {
+      "char": "必",
+      "pinyin": "bì"
+    },
+    {
+      "char": "须",
+      "pinyin": "xū"
+    },
+    {
+      "char": "每",
+      "pinyin": "měi"
+    },
+    {
+      "char": "天",
+      "pinyin": "tiān"
+    },
+    {
+      "char": "坚",
+      "pinyin": "jiān"
+    },
+    {
+      "char": "持",
+      "pinyin": "chí"
+    },
+    {
+      "char": "训",
+      "pinyin": "xùn"
+    },
+    {
+      "char": "练",
+      "pinyin": "liàn"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "不",
+      "pinyin": "bù"
+    },
+    {
+      "char": "怕",
+      "pinyin": "pà"
+    },
+    {
+      "char": "吃",
+      "pinyin": "chī"
+    },
+    {
+      "char": "苦",
+      "pinyin": "kǔ"
+    },
+    {
+      "char": "。",
+      "pinyin": ""
+    },
+    {
+      "char": "小",
+      "pinyin": "xiǎo"
+    },
+    {
+      "char": "杰",
+      "pinyin": "jié"
+    },
+    {
+      "char": "下",
+      "pinyin": "xià"
+    },
+    {
+      "char": "定",
+      "pinyin": "dìng"
+    },
+    {
+      "char": "决",
+      "pinyin": "jué"
+    },
+    {
+      "char": "心",
+      "pinyin": "xīn"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "每",
+      "pinyin": "měi"
+    },
+    {
+      "char": "天",
+      "pinyin": "tiān"
+    },
+    {
+      "char": "提",
+      "pinyin": "tí"
+    },
+    {
+      "char": "早",
+      "pinyin": "zǎo"
+    },
+    {
+      "char": "到",
+      "pinyin": "dào"
+    },
+    {
+      "char": "学",
+      "pinyin": "xué"
+    },
+    {
+      "char": "校",
+      "pinyin": "xiào"
+    },
+    {
+      "char": "练",
+      "pinyin": "liàn"
+    },
+    {
+      "char": "习",
+      "pinyin": "xí"
+    },
+    {
+      "char": "。",
+      "pinyin": ""
+    },
+    {
+      "char": "运",
+      "pinyin": "yùn"
+    },
+    {
+      "char": "动",
+      "pinyin": "dòng"
+    },
+    {
+      "char": "会",
+      "pinyin": "huì"
+    },
+    {
+      "char": "当",
+      "pinyin": "dāng"
+    },
+    {
+      "char": "天",
+      "pinyin": "tiān"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "他",
+      "pinyin": "tā"
+    },
+    {
+      "char": "终",
+      "pinyin": "zhōng"
+    },
+    {
+      "char": "于",
+      "pinyin": "yú"
+    },
+    {
+      "char": "跑",
+      "pinyin": "pǎo"
+    },
+    {
+      "char": "出",
+      "pinyin": "chū"
+    },
+    {
+      "char": "了",
+      "pinyin": "liǎo"
+    },
+    {
+      "char": "最",
+      "pinyin": "zuì"
+    },
+    {
+      "char": "好",
+      "pinyin": "hǎo"
+    },
+    {
+      "char": "的",
+      "pinyin": "de"
+    },
+    {
+      "char": "成",
+      "pinyin": "chéng"
+    },
+    {
+      "char": "绩",
+      "pinyin": "jì"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "赢",
+      "pinyin": "yíng"
+    },
+    {
+      "char": "得",
+      "pinyin": "dé"
+    },
+    {
+      "char": "了",
+      "pinyin": "liǎo"
+    },
+    {
+      "char": "同",
+      "pinyin": "tóng"
+    },
+    {
+      "char": "学",
+      "pinyin": "xué"
+    },
+    {
+      "char": "们",
+      "pinyin": "men"
+    },
+    {
+      "char": "热",
+      "pinyin": "rè"
+    },
+    {
+      "char": "烈",
+      "pinyin": "liè"
+    },
+    {
+      "char": "的",
+      "pinyin": "de"
+    },
+    {
+      "char": "掌",
+      "pinyin": "zhǎng"
+    },
+    {
+      "char": "声",
+      "pinyin": "shēng"
+    },
+    {
+      "char": "。",
+      "pinyin": ""
+    }
+  ]
+}

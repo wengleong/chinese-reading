@@ -14,7 +14,7 @@ import { isLoggedIn } from './lib/api.js';
 import { syncDown } from './lib/cloud.js';
 import { showFamilyOnboarding } from './components/familyOnboarding.js';
 import { renderPictureReader } from './components/pictureReader.js';
-import { scorePicture } from './lib/pictureScorer.js';
+import { scorePicture, selectQuestions } from './lib/pictureScorer.js';
 
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
   window.addEventListener("load", () => {
@@ -56,6 +56,7 @@ let readerCtl = null;
 let player = null;
 let rate = 0.9;
 let highlightEnabled = true;
+let pictureOralState = null;
 
 renderSettingsButton({ root: els.settingsBtn });
 
@@ -104,7 +105,7 @@ renderPlaybackControls({
   onRateChange: (v) => { rate = v; player?.setRate(v); },
 });
 
-renderRecorder({
+const recorderCtl = renderRecorder({
   root: els.recorder,
   getCurrentStory: () => activeStory,
   getActiveStudent: () => getActiveStudent(),
@@ -116,33 +117,67 @@ renderRecorder({
     if (!student || !story) return;
 
     if (story.type === 'picture') {
-      // Picture description scoring
-      const picResult = await scorePicture({ story, transcript, durationMs });
-      if (!picResult) {
-        // No AI available — show info message
-        alert('需要登录账号才能为图片描述评分。\nSign in to score picture descriptions.');
-        return;
+      const state = pictureOralState;
+      if (!state) return;
+      state.transcripts.push(transcript);
+      state.durationMs.push(durationMs);
+
+      if (state.phase === 0) {
+        // Description done — AI selects 3 questions, show first
+        const selected = await selectQuestions({ story, descriptionTranscript: transcript });
+        state.questions = selected;
+        state.phase = 1;
+        readerCtl.setPhase(1, state.questions[0]);
+        recorderCtl.rearm();
+      } else if (state.phase === 1) {
+        // Q1 done — show Q2
+        state.phase = 2;
+        readerCtl.setPhase(2, state.questions[1]);
+        recorderCtl.rearm();
+      } else if (state.phase === 2) {
+        // Q2 done — show Q3
+        state.phase = 3;
+        readerCtl.setPhase(3, state.questions[2]);
+        recorderCtl.rearm();
+      } else {
+        // Q3 done — score all 4 responses
+        const picResult = await scorePicture({
+          story,
+          transcripts: state.transcripts,
+          durations: state.durationMs,
+        });
+        pictureOralState = null;
+        if (!picResult) {
+          alert('Unable to score — please try again.');
+          return;
+        }
+        openScoreModal({
+          student, story,
+          scoreResult: {
+            accuracy: picResult.contentScore,
+            coverage: picResult.languageScore,
+            overall: picResult.overall,
+          },
+          fluency: picResult.expressionScore,
+          transcript: state.transcripts.join('\n---\n'),
+          sessionId,
+          pictureFeedback: picResult.feedback,
+          onRetry: () => {},
+          onDone: () => { studentPanelCtl?.refresh(); refreshPicker(); },
+        });
       }
-      openScoreModal({
-        student, story,
-        scoreResult: { accuracy: picResult.contentScore, coverage: picResult.languageScore, overall: picResult.overall },
-        fluency: Math.round(durationMs > 8000 ? 80 : (durationMs / 8000) * 80),
-        transcript, sessionId,
-        pictureFeedback: picResult.feedback,
-        onRetry: () => {},
-        onDone: () => { studentPanelCtl?.refresh(); refreshPicker(); },
-      });
-    } else {
-      // Standard passage scoring
-      const scoreResult = scoreTranscript(story.tokens, transcript);
-      const storyLength = story.tokens.filter(t => t.pinyin).length;
-      const fluency = computeFluency({ avgConfidence, timingGaps, durationMs, storyLength });
-      openScoreModal({
-        student, story, scoreResult, fluency, transcript, sessionId,
-        onRetry: () => {},
-        onDone: () => { studentPanelCtl?.refresh(); refreshPicker(); },
-      });
+      return;
     }
+
+    // Standard passage scoring
+    const scoreResult = scoreTranscript(story.tokens, transcript);
+    const storyLength = story.tokens.filter(t => t.pinyin).length;
+    const fluency = computeFluency({ avgConfidence, timingGaps, durationMs, storyLength });
+    openScoreModal({
+      student, story, scoreResult, fluency, transcript, sessionId,
+      onRetry: () => {},
+      onDone: () => { studentPanelCtl?.refresh(); refreshPicker(); },
+    });
   },
 });
 
@@ -179,6 +214,7 @@ renderRecordingsList({ root: els.recordings });
 
 async function pickStory(id) {
   player?.pause();
+  pictureOralState = null;
   try {
     activeStory = await loadStory(id);
   } catch (err) {
@@ -187,6 +223,7 @@ async function pickStory(id) {
   }
 
   if (activeStory.type === 'picture') {
+    pictureOralState = { phase: 0, questions: [], transcripts: [], durationMs: [] };
     readerCtl = renderPictureReader({ root: els.reader, story: activeStory });
     player = null;
     // Hide TTS controls for picture stories
