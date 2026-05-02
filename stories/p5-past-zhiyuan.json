@@ -1,0 +1,624 @@
+{
+  "id": "p5-past-zhiyuan",
+  "title": "义工服务",
+  "level": "P5",
+  "estMinutes": 5,
+  "tags": [
+    "past-years",
+    "community"
+  ],
+  "tokens": [
+    {
+      "char": "每",
+      "pinyin": "měi"
+    },
+    {
+      "char": "个",
+      "pinyin": "gè"
+    },
+    {
+      "char": "周",
+      "pinyin": "zhōu"
+    },
+    {
+      "char": "末",
+      "pinyin": "mò"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "王",
+      "pinyin": "wáng"
+    },
+    {
+      "char": "华",
+      "pinyin": "huá"
+    },
+    {
+      "char": "都",
+      "pinyin": "dōu"
+    },
+    {
+      "char": "会",
+      "pinyin": "huì"
+    },
+    {
+      "char": "到",
+      "pinyin": "dào"
+    },
+    {
+      "char": "敬",
+      "pinyin": "jìng"
+    },
+    {
+      "char": "老",
+      "pinyin": "lǎo"
+    },
+    {
+      "char": "院",
+      "pinyin": "yuàn"
+    },
+    {
+      "char": "当",
+      "pinyin": "dāng"
+    },
+    {
+      "char": "义",
+      "pinyin": "yì"
+    },
+    {
+      "char": "工",
+      "pinyin": "gōng"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "陪",
+      "pinyin": "péi"
+    },
+    {
+      "char": "伴",
+      "pinyin": "bàn"
+    },
+    {
+      "char": "老",
+      "pinyin": "lǎo"
+    },
+    {
+      "char": "人",
+      "pinyin": "rén"
+    },
+    {
+      "char": "们",
+      "pinyin": "men"
+    },
+    {
+      "char": "聊",
+      "pinyin": "liáo"
+    },
+    {
+      "char": "天",
+      "pinyin": "tiān"
+    },
+    {
+      "char": "、",
+      "pinyin": ""
+    },
+    {
+      "char": "做",
+      "pinyin": "zuò"
+    },
+    {
+      "char": "活",
+      "pinyin": "huó"
+    },
+    {
+      "char": "动",
+      "pinyin": "dòng"
+    },
+    {
+      "char": "。",
+      "pinyin": ""
+    },
+    {
+      "char": "起",
+      "pinyin": "qǐ"
+    },
+    {
+      "char": "初",
+      "pinyin": "chū"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "他",
+      "pinyin": "tā"
+    },
+    {
+      "char": "只",
+      "pinyin": "zhī"
+    },
+    {
+      "char": "是",
+      "pinyin": "shì"
+    },
+    {
+      "char": "为",
+      "pinyin": "wèi"
+    },
+    {
+      "char": "了",
+      "pinyin": "liǎo"
+    },
+    {
+      "char": "完",
+      "pinyin": "wán"
+    },
+    {
+      "char": "成",
+      "pinyin": "chéng"
+    },
+    {
+      "char": "学",
+      "pinyin": "xué"
+    },
+    {
+      "char": "校",
+      "pinyin": "xiào"
+    },
+    {
+      "char": "要",
+      "pinyin": "yào"
+    },
+    {
+      "char": "求",
+      "pinyin": "qiú"
+    },
+    {
+      "char": "的",
+      "pinyin": "de"
+    },
+    {
+      "char": "义",
+      "pinyin": "yì"
+    },
+    {
+      "char": "工",
+      "pinyin": "gōng"
+    },
+    {
+      "char": "时",
+      "pinyin": "shí"
+    },
+    {
+      "char": "数",
+      "pinyin": "shù"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "并",
+      "pinyin": "bìng"
+    },
+    {
+      "char": "不",
+      "pinyin": "bù"
+    },
+    {
+      "char": "十",
+      "pinyin": "shí"
+    },
+    {
+      "char": "分",
+      "pinyin": "fēn"
+    },
+    {
+      "char": "投",
+      "pinyin": "tóu"
+    },
+    {
+      "char": "入",
+      "pinyin": "rù"
+    },
+    {
+      "char": "。",
+      "pinyin": ""
+    },
+    {
+      "char": "渐",
+      "pinyin": "jiàn"
+    },
+    {
+      "char": "渐",
+      "pinyin": "jiàn"
+    },
+    {
+      "char": "地",
+      "pinyin": "dì"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "他",
+      "pinyin": "tā"
+    },
+    {
+      "char": "开",
+      "pinyin": "kāi"
+    },
+    {
+      "char": "始",
+      "pinyin": "shǐ"
+    },
+    {
+      "char": "期",
+      "pinyin": "qī"
+    },
+    {
+      "char": "待",
+      "pinyin": "dài"
+    },
+    {
+      "char": "每",
+      "pinyin": "měi"
+    },
+    {
+      "char": "次",
+      "pinyin": "cì"
+    },
+    {
+      "char": "探",
+      "pinyin": "tàn"
+    },
+    {
+      "char": "访",
+      "pinyin": "fǎng"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "因",
+      "pinyin": "yīn"
+    },
+    {
+      "char": "为",
+      "pinyin": "wèi"
+    },
+    {
+      "char": "他",
+      "pinyin": "tā"
+    },
+    {
+      "char": "看",
+      "pinyin": "kàn"
+    },
+    {
+      "char": "到",
+      "pinyin": "dào"
+    },
+    {
+      "char": "了",
+      "pinyin": "liǎo"
+    },
+    {
+      "char": "老",
+      "pinyin": "lǎo"
+    },
+    {
+      "char": "人",
+      "pinyin": "rén"
+    },
+    {
+      "char": "们",
+      "pinyin": "men"
+    },
+    {
+      "char": "因",
+      "pinyin": "yīn"
+    },
+    {
+      "char": "他",
+      "pinyin": "tā"
+    },
+    {
+      "char": "而",
+      "pinyin": "ér"
+    },
+    {
+      "char": "流",
+      "pinyin": "liú"
+    },
+    {
+      "char": "露",
+      "pinyin": "lù"
+    },
+    {
+      "char": "出",
+      "pinyin": "chū"
+    },
+    {
+      "char": "的",
+      "pinyin": "de"
+    },
+    {
+      "char": "喜",
+      "pinyin": "xǐ"
+    },
+    {
+      "char": "悦",
+      "pinyin": "yuè"
+    },
+    {
+      "char": "。",
+      "pinyin": ""
+    },
+    {
+      "char": "义",
+      "pinyin": "yì"
+    },
+    {
+      "char": "工",
+      "pinyin": "gōng"
+    },
+    {
+      "char": "服",
+      "pinyin": "fú"
+    },
+    {
+      "char": "务",
+      "pinyin": "wù"
+    },
+    {
+      "char": "让",
+      "pinyin": "ràng"
+    },
+    {
+      "char": "王",
+      "pinyin": "wáng"
+    },
+    {
+      "char": "华",
+      "pinyin": "huá"
+    },
+    {
+      "char": "明",
+      "pinyin": "míng"
+    },
+    {
+      "char": "白",
+      "pinyin": "bái"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "帮",
+      "pinyin": "bāng"
+    },
+    {
+      "char": "助",
+      "pinyin": "zhù"
+    },
+    {
+      "char": "他",
+      "pinyin": "tā"
+    },
+    {
+      "char": "人",
+      "pinyin": "rén"
+    },
+    {
+      "char": "不",
+      "pinyin": "bù"
+    },
+    {
+      "char": "仅",
+      "pinyin": "jǐn"
+    },
+    {
+      "char": "能",
+      "pinyin": "néng"
+    },
+    {
+      "char": "给",
+      "pinyin": "gěi"
+    },
+    {
+      "char": "受",
+      "pinyin": "shòu"
+    },
+    {
+      "char": "助",
+      "pinyin": "zhù"
+    },
+    {
+      "char": "者",
+      "pinyin": "zhě"
+    },
+    {
+      "char": "带",
+      "pinyin": "dài"
+    },
+    {
+      "char": "来",
+      "pinyin": "lái"
+    },
+    {
+      "char": "温",
+      "pinyin": "wēn"
+    },
+    {
+      "char": "暖",
+      "pinyin": "nuǎn"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "也",
+      "pinyin": "yě"
+    },
+    {
+      "char": "能",
+      "pinyin": "néng"
+    },
+    {
+      "char": "让",
+      "pinyin": "ràng"
+    },
+    {
+      "char": "自",
+      "pinyin": "zì"
+    },
+    {
+      "char": "己",
+      "pinyin": "jǐ"
+    },
+    {
+      "char": "的",
+      "pinyin": "de"
+    },
+    {
+      "char": "心",
+      "pinyin": "xīn"
+    },
+    {
+      "char": "灵",
+      "pinyin": "líng"
+    },
+    {
+      "char": "得",
+      "pinyin": "dé"
+    },
+    {
+      "char": "到",
+      "pinyin": "dào"
+    },
+    {
+      "char": "充",
+      "pinyin": "chōng"
+    },
+    {
+      "char": "实",
+      "pinyin": "shí"
+    },
+    {
+      "char": "。",
+      "pinyin": ""
+    },
+    {
+      "char": "一",
+      "pinyin": "yī"
+    },
+    {
+      "char": "个",
+      "pinyin": "gè"
+    },
+    {
+      "char": "真",
+      "pinyin": "zhēn"
+    },
+    {
+      "char": "正",
+      "pinyin": "zhèng"
+    },
+    {
+      "char": "有",
+      "pinyin": "yǒu"
+    },
+    {
+      "char": "爱",
+      "pinyin": "ài"
+    },
+    {
+      "char": "心",
+      "pinyin": "xīn"
+    },
+    {
+      "char": "的",
+      "pinyin": "de"
+    },
+    {
+      "char": "人",
+      "pinyin": "rén"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "会",
+      "pinyin": "huì"
+    },
+    {
+      "char": "把",
+      "pinyin": "bǎ"
+    },
+    {
+      "char": "助",
+      "pinyin": "zhù"
+    },
+    {
+      "char": "人",
+      "pinyin": "rén"
+    },
+    {
+      "char": "为",
+      "pinyin": "wèi"
+    },
+    {
+      "char": "乐",
+      "pinyin": "lè"
+    },
+    {
+      "char": "变",
+      "pinyin": "biàn"
+    },
+    {
+      "char": "成",
+      "pinyin": "chéng"
+    },
+    {
+      "char": "生",
+      "pinyin": "shēng"
+    },
+    {
+      "char": "命",
+      "pinyin": "mìng"
+    },
+    {
+      "char": "中",
+      "pinyin": "zhōng"
+    },
+    {
+      "char": "的",
+      "pinyin": "de"
+    },
+    {
+      "char": "习",
+      "pinyin": "xí"
+    },
+    {
+      "char": "惯",
+      "pinyin": "guàn"
+    },
+    {
+      "char": "。",
+      "pinyin": ""
+    }
+  ]
+}

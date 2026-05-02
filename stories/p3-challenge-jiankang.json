@@ -1,0 +1,552 @@
+{
+  "id": "p3-challenge-jiankang",
+  "title": "健康生活",
+  "level": "P3",
+  "estMinutes": 4,
+  "tags": [
+    "challenge",
+    "healthy"
+  ],
+  "tokens": [
+    {
+      "char": "现",
+      "pinyin": "xiàn"
+    },
+    {
+      "char": "代",
+      "pinyin": "dài"
+    },
+    {
+      "char": "人",
+      "pinyin": "rén"
+    },
+    {
+      "char": "的",
+      "pinyin": "de"
+    },
+    {
+      "char": "生",
+      "pinyin": "shēng"
+    },
+    {
+      "char": "活",
+      "pinyin": "huó"
+    },
+    {
+      "char": "越",
+      "pinyin": "yuè"
+    },
+    {
+      "char": "来",
+      "pinyin": "lái"
+    },
+    {
+      "char": "越",
+      "pinyin": "yuè"
+    },
+    {
+      "char": "便",
+      "pinyin": "biàn"
+    },
+    {
+      "char": "利",
+      "pinyin": "lì"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "但",
+      "pinyin": "dàn"
+    },
+    {
+      "char": "健",
+      "pinyin": "jiàn"
+    },
+    {
+      "char": "康",
+      "pinyin": "kāng"
+    },
+    {
+      "char": "问",
+      "pinyin": "wèn"
+    },
+    {
+      "char": "题",
+      "pinyin": "tí"
+    },
+    {
+      "char": "也",
+      "pinyin": "yě"
+    },
+    {
+      "char": "越",
+      "pinyin": "yuè"
+    },
+    {
+      "char": "来",
+      "pinyin": "lái"
+    },
+    {
+      "char": "越",
+      "pinyin": "yuè"
+    },
+    {
+      "char": "多",
+      "pinyin": "duō"
+    },
+    {
+      "char": "。",
+      "pinyin": ""
+    },
+    {
+      "char": "许",
+      "pinyin": "xǔ"
+    },
+    {
+      "char": "多",
+      "pinyin": "duō"
+    },
+    {
+      "char": "同",
+      "pinyin": "tóng"
+    },
+    {
+      "char": "学",
+      "pinyin": "xué"
+    },
+    {
+      "char": "不",
+      "pinyin": "bù"
+    },
+    {
+      "char": "喜",
+      "pinyin": "xǐ"
+    },
+    {
+      "char": "欢",
+      "pinyin": "huān"
+    },
+    {
+      "char": "运",
+      "pinyin": "yùn"
+    },
+    {
+      "char": "动",
+      "pinyin": "dòng"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "整",
+      "pinyin": "zhěng"
+    },
+    {
+      "char": "天",
+      "pinyin": "tiān"
+    },
+    {
+      "char": "坐",
+      "pinyin": "zuò"
+    },
+    {
+      "char": "着",
+      "pinyin": "zhe"
+    },
+    {
+      "char": "玩",
+      "pinyin": "wán"
+    },
+    {
+      "char": "电",
+      "pinyin": "diàn"
+    },
+    {
+      "char": "子",
+      "pinyin": "zǐ"
+    },
+    {
+      "char": "游",
+      "pinyin": "yóu"
+    },
+    {
+      "char": "戏",
+      "pinyin": "xì"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "不",
+      "pinyin": "bù"
+    },
+    {
+      "char": "爱",
+      "pinyin": "ài"
+    },
+    {
+      "char": "吃",
+      "pinyin": "chī"
+    },
+    {
+      "char": "蔬",
+      "pinyin": "shū"
+    },
+    {
+      "char": "菜",
+      "pinyin": "cài"
+    },
+    {
+      "char": "水",
+      "pinyin": "shuǐ"
+    },
+    {
+      "char": "果",
+      "pinyin": "guǒ"
+    },
+    {
+      "char": "。",
+      "pinyin": ""
+    },
+    {
+      "char": "医",
+      "pinyin": "yī"
+    },
+    {
+      "char": "生",
+      "pinyin": "shēng"
+    },
+    {
+      "char": "说",
+      "pinyin": "shuō"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "要",
+      "pinyin": "yào"
+    },
+    {
+      "char": "保",
+      "pinyin": "bǎo"
+    },
+    {
+      "char": "持",
+      "pinyin": "chí"
+    },
+    {
+      "char": "健",
+      "pinyin": "jiàn"
+    },
+    {
+      "char": "康",
+      "pinyin": "kāng"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "必",
+      "pinyin": "bì"
+    },
+    {
+      "char": "须",
+      "pinyin": "xū"
+    },
+    {
+      "char": "养",
+      "pinyin": "yǎng"
+    },
+    {
+      "char": "成",
+      "pinyin": "chéng"
+    },
+    {
+      "char": "良",
+      "pinyin": "liáng"
+    },
+    {
+      "char": "好",
+      "pinyin": "hǎo"
+    },
+    {
+      "char": "的",
+      "pinyin": "de"
+    },
+    {
+      "char": "生",
+      "pinyin": "shēng"
+    },
+    {
+      "char": "活",
+      "pinyin": "huó"
+    },
+    {
+      "char": "习",
+      "pinyin": "xí"
+    },
+    {
+      "char": "惯",
+      "pinyin": "guàn"
+    },
+    {
+      "char": "。",
+      "pinyin": ""
+    },
+    {
+      "char": "每",
+      "pinyin": "měi"
+    },
+    {
+      "char": "天",
+      "pinyin": "tiān"
+    },
+    {
+      "char": "运",
+      "pinyin": "yùn"
+    },
+    {
+      "char": "动",
+      "pinyin": "dòng"
+    },
+    {
+      "char": "三",
+      "pinyin": "sān"
+    },
+    {
+      "char": "十",
+      "pinyin": "shí"
+    },
+    {
+      "char": "分",
+      "pinyin": "fēn"
+    },
+    {
+      "char": "钟",
+      "pinyin": "zhōng"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "多",
+      "pinyin": "duō"
+    },
+    {
+      "char": "吃",
+      "pinyin": "chī"
+    },
+    {
+      "char": "蔬",
+      "pinyin": "shū"
+    },
+    {
+      "char": "菜",
+      "pinyin": "cài"
+    },
+    {
+      "char": "少",
+      "pinyin": "shǎo"
+    },
+    {
+      "char": "吃",
+      "pinyin": "chī"
+    },
+    {
+      "char": "零",
+      "pinyin": "líng"
+    },
+    {
+      "char": "食",
+      "pinyin": "shí"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "早",
+      "pinyin": "zǎo"
+    },
+    {
+      "char": "睡",
+      "pinyin": "shuì"
+    },
+    {
+      "char": "早",
+      "pinyin": "zǎo"
+    },
+    {
+      "char": "起",
+      "pinyin": "qǐ"
+    },
+    {
+      "char": "保",
+      "pinyin": "bǎo"
+    },
+    {
+      "char": "证",
+      "pinyin": "zhèng"
+    },
+    {
+      "char": "充",
+      "pinyin": "chōng"
+    },
+    {
+      "char": "足",
+      "pinyin": "zú"
+    },
+    {
+      "char": "的",
+      "pinyin": "de"
+    },
+    {
+      "char": "睡",
+      "pinyin": "shuì"
+    },
+    {
+      "char": "眠",
+      "pinyin": "mián"
+    },
+    {
+      "char": "。",
+      "pinyin": ""
+    },
+    {
+      "char": "健",
+      "pinyin": "jiàn"
+    },
+    {
+      "char": "康",
+      "pinyin": "kāng"
+    },
+    {
+      "char": "的",
+      "pinyin": "de"
+    },
+    {
+      "char": "身",
+      "pinyin": "shēn"
+    },
+    {
+      "char": "体",
+      "pinyin": "tǐ"
+    },
+    {
+      "char": "是",
+      "pinyin": "shì"
+    },
+    {
+      "char": "学",
+      "pinyin": "xué"
+    },
+    {
+      "char": "习",
+      "pinyin": "xí"
+    },
+    {
+      "char": "的",
+      "pinyin": "de"
+    },
+    {
+      "char": "基",
+      "pinyin": "jī"
+    },
+    {
+      "char": "础",
+      "pinyin": "chǔ"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "我",
+      "pinyin": "wǒ"
+    },
+    {
+      "char": "们",
+      "pinyin": "men"
+    },
+    {
+      "char": "要",
+      "pinyin": "yào"
+    },
+    {
+      "char": "从",
+      "pinyin": "cóng"
+    },
+    {
+      "char": "小",
+      "pinyin": "xiǎo"
+    },
+    {
+      "char": "爱",
+      "pinyin": "ài"
+    },
+    {
+      "char": "护",
+      "pinyin": "hù"
+    },
+    {
+      "char": "自",
+      "pinyin": "zì"
+    },
+    {
+      "char": "己",
+      "pinyin": "jǐ"
+    },
+    {
+      "char": "的",
+      "pinyin": "de"
+    },
+    {
+      "char": "身",
+      "pinyin": "shēn"
+    },
+    {
+      "char": "体",
+      "pinyin": "tǐ"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "才",
+      "pinyin": "cái"
+    },
+    {
+      "char": "能",
+      "pinyin": "néng"
+    },
+    {
+      "char": "快",
+      "pinyin": "kuài"
+    },
+    {
+      "char": "乐",
+      "pinyin": "lè"
+    },
+    {
+      "char": "成",
+      "pinyin": "chéng"
+    },
+    {
+      "char": "长",
+      "pinyin": "cháng"
+    },
+    {
+      "char": "。",
+      "pinyin": ""
+    }
+  ]
+}

@@ -1,0 +1,532 @@
+{
+  "id": "p4-challenge-zeren",
+  "title": "负责任的小华",
+  "level": "P4",
+  "estMinutes": 4,
+  "tags": [
+    "challenge",
+    "responsibility"
+  ],
+  "tokens": [
+    {
+      "char": "班",
+      "pinyin": "bān"
+    },
+    {
+      "char": "长",
+      "pinyin": "cháng"
+    },
+    {
+      "char": "小",
+      "pinyin": "xiǎo"
+    },
+    {
+      "char": "华",
+      "pinyin": "huá"
+    },
+    {
+      "char": "放",
+      "pinyin": "fàng"
+    },
+    {
+      "char": "学",
+      "pinyin": "xué"
+    },
+    {
+      "char": "时",
+      "pinyin": "shí"
+    },
+    {
+      "char": "发",
+      "pinyin": "fā"
+    },
+    {
+      "char": "现",
+      "pinyin": "xiàn"
+    },
+    {
+      "char": "课",
+      "pinyin": "kè"
+    },
+    {
+      "char": "室",
+      "pinyin": "shì"
+    },
+    {
+      "char": "里",
+      "pinyin": "lǐ"
+    },
+    {
+      "char": "的",
+      "pinyin": "de"
+    },
+    {
+      "char": "灯",
+      "pinyin": "dēng"
+    },
+    {
+      "char": "还",
+      "pinyin": "hái"
+    },
+    {
+      "char": "亮",
+      "pinyin": "liàng"
+    },
+    {
+      "char": "着",
+      "pinyin": "zhe"
+    },
+    {
+      "char": "。",
+      "pinyin": ""
+    },
+    {
+      "char": "他",
+      "pinyin": "tā"
+    },
+    {
+      "char": "可",
+      "pinyin": "kě"
+    },
+    {
+      "char": "以",
+      "pinyin": "yǐ"
+    },
+    {
+      "char": "假",
+      "pinyin": "jiǎ"
+    },
+    {
+      "char": "装",
+      "pinyin": "zhuāng"
+    },
+    {
+      "char": "没",
+      "pinyin": "méi"
+    },
+    {
+      "char": "看",
+      "pinyin": "kàn"
+    },
+    {
+      "char": "见",
+      "pinyin": "jiàn"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "直",
+      "pinyin": "zhí"
+    },
+    {
+      "char": "接",
+      "pinyin": "jiē"
+    },
+    {
+      "char": "回",
+      "pinyin": "huí"
+    },
+    {
+      "char": "家",
+      "pinyin": "jiā"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "但",
+      "pinyin": "dàn"
+    },
+    {
+      "char": "他",
+      "pinyin": "tā"
+    },
+    {
+      "char": "没",
+      "pinyin": "méi"
+    },
+    {
+      "char": "有",
+      "pinyin": "yǒu"
+    },
+    {
+      "char": "这",
+      "pinyin": "zhè"
+    },
+    {
+      "char": "样",
+      "pinyin": "yàng"
+    },
+    {
+      "char": "做",
+      "pinyin": "zuò"
+    },
+    {
+      "char": "。",
+      "pinyin": ""
+    },
+    {
+      "char": "小",
+      "pinyin": "xiǎo"
+    },
+    {
+      "char": "华",
+      "pinyin": "huá"
+    },
+    {
+      "char": "折",
+      "pinyin": "zhé"
+    },
+    {
+      "char": "回",
+      "pinyin": "huí"
+    },
+    {
+      "char": "去",
+      "pinyin": "qù"
+    },
+    {
+      "char": "关",
+      "pinyin": "guān"
+    },
+    {
+      "char": "好",
+      "pinyin": "hǎo"
+    },
+    {
+      "char": "了",
+      "pinyin": "liǎo"
+    },
+    {
+      "char": "灯",
+      "pinyin": "dēng"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "还",
+      "pinyin": "hái"
+    },
+    {
+      "char": "顺",
+      "pinyin": "shùn"
+    },
+    {
+      "char": "手",
+      "pinyin": "shǒu"
+    },
+    {
+      "char": "把",
+      "pinyin": "bǎ"
+    },
+    {
+      "char": "黑",
+      "pinyin": "hēi"
+    },
+    {
+      "char": "板",
+      "pinyin": "bǎn"
+    },
+    {
+      "char": "擦",
+      "pinyin": "cā"
+    },
+    {
+      "char": "干",
+      "pinyin": "gān"
+    },
+    {
+      "char": "净",
+      "pinyin": "jìng"
+    },
+    {
+      "char": "。",
+      "pinyin": ""
+    },
+    {
+      "char": "班",
+      "pinyin": "bān"
+    },
+    {
+      "char": "主",
+      "pinyin": "zhǔ"
+    },
+    {
+      "char": "任",
+      "pinyin": "rèn"
+    },
+    {
+      "char": "知",
+      "pinyin": "zhī"
+    },
+    {
+      "char": "道",
+      "pinyin": "dào"
+    },
+    {
+      "char": "这",
+      "pinyin": "zhè"
+    },
+    {
+      "char": "件",
+      "pinyin": "jiàn"
+    },
+    {
+      "char": "事",
+      "pinyin": "shì"
+    },
+    {
+      "char": "后",
+      "pinyin": "hòu"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "在",
+      "pinyin": "zài"
+    },
+    {
+      "char": "班",
+      "pinyin": "bān"
+    },
+    {
+      "char": "上",
+      "pinyin": "shàng"
+    },
+    {
+      "char": "表",
+      "pinyin": "biǎo"
+    },
+    {
+      "char": "扬",
+      "pinyin": "yáng"
+    },
+    {
+      "char": "了",
+      "pinyin": "liǎo"
+    },
+    {
+      "char": "他",
+      "pinyin": "tā"
+    },
+    {
+      "char": "的",
+      "pinyin": "de"
+    },
+    {
+      "char": "负",
+      "pinyin": "fù"
+    },
+    {
+      "char": "责",
+      "pinyin": "zé"
+    },
+    {
+      "char": "任",
+      "pinyin": "rèn"
+    },
+    {
+      "char": "精",
+      "pinyin": "jīng"
+    },
+    {
+      "char": "神",
+      "pinyin": "shén"
+    },
+    {
+      "char": "。",
+      "pinyin": ""
+    },
+    {
+      "char": "老",
+      "pinyin": "lǎo"
+    },
+    {
+      "char": "师",
+      "pinyin": "shī"
+    },
+    {
+      "char": "说",
+      "pinyin": "shuō"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "负",
+      "pinyin": "fù"
+    },
+    {
+      "char": "责",
+      "pinyin": "zé"
+    },
+    {
+      "char": "任",
+      "pinyin": "rèn"
+    },
+    {
+      "char": "不",
+      "pinyin": "bù"
+    },
+    {
+      "char": "是",
+      "pinyin": "shì"
+    },
+    {
+      "char": "在",
+      "pinyin": "zài"
+    },
+    {
+      "char": "别",
+      "pinyin": "bié"
+    },
+    {
+      "char": "人",
+      "pinyin": "rén"
+    },
+    {
+      "char": "注",
+      "pinyin": "zhù"
+    },
+    {
+      "char": "视",
+      "pinyin": "shì"
+    },
+    {
+      "char": "下",
+      "pinyin": "xià"
+    },
+    {
+      "char": "才",
+      "pinyin": "cái"
+    },
+    {
+      "char": "做",
+      "pinyin": "zuò"
+    },
+    {
+      "char": "对",
+      "pinyin": "duì"
+    },
+    {
+      "char": "的",
+      "pinyin": "de"
+    },
+    {
+      "char": "事",
+      "pinyin": "shì"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "而",
+      "pinyin": "ér"
+    },
+    {
+      "char": "是",
+      "pinyin": "shì"
+    },
+    {
+      "char": "在",
+      "pinyin": "zài"
+    },
+    {
+      "char": "没",
+      "pinyin": "méi"
+    },
+    {
+      "char": "有",
+      "pinyin": "yǒu"
+    },
+    {
+      "char": "人",
+      "pinyin": "rén"
+    },
+    {
+      "char": "看",
+      "pinyin": "kàn"
+    },
+    {
+      "char": "见",
+      "pinyin": "jiàn"
+    },
+    {
+      "char": "时",
+      "pinyin": "shí"
+    },
+    {
+      "char": "同",
+      "pinyin": "tóng"
+    },
+    {
+      "char": "样",
+      "pinyin": "yàng"
+    },
+    {
+      "char": "尽",
+      "pinyin": "jìn"
+    },
+    {
+      "char": "职",
+      "pinyin": "zhí"
+    },
+    {
+      "char": "尽",
+      "pinyin": "jìn"
+    },
+    {
+      "char": "责",
+      "pinyin": "zé"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "这",
+      "pinyin": "zhè"
+    },
+    {
+      "char": "才",
+      "pinyin": "cái"
+    },
+    {
+      "char": "是",
+      "pinyin": "shì"
+    },
+    {
+      "char": "真",
+      "pinyin": "zhēn"
+    },
+    {
+      "char": "正",
+      "pinyin": "zhèng"
+    },
+    {
+      "char": "的",
+      "pinyin": "de"
+    },
+    {
+      "char": "品",
+      "pinyin": "pǐn"
+    },
+    {
+      "char": "德",
+      "pinyin": "dé"
+    },
+    {
+      "char": "。",
+      "pinyin": ""
+    }
+  ]
+}

@@ -150,3 +150,40 @@ test('detectPersonalBest: different story IDs are independent', () => {
   // s2 has no prior best, so 70 > 0 is a personal best
   assert.equal(isPersonalBest, true);
 });
+
+// ---------------------------------------------------------------------------
+// selectQuestions fallback logic
+// Tests the pure fallback path (no API call needed).
+// ---------------------------------------------------------------------------
+const GENERIC_FALLBACK = [
+  '你觉得图片里发生了什么事？',
+  '图片里的人物心情怎样？',
+  '你从这幅图片学到了什么？',
+];
+
+function selectQuestionsFallback(questions) {
+  if (!questions || questions.length === 0) return GENERIC_FALLBACK;
+  return questions.slice(0, 3);
+}
+
+test('selectQuestions fallback: empty array returns 3 generic questions', () => {
+  const result = selectQuestionsFallback([]);
+  assert.equal(result.length, 3);
+  assert.equal(result[0], '你觉得图片里发生了什么事？');
+});
+
+test('selectQuestions fallback: 3 questions returns all 3', () => {
+  const q = ['Q1', 'Q2', 'Q3'];
+  assert.deepEqual(selectQuestionsFallback(q), ['Q1', 'Q2', 'Q3']);
+});
+
+test('selectQuestions fallback: 5 questions returns first 3', () => {
+  const q = ['Q1', 'Q2', 'Q3', 'Q4', 'Q5'];
+  assert.deepEqual(selectQuestionsFallback(q), ['Q1', 'Q2', 'Q3']);
+});
+
+test('selectQuestions fallback: null returns generic', () => {
+  const result = selectQuestionsFallback(null);
+  assert.equal(result.length, 3);
+  assert.equal(result[0], '你觉得图片里发生了什么事？');
+});

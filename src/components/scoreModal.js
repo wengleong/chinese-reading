@@ -202,7 +202,7 @@ export function openScoreModal({ student, story, scoreResult, fluency = 50, tran
   const isPicture = story.type === 'picture';
   const cat1Label = isPicture ? '内容 Content'  : '准确性 Accuracy';
   const cat2Label = isPicture ? '语言 Language' : '完整性 Coverage';
-  const cat3Label = isPicture ? '节奏 Pace'     : '流利度 Fluency';
+  const cat3Label = isPicture ? '表达 Expression' : '流利度 Fluency';
 
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';

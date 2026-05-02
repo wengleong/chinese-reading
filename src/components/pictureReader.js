@@ -1,5 +1,7 @@
 // Displays a scene card for picture description stories.
-// Returns the same interface as storyReader (setActiveIndex, clearActive) as no-ops.
+// Phase 0: full scene card + description prompt.
+// Phase 1-3: compact scene + question counter + question text.
+// Returns { setActiveIndex(){}, clearActive(){}, setPhase(phase, questionText) }.
 
 export function renderPictureReader({ root, story }) {
   root.innerHTML = '';
@@ -11,10 +13,7 @@ export function renderPictureReader({ root, story }) {
   title.className = 'story-title';
   title.textContent = story.title;
 
-  const prompt = document.createElement('p');
-  prompt.className = 'picture-prompt';
-  prompt.textContent = '请描述以下图片的内容：';
-
+  // Scene grid — rendered once, CSS class toggled for compact mode
   const scene = document.createElement('div');
   scene.className = 'picture-scene';
   for (const part of (story.sceneParts || [])) {
@@ -31,18 +30,53 @@ export function renderPictureReader({ root, story }) {
     scene.appendChild(item);
   }
 
+  // Phase 0 elements
+  const prompt = document.createElement('p');
+  prompt.className = 'picture-prompt';
+  prompt.textContent = '请描述以下图片的内容：';
+
   const hint = document.createElement('p');
   hint.className = 'picture-hint';
   hint.textContent = story.scene || '';
 
+  // Phase 1-3 elements (hidden initially)
+  const questionCounter = document.createElement('p');
+  questionCounter.className = 'picture-question-counter';
+  questionCounter.hidden = true;
+
+  const questionCard = document.createElement('div');
+  questionCard.className = 'picture-question-card';
+  questionCard.hidden = true;
+
   card.appendChild(title);
-  card.appendChild(prompt);
   card.appendChild(scene);
+  card.appendChild(prompt);
   card.appendChild(hint);
+  card.appendChild(questionCounter);
+  card.appendChild(questionCard);
   root.appendChild(card);
+
+  function setPhase(phase, questionText) {
+    if (phase === 0) {
+      scene.classList.remove('picture-scene-compact');
+      prompt.hidden = false;
+      hint.hidden = false;
+      questionCounter.hidden = true;
+      questionCard.hidden = true;
+    } else {
+      scene.classList.add('picture-scene-compact');
+      prompt.hidden = true;
+      hint.hidden = true;
+      questionCounter.hidden = false;
+      questionCounter.textContent = `第${phase}题 共3题`;
+      questionCard.hidden = false;
+      questionCard.textContent = questionText || '';
+    }
+  }
 
   return {
     setActiveIndex() {},
     clearActive() {},
+    setPhase,
   };
 }
