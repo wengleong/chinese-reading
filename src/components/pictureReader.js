@@ -13,6 +13,16 @@ export function renderPictureReader({ root, story }) {
   title.className = 'story-title';
   title.textContent = story.title;
 
+  // Illustration image (if available) — shown prominently above scene grid
+  const imgPath = `stories/images/${story.id}.jpg`;
+  const storyImg = document.createElement('img');
+  storyImg.className = 'picture-illustration';
+  storyImg.alt = story.title;
+  storyImg.src = imgPath;
+  storyImg.hidden = true; // shown once loaded successfully
+  storyImg.addEventListener('load', () => { storyImg.hidden = false; scene.hidden = true; });
+  storyImg.addEventListener('error', () => { storyImg.hidden = true; scene.hidden = false; });
+
   // Scene grid — rendered once, CSS class toggled for compact mode
   const scene = document.createElement('div');
   scene.className = 'picture-scene';
@@ -49,6 +59,7 @@ export function renderPictureReader({ root, story }) {
   questionCard.hidden = true;
 
   card.appendChild(title);
+  card.appendChild(storyImg);
   card.appendChild(scene);
   card.appendChild(prompt);
   card.appendChild(hint);
@@ -58,12 +69,14 @@ export function renderPictureReader({ root, story }) {
 
   function setPhase(phase, questionText) {
     if (phase === 0) {
+      storyImg.classList.remove('compact');
       scene.classList.remove('picture-scene-compact');
       prompt.hidden = false;
       hint.hidden = false;
       questionCounter.hidden = true;
       questionCard.hidden = true;
     } else {
+      storyImg.classList.add('compact');
       scene.classList.add('picture-scene-compact');
       prompt.hidden = true;
       hint.hidden = true;
