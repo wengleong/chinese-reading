@@ -158,5 +158,8 @@ export function renderRecorder({ root, getCurrentStory, getActiveStudent, onSave
       stopBtn.disabled = true;
       stickyBar.classList.remove('is-recording');
     },
+    setStopLabel(text) {
+      stopBtn.textContent = text;
+    },
   };
 }

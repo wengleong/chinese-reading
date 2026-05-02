@@ -28,16 +28,17 @@ export function renderPictureReader({ root, story }) {
   // Phase 0 elements
   const prompt = document.createElement('p');
   prompt.className = 'picture-prompt';
-  prompt.textContent = '请描述以下图片的内容：';
+  prompt.textContent = '请用中文描述以上图片内容。Describe what you see in Chinese.';
 
   const hint = document.createElement('p');
   hint.className = 'picture-hint';
   hint.textContent = story.scene || '';
 
-  // Phase 1-3 elements (hidden initially)
+  // Step counter — shown in all phases
   const questionCounter = document.createElement('p');
   questionCounter.className = 'picture-question-counter';
-  questionCounter.hidden = true;
+  questionCounter.hidden = false;
+  questionCounter.textContent = '录音 1 / 4 · 看图说话 Describe the picture';
 
   const questionCard = document.createElement('div');
   questionCard.className = 'picture-question-card';
@@ -53,17 +54,14 @@ export function renderPictureReader({ root, story }) {
 
   function setPhase(phase, questionText) {
     if (phase === 0) {
-      storyImg.classList.remove('compact');
       prompt.hidden = false;
       hint.hidden = false;
-      questionCounter.hidden = true;
+      questionCounter.textContent = '录音 1 / 4 · 看图说话 Describe the picture';
       questionCard.hidden = true;
     } else {
-      storyImg.classList.add('compact');
       prompt.hidden = true;
       hint.hidden = true;
-      questionCounter.hidden = false;
-      questionCounter.textContent = `第${phase}题 共3题`;
+      questionCounter.textContent = `录音 ${phase + 1} / 4 · 第${phase}题 Question ${phase}`;
       questionCard.hidden = false;
       questionCard.textContent = questionText || '';
     }

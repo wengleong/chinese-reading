@@ -295,10 +295,12 @@ export function openScoreModal({ student, story, scoreResult, fluency = 50, tran
   if (newBadges.length) showBadgeCelebration(newBadges);
 
   // Fetch AI feedback — updates Expression bar + tips
-  if (pictureFeedback) {
+  if (isPicture) {
     const feedbackEl = overlay.querySelector('#score-feedback');
     if (feedbackEl) {
-      feedbackEl.innerHTML = `<p class="score-feedback-text">✨ ${pictureFeedback}</p>`;
+      feedbackEl.innerHTML = pictureFeedback
+        ? `<p class="score-feedback-text">✨ ${pictureFeedback}</p>`
+        : `<p class="score-feedback-text">${passed ? '好极了！继续加油！Keep it up!' : '再试一次，你一定能做到！Try again!'}</p>`;
     }
   } else if (!isPicture) {
     const storyText = story.tokens.filter(t => t.pinyin).map(t => t.char).join('');

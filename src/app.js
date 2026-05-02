@@ -129,16 +129,19 @@ const recorderCtl = renderRecorder({
         state.phase = 1;
         readerCtl.setPhase(1, state.questions[0]);
         recorderCtl.rearm();
+        recorderCtl.setStopLabel('■ 停止 Next →');
       } else if (state.phase === 1) {
         // Q1 done — show Q2
         state.phase = 2;
         readerCtl.setPhase(2, state.questions[1]);
         recorderCtl.rearm();
+        recorderCtl.setStopLabel('■ 停止 Next →');
       } else if (state.phase === 2) {
         // Q2 done — show Q3
         state.phase = 3;
         readerCtl.setPhase(3, state.questions[2]);
         recorderCtl.rearm();
+        recorderCtl.setStopLabel('■ 停止 Stop & Score');
       } else {
         // Q3 done — score all 4 responses
         const picResult = await scorePicture({
@@ -230,10 +233,12 @@ async function pickStory(id) {
     els.playback.style.display = 'none';
     els.pinyinToggle.style.display = 'none';
     els.highlightToggle.style.display = 'none';
+    recorderCtl.setStopLabel('■ 停止 Next →');
   } else {
     els.playback.style.display = '';
     els.pinyinToggle.style.display = '';
     els.highlightToggle.style.display = '';
+    recorderCtl.setStopLabel('■ 停止 Stop & Score');
     readerCtl = renderStoryReader({ root: els.reader, story: activeStory });
     player = createPlayer({
       tokens: activeStory.tokens,
