@@ -8,14 +8,22 @@ import {
 const MONTH_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
 const BADGES = [
-  { id: 'first_pass',  icon: '🌟', label: 'First Pass',     check: (p)    => p.sessions.filter(s => s.passed).length >= 1 },
-  { id: 'stories_5',  icon: '📚', label: '5 Stories',       check: (p)    => new Set(p.sessions.filter(s => s.passed).map(s => s.storyId)).size >= 5 },
-  { id: 'perfect',    icon: '💯', label: 'Perfect Score',   check: (p)    => p.sessions.some(s => s.score >= 100) },
-  { id: 'streak_7',   icon: '🔥', label: '7-Day Streak',    check: (p, k) => k >= 7 },
-  { id: 'streak_30',  icon: '🏆', label: '30-Day Streak',   check: (p, k) => k >= 30 },
-  { id: 'pts_100',    icon: '💎', label: '100 Points',       check: (p)    => p.totalPoints >= 100 },
-  { id: 'pts_500',    icon: '👑', label: '500 Points',       check: (p)    => p.totalPoints >= 500 },
-  { id: 'pts_1000',   icon: '🎯', label: '1000 Points',      check: (p)    => p.totalPoints >= 1000 },
+  { id: 'first_pass',  icon: '🌟', label: 'First Pass',          check: (p)    => p.sessions.filter(s => s.passed).length >= 1 },
+  { id: 'stories_5',  icon: '📚', label: '5 Stories',            check: (p)    => new Set(p.sessions.filter(s => s.passed).map(s => s.storyId)).size >= 5 },
+  { id: 'perfect',    icon: '💯', label: 'Perfect Score',        check: (p)    => p.sessions.some(s => s.score >= 100) },
+  { id: 'streak_7',   icon: '🔥', label: '7-Day Streak',         check: (p, k) => k >= 7 },
+  { id: 'streak_30',  icon: '🏆', label: '30-Day Streak',        check: (p, k) => k >= 30 },
+  { id: 'pts_100',    icon: '💎', label: '100 Points',            check: (p)    => p.totalPoints >= 100 },
+  { id: 'pts_500',    icon: '👑', label: '500 Points',            check: (p)    => p.totalPoints >= 500 },
+  { id: 'pts_1000',   icon: '🎯', label: '1000 Points',           check: (p)    => p.totalPoints >= 1000 },
+  { id: 'challenge_1', icon: '🗡️', label: '初试挑战 First Challenge', check: (p) => p.sessions.some(s => s.passed && (s.storyTags || []).includes('challenge')) },
+  { id: 'challenge_5', icon: '⚔️', label: '挑战达人 5 Challenges',    check: (p) => new Set(p.sessions.filter(s => s.passed && (s.storyTags || []).includes('challenge')).map(s => s.storyId)).size >= 5 },
+  { id: 'exam_1',      icon: '🏅', label: '初上考场 Exam Debut',       check: (p) => p.sessions.some(s => s.passed && (s.storyTags || []).includes('past-years')) },
+  { id: 'exam_3',      icon: '🎖️', label: '考试达人 Exam Pro',          check: (p) => new Set(p.sessions.filter(s => s.passed && (s.storyTags || []).includes('past-years')).map(s => s.storyId)).size >= 3 },
+  { id: 'picture_1',   icon: '📷', label: '看图说话 Picture Pro',        check: (p) => p.sessions.some(s => s.passed && s.storyType === 'picture') },
+  { id: 'pb',          icon: '🌈', label: '新纪录 Personal Best',        check: (p) => p.sessions.some(s => s.isPersonalBest) },
+  { id: 'p3_master',   icon: '📕', label: 'P3 Master',                  check: (p) => ['p3-xiaomao-diaoyu','p3-huanjing','p3-jieyue','p3-shequ','p3-yundong','p3-challenge-keji','p3-challenge-zhuren'].every(id => p.sessions.some(s => s.passed && s.storyId === id)) },
+  { id: 'p6_master',   icon: '📙', label: 'P6 Master',                  check: (p) => ['p6-kexue','p6-minzu','p6-shengming','p6-zeren','p6-zixiang-maodun','p6-challenge-shuzi','p6-challenge-xinjiapo'].every(id => p.sessions.some(s => s.passed && s.storyId === id)) },
 ];
 
 function sgTime(ts) {
