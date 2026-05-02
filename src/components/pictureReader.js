@@ -18,10 +18,12 @@ export function renderPictureReader({ root, story }) {
   const storyImg = document.createElement('img');
   storyImg.className = 'picture-illustration';
   storyImg.alt = story.title;
-  storyImg.src = imgPath;
   storyImg.hidden = true; // shown once loaded successfully
+  // Listeners must be attached before setting src — if the image is cached,
+  // the load event fires synchronously during src assignment.
   storyImg.addEventListener('load', () => { storyImg.hidden = false; scene.hidden = true; });
   storyImg.addEventListener('error', () => { storyImg.hidden = true; scene.hidden = false; });
+  storyImg.src = imgPath;
 
   // Scene grid — rendered once, CSS class toggled for compact mode
   const scene = document.createElement('div');
