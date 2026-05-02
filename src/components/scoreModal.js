@@ -10,15 +10,22 @@ import { isLoggedIn, generateViaApi } from '../lib/api.js';
 const API_KEY_STORAGE = "anthropicApiKey";
 
 const BADGES = [
-  { id: 'first_pass', icon: '🌟', label: 'First Pass',   mascot: '🐣', color: '#f59f00', check: (p)    => p.sessions.filter(s => s.passed).length >= 1 },
-  { id: 'stories_5',  icon: '📚', label: '5 Stories',    mascot: '🦉', color: '#1971c2', check: (p)    => new Set(p.sessions.filter(s => s.passed).map(s => s.storyId)).size >= 5 },
-  { id: 'stories_10', icon: '🎒', label: '10 Stories',   mascot: '🐨', color: '#2f9e44', check: (p)    => new Set(p.sessions.filter(s => s.passed).map(s => s.storyId)).size >= 10 },
-  { id: 'perfect',    icon: '💯', label: 'Perfect Score', mascot: '🌈', color: '#ae3ec9', check: (p)    => p.sessions.some(s => s.score >= 100) },
-  { id: 'streak_7',   icon: '🔥', label: '7-Day Streak', mascot: '🐯', color: '#e8590c', check: (p, k) => k >= 7 },
-  { id: 'streak_30',  icon: '🏆', label: '30-Day Streak', mascot: '🦁', color: '#e8590c', check: (p, k) => k >= 30 },
-  { id: 'pts_100',    icon: '💎', label: '100 Points',   mascot: '🐬', color: '#1971c2', check: (p)    => p.totalPoints >= 100 },
-  { id: 'pts_500',    icon: '👑', label: '500 Points',   mascot: '🦋', color: '#ae3ec9', check: (p)    => p.totalPoints >= 500 },
-  { id: 'pts_1000',   icon: '🎯', label: '1000 Points',  mascot: '🐉', color: '#e03131', check: (p)    => p.totalPoints >= 1000 },
+  { id: 'first_pass',  icon: '🌟', label: 'First Pass',          mascot: '🐣', color: '#f59f00', check: (p)    => p.sessions.filter(s => s.passed).length >= 1 },
+  { id: 'stories_5',  icon: '📚', label: '5 Stories',            mascot: '🦉', color: '#1971c2', check: (p)    => new Set(p.sessions.filter(s => s.passed).map(s => s.storyId)).size >= 5 },
+  { id: 'perfect',    icon: '💯', label: 'Perfect Score',        mascot: '🌈', color: '#ae3ec9', check: (p)    => p.sessions.some(s => s.score >= 100) },
+  { id: 'streak_7',   icon: '🔥', label: '7-Day Streak',         mascot: '🐯', color: '#e8590c', check: (p, k) => k >= 7 },
+  { id: 'streak_30',  icon: '🏆', label: '30-Day Streak',        mascot: '🦁', color: '#e8590c', check: (p, k) => k >= 30 },
+  { id: 'pts_100',    icon: '💎', label: '100 Points',            mascot: '🐬', color: '#1971c2', check: (p)    => p.totalPoints >= 100 },
+  { id: 'pts_500',    icon: '👑', label: '500 Points',            mascot: '🦋', color: '#ae3ec9', check: (p)    => p.totalPoints >= 500 },
+  { id: 'pts_1000',   icon: '🎯', label: '1000 Points',           mascot: '🐉', color: '#e03131', check: (p)    => p.totalPoints >= 1000 },
+  { id: 'challenge_1', icon: '🗡️', label: '初试挑战 First Challenge', mascot: '🐺', color: '#9c36b5', check: (p) => p.sessions.some(s => s.passed && (s.storyTags || []).includes('challenge')) },
+  { id: 'challenge_5', icon: '⚔️', label: '挑战达人 5 Challenges',    mascot: '🦊', color: '#6741d9', check: (p) => new Set(p.sessions.filter(s => s.passed && (s.storyTags || []).includes('challenge')).map(s => s.storyId)).size >= 5 },
+  { id: 'exam_1',      icon: '🏅', label: '初上考场 Exam Debut',       mascot: '🦅', color: '#2f9e44', check: (p) => p.sessions.some(s => s.passed && (s.storyTags || []).includes('past-years')) },
+  { id: 'exam_3',      icon: '🎖️', label: '考试达人 Exam Pro',          mascot: '🦉', color: '#0ca678', check: (p) => new Set(p.sessions.filter(s => s.passed && (s.storyTags || []).includes('past-years')).map(s => s.storyId)).size >= 3 },
+  { id: 'picture_1',   icon: '📷', label: '看图说话 Picture Pro',        mascot: '🦜', color: '#1971c2', check: (p) => p.sessions.some(s => s.passed && s.storyType === 'picture') },
+  { id: 'pb',          icon: '🌈', label: '新纪录 Personal Best',        mascot: '🐦', color: '#f59f00', check: (p) => p.sessions.some(s => s.isPersonalBest) },
+  { id: 'p3_master',   icon: '📕', label: 'P3 Master',                  mascot: '🐨', color: '#2f9e44', check: (p) => ['p3-xiaomao-diaoyu','p3-huanjing','p3-jieyue','p3-shequ','p3-yundong','p3-challenge-keji','p3-challenge-zhuren'].every(id => p.sessions.some(s => s.passed && s.storyId === id)) },
+  { id: 'p6_master',   icon: '📙', label: 'P6 Master',                  mascot: '🦁', color: '#e03131', check: (p) => ['p6-kexue','p6-minzu','p6-shengming','p6-zeren','p6-zixiang-maodun','p6-challenge-shuzi','p6-challenge-xinjiapo'].every(id => p.sessions.some(s => s.passed && s.storyId === id)) },
 ];
 
 function getEarnedBadgeIds(progress, streak) {
@@ -155,7 +162,7 @@ function todayIso() {
 
 // scoreResult = { accuracy, coverage, overall }
 // fluency     = 0-100 from computeFluency()
-export function openScoreModal({ student, story, scoreResult, fluency = 50, transcript, sessionId, onRetry, onDone }) {
+export function openScoreModal({ student, story, scoreResult, fluency = 50, transcript, sessionId, onRetry, onDone, pictureFeedback = null }) {
   const score = scoreResult?.overall ?? scoreResult ?? 0; // backward-compat if bare number passed
   const accuracy  = scoreResult?.accuracy  ?? score;
   const coverage  = scoreResult?.coverage  ?? score;
@@ -173,9 +180,11 @@ export function openScoreModal({ student, story, scoreResult, fluency = 50, tran
   const progressBefore = getProgress(student.id);
   const badgesBefore = getEarnedBadgeIds(progressBefore, currentStreak);
 
-  addSession(student.id, {
+  const { isPersonalBest } = addSession(student.id, {
     id: sessionId ?? `sess-${Date.now()}`,
     date: today, storyId: story.id, storyTitle: story.title,
+    storyTags: story.tags || [],
+    storyType: story.type || 'passage',
     score, passed, pointsEarned, transcript: transcript || '',
     completedAt: Date.now(),
   });
@@ -190,11 +199,18 @@ export function openScoreModal({ student, story, scoreResult, fluency = 50, tran
   // Category bar colour helper
   function barColor(v) { return v >= 80 ? 'var(--good)' : v >= 60 ? 'var(--accent)' : 'var(--danger)'; }
 
+  const isPicture = story.type === 'picture';
+  const cat1Label = isPicture ? '内容 Content'  : '准确性 Accuracy';
+  const cat2Label = isPicture ? '语言 Language' : '完整性 Coverage';
+  const cat3Label = isPicture ? '节奏 Pace'     : '流利度 Fluency';
+
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
   overlay.innerHTML = `
     <div class="confetti-stage" id="score-confetti"></div>
     <div class="modal-card score-modal-v2" role="dialog" aria-modal="true">
+      <button class="score-close-btn" id="score-close" aria-label="Close">✕</button>
+      ${isPersonalBest ? `<div class="personal-best-banner" id="pb-banner">🏆 新纪录 Personal Best!</div>` : ''}
       <div class="score-hero">
         <svg class="score-ring-svg" viewBox="0 0 120 120" aria-hidden="true">
           <circle class="score-ring-track" cx="60" cy="60" r="50"/>
@@ -211,25 +227,25 @@ export function openScoreModal({ student, story, scoreResult, fluency = 50, tran
 
       <div class="score-categories">
         <div class="score-cat-row">
-          <span class="score-cat-label">准确性 Accuracy</span>
+          <span class="score-cat-label">${cat1Label}</span>
           <div class="score-cat-bar-wrap"><div class="score-cat-bar" id="bar-acc" style="background:${barColor(accuracy)}"></div></div>
           <span class="score-cat-val">${accuracy}</span>
         </div>
         <div class="score-cat-row">
-          <span class="score-cat-label">完整性 Coverage</span>
+          <span class="score-cat-label">${cat2Label}</span>
           <div class="score-cat-bar-wrap"><div class="score-cat-bar" id="bar-cov" style="background:${barColor(coverage)}"></div></div>
           <span class="score-cat-val">${coverage}</span>
         </div>
         <div class="score-cat-row">
-          <span class="score-cat-label">流利度 Fluency</span>
+          <span class="score-cat-label">${cat3Label}</span>
           <div class="score-cat-bar-wrap"><div class="score-cat-bar" id="bar-flu" style="background:${barColor(fluency)}"></div></div>
           <span class="score-cat-val">${fluency}</span>
         </div>
-        <div class="score-cat-row">
+        ${!isPicture ? `<div class="score-cat-row">
           <span class="score-cat-label">表达力 Expression</span>
           <div class="score-cat-bar-wrap"><div class="score-cat-bar" id="bar-exp" style="background:var(--muted)"></div></div>
           <span class="score-cat-val" id="exp-val">…</span>
-        </div>
+        </div>` : ''}
       </div>
 
       ${passed ? `
@@ -274,36 +290,44 @@ export function openScoreModal({ student, story, scoreResult, fluency = 50, tran
   function close() { overlay.remove(); }
   overlay.querySelector('#score-retry').addEventListener('click', () => { close(); onRetry?.(); });
   overlay.querySelector('#score-done').addEventListener('click', () => { close(); onDone?.(); });
+  overlay.querySelector('#score-close').addEventListener('click', () => { close(); onDone?.(); });
 
   if (newBadges.length) showBadgeCelebration(newBadges);
 
   // Fetch AI feedback — updates Expression bar + tips
-  const storyText = story.tokens.filter(t => t.pinyin).map(t => t.char).join('');
-  getAiFeedback(story.title, storyText, transcript, scoreResult ?? { accuracy: score, coverage: score, overall: score }, fluency)
-    .then(result => {
-      if (!overlay.isConnected) return;
-      const feedbackEl = overlay.querySelector('#score-feedback');
-      const expVal = overlay.querySelector('#exp-val');
-      const expBar = overlay.querySelector('#bar-exp');
+  if (pictureFeedback) {
+    const feedbackEl = overlay.querySelector('#score-feedback');
+    if (feedbackEl) {
+      feedbackEl.innerHTML = `<p class="score-feedback-text">✨ ${pictureFeedback}</p>`;
+    }
+  } else if (!isPicture) {
+    const storyText = story.tokens.filter(t => t.pinyin).map(t => t.char).join('');
+    getAiFeedback(story.title, storyText, transcript, scoreResult ?? { accuracy: score, coverage: score, overall: score }, fluency)
+      .then(result => {
+        if (!overlay.isConnected) return;
+        const feedbackEl = overlay.querySelector('#score-feedback');
+        const expVal = overlay.querySelector('#exp-val');
+        const expBar = overlay.querySelector('#bar-exp');
 
-      if (result) {
-        const exp = Math.max(0, Math.min(100, result.expression_score ?? fluency));
-        if (expVal) expVal.textContent = exp;
-        if (expBar) {
-          expBar.style.background = barColor(exp);
-          animateBar(expBar, exp, 0);
+        if (result) {
+          const exp = Math.max(0, Math.min(100, result.expression_score ?? fluency));
+          if (expVal) expVal.textContent = exp;
+          if (expBar) {
+            expBar.style.background = barColor(exp);
+            animateBar(expBar, exp, 0);
+          }
+          const tips = [result.accuracy_tip, result.coverage_tip, result.fluency_tip].filter(Boolean);
+          feedbackEl.innerHTML = `
+            ${result.highlight ? `<p class="score-feedback-highlight">🌟 ${result.highlight}</p>` : ''}
+            <p class="score-feedback-text">✨ ${result.feedback}</p>
+            ${tips.map(t => `<p class="score-feedback-tip">💡 ${t}</p>`).join('')}`;
+        } else {
+          if (expVal) expVal.textContent = fluency;
+          if (expBar) { expBar.style.background = barColor(fluency); animateBar(expBar, fluency, 0); }
+          feedbackEl.innerHTML = `<p class="score-feedback-text">${passed
+            ? '🎉 Great reading! Keep practising every day!'
+            : '💪 Almost there — try again and you\'ll get it!'}</p>`;
         }
-        const tips = [result.accuracy_tip, result.coverage_tip, result.fluency_tip].filter(Boolean);
-        feedbackEl.innerHTML = `
-          ${result.highlight ? `<p class="score-feedback-highlight">🌟 ${result.highlight}</p>` : ''}
-          <p class="score-feedback-text">✨ ${result.feedback}</p>
-          ${tips.map(t => `<p class="score-feedback-tip">💡 ${t}</p>`).join('')}`;
-      } else {
-        if (expVal) expVal.textContent = fluency;
-        if (expBar) { expBar.style.background = barColor(fluency); animateBar(expBar, fluency, 0); }
-        feedbackEl.innerHTML = `<p class="score-feedback-text">${passed
-          ? '🎉 Great reading! Keep practising every day!'
-          : '💪 Almost there — try again and you\'ll get it!'}</p>`;
-      }
-    });
+      });
+  }
 }

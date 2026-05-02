@@ -59,10 +59,28 @@ export function getActiveStudent() {
 
 // ---- Progress ----
 
+// Returns total points counting only the best-scoring session per story per day.
+function computeTotalPoints(sessions) {
+  const best = {};
+  for (const s of sessions) {
+    if (!s.passed) continue;
+    const key = `${s.date}|${s.storyId}`;
+    best[key] = Math.max(best[key] || 0, s.pointsEarned || 0);
+  }
+  return Object.values(best).reduce((sum, v) => sum + v, 0);
+}
+
 export function getProgress(studentId) {
   try {
-    return JSON.parse(localStorage.getItem(PROGRESS_PREFIX + studentId) || '{"totalPoints":0,"sessions":[]}');
-  } catch { return { totalPoints: 0, sessions: [] }; }
+    const p = JSON.parse(
+      localStorage.getItem(PROGRESS_PREFIX + studentId) ||
+      '{"totalPoints":0,"sessions":[]}'
+    );
+    if (!p.bestScores) p.bestScores = {};
+    return p;
+  } catch {
+    return { totalPoints: 0, sessions: [], bestScores: {} };
+  }
 }
 
 function saveProgress(studentId, progress) {
@@ -71,10 +89,19 @@ function saveProgress(studentId, progress) {
 
 export function addSession(studentId, session) {
   const progress = getProgress(studentId);
-  progress.sessions.unshift(session);
-  progress.totalPoints = (progress.totalPoints || 0) + (session.pointsEarned || 0);
+
+  // Personal best detection (only for passed sessions)
+  const prevBest = progress.bestScores[session.storyId] || 0;
+  const isPersonalBest = !!session.passed && session.score > prevBest;
+  if (isPersonalBest) {
+    progress.bestScores[session.storyId] = session.score;
+  }
+
+  progress.sessions.unshift({ ...session, isPersonalBest });
+  progress.totalPoints = computeTotalPoints(progress.sessions);
   saveProgress(studentId, progress);
-  pushSession(session, studentId);
+  pushSession({ ...session, isPersonalBest }, studentId);
+  return { isPersonalBest, previousBest: prevBest };
 }
 
 // Consecutive days (up to and including today) where student passed ≥1 session.

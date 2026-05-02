@@ -13,6 +13,8 @@ import { renderSettingsButton } from "./components/settings.js";
 import { isLoggedIn } from './lib/api.js';
 import { syncDown } from './lib/cloud.js';
 import { showFamilyOnboarding } from './components/familyOnboarding.js';
+import { renderPictureReader } from './components/pictureReader.js';
+import { scorePicture } from './lib/pictureScorer.js';
 
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
   window.addEventListener("load", () => {
@@ -109,18 +111,38 @@ renderRecorder({
   onSaved: () => renderRecordingsList({ root: els.recordings }),
   onActiveChange: () => {},
   onStart: () => els.reader.scrollIntoView({ behavior: 'smooth', block: 'start' }),
-  onComplete: ({ transcript, story, sessionId, avgConfidence, timingGaps, durationMs }) => {
+  onComplete: async ({ transcript, story, sessionId, avgConfidence, timingGaps, durationMs }) => {
     const student = getActiveStudent();
     if (!student || !story) return;
-    const scoreResult = scoreTranscript(story.tokens, transcript);
-    const storyLength = story.tokens.filter(t => t.pinyin).length;
-    const fluency = computeFluency({ avgConfidence, timingGaps, durationMs, storyLength });
-    openScoreModal({
-      student, story, scoreResult, fluency, transcript, sessionId,
-      onRetry: () => {},
-      onDone: () => { studentPanelCtl?.refresh(); refreshPicker(); },
-    });
-    studentPanelCtl?.refresh();
+
+    if (story.type === 'picture') {
+      // Picture description scoring
+      const picResult = await scorePicture({ story, transcript, durationMs });
+      if (!picResult) {
+        // No AI available — show info message
+        alert('需要登录账号才能为图片描述评分。\nSign in to score picture descriptions.');
+        return;
+      }
+      openScoreModal({
+        student, story,
+        scoreResult: { accuracy: picResult.contentScore, coverage: picResult.languageScore, overall: picResult.overall },
+        fluency: Math.round(durationMs > 8000 ? 80 : (durationMs / 8000) * 80),
+        transcript, sessionId,
+        pictureFeedback: picResult.feedback,
+        onRetry: () => {},
+        onDone: () => { studentPanelCtl?.refresh(); refreshPicker(); },
+      });
+    } else {
+      // Standard passage scoring
+      const scoreResult = scoreTranscript(story.tokens, transcript);
+      const storyLength = story.tokens.filter(t => t.pinyin).length;
+      const fluency = computeFluency({ avgConfidence, timingGaps, durationMs, storyLength });
+      openScoreModal({
+        student, story, scoreResult, fluency, transcript, sessionId,
+        onRetry: () => {},
+        onDone: () => { studentPanelCtl?.refresh(); refreshPicker(); },
+      });
+    }
   },
 });
 
@@ -135,7 +157,8 @@ renderRecordingsList({ root: els.recordings });
       });
     });
   } else {
-    syncDown().catch(() => {});
+    await syncDown().catch(() => {});
+    studentPanelCtl?.refresh();
   }
 
   try {
@@ -162,12 +185,25 @@ async function pickStory(id) {
     els.reader.innerHTML = `<p class="privacy-note">Could not load story: ${err.message}</p>`;
     return;
   }
-  readerCtl = renderStoryReader({ root: els.reader, story: activeStory });
-  player = createPlayer({
-    tokens: activeStory.tokens,
-    onTokenStart: (i) => { if (highlightEnabled) readerCtl.setActiveIndex(i); },
-    onEnd: () => readerCtl.clearActive(),
-  });
-  player.setRate(rate);
+
+  if (activeStory.type === 'picture') {
+    readerCtl = renderPictureReader({ root: els.reader, story: activeStory });
+    player = null;
+    // Hide TTS controls for picture stories
+    els.playback.style.display = 'none';
+    els.pinyinToggle.style.display = 'none';
+    els.highlightToggle.style.display = 'none';
+  } else {
+    els.playback.style.display = '';
+    els.pinyinToggle.style.display = '';
+    els.highlightToggle.style.display = '';
+    readerCtl = renderStoryReader({ root: els.reader, story: activeStory });
+    player = createPlayer({
+      tokens: activeStory.tokens,
+      onTokenStart: (i) => { if (highlightEnabled) readerCtl.setActiveIndex(i); },
+      onEnd: () => readerCtl.clearActive(),
+    });
+    player.setRate(rate);
+  }
   refreshPicker(id);
 }

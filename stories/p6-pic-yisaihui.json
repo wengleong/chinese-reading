@@ -1,0 +1,18 @@
+{
+  "id": "p6-pic-yisaihui",
+  "type": "picture",
+  "title": "学校义卖会",
+  "level": "P6",
+  "estMinutes": 6,
+  "tags": ["picture", "community"],
+  "scene": "学校操场上，一年一度的义卖会正在举行。",
+  "sceneParts": [
+    { "emoji": "🏫", "label": "学校" },
+    { "emoji": "🛍️", "label": "摊位" },
+    { "emoji": "👨‍👩‍👧‍👦", "label": "家长学生" },
+    { "emoji": "💝", "label": "爱心" },
+    { "emoji": "🎀", "label": "义卖品" },
+    { "emoji": "🤝", "label": "捐款" }
+  ],
+  "keyElements": ["义卖", "摊位", "学生", "家长", "捐款", "爱心", "筹款", "慈善", "团结", "贡献"]
+}

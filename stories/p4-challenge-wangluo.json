@@ -1,0 +1,604 @@
+{
+  "id": "p4-challenge-wangluo",
+  "title": "网络与友谊",
+  "level": "P4",
+  "estMinutes": 4,
+  "tags": [
+    "challenge",
+    "technology"
+  ],
+  "tokens": [
+    {
+      "char": "随",
+      "pinyin": "suí"
+    },
+    {
+      "char": "着",
+      "pinyin": "zhe"
+    },
+    {
+      "char": "互",
+      "pinyin": "hù"
+    },
+    {
+      "char": "联",
+      "pinyin": "lián"
+    },
+    {
+      "char": "网",
+      "pinyin": "wǎng"
+    },
+    {
+      "char": "的",
+      "pinyin": "de"
+    },
+    {
+      "char": "普",
+      "pinyin": "pǔ"
+    },
+    {
+      "char": "及",
+      "pinyin": "jí"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "人",
+      "pinyin": "rén"
+    },
+    {
+      "char": "们",
+      "pinyin": "men"
+    },
+    {
+      "char": "越",
+      "pinyin": "yuè"
+    },
+    {
+      "char": "来",
+      "pinyin": "lái"
+    },
+    {
+      "char": "越",
+      "pinyin": "yuè"
+    },
+    {
+      "char": "习",
+      "pinyin": "xí"
+    },
+    {
+      "char": "惯",
+      "pinyin": "guàn"
+    },
+    {
+      "char": "在",
+      "pinyin": "zài"
+    },
+    {
+      "char": "网",
+      "pinyin": "wǎng"
+    },
+    {
+      "char": "上",
+      "pinyin": "shàng"
+    },
+    {
+      "char": "交",
+      "pinyin": "jiāo"
+    },
+    {
+      "char": "朋",
+      "pinyin": "péng"
+    },
+    {
+      "char": "友",
+      "pinyin": "yǒu"
+    },
+    {
+      "char": "。",
+      "pinyin": ""
+    },
+    {
+      "char": "网",
+      "pinyin": "wǎng"
+    },
+    {
+      "char": "络",
+      "pinyin": "luò"
+    },
+    {
+      "char": "让",
+      "pinyin": "ràng"
+    },
+    {
+      "char": "我",
+      "pinyin": "wǒ"
+    },
+    {
+      "char": "们",
+      "pinyin": "men"
+    },
+    {
+      "char": "能",
+      "pinyin": "néng"
+    },
+    {
+      "char": "和",
+      "pinyin": "hé"
+    },
+    {
+      "char": "世",
+      "pinyin": "shì"
+    },
+    {
+      "char": "界",
+      "pinyin": "jiè"
+    },
+    {
+      "char": "各",
+      "pinyin": "gè"
+    },
+    {
+      "char": "地",
+      "pinyin": "dì"
+    },
+    {
+      "char": "的",
+      "pinyin": "de"
+    },
+    {
+      "char": "人",
+      "pinyin": "rén"
+    },
+    {
+      "char": "沟",
+      "pinyin": "gōu"
+    },
+    {
+      "char": "通",
+      "pinyin": "tōng"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "拓",
+      "pinyin": "tuò"
+    },
+    {
+      "char": "宽",
+      "pinyin": "kuān"
+    },
+    {
+      "char": "了",
+      "pinyin": "liǎo"
+    },
+    {
+      "char": "我",
+      "pinyin": "wǒ"
+    },
+    {
+      "char": "们",
+      "pinyin": "men"
+    },
+    {
+      "char": "的",
+      "pinyin": "de"
+    },
+    {
+      "char": "视",
+      "pinyin": "shì"
+    },
+    {
+      "char": "野",
+      "pinyin": "yě"
+    },
+    {
+      "char": "。",
+      "pinyin": ""
+    },
+    {
+      "char": "然",
+      "pinyin": "rán"
+    },
+    {
+      "char": "而",
+      "pinyin": "ér"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "网",
+      "pinyin": "wǎng"
+    },
+    {
+      "char": "络",
+      "pinyin": "luò"
+    },
+    {
+      "char": "友",
+      "pinyin": "yǒu"
+    },
+    {
+      "char": "谊",
+      "pinyin": "yì"
+    },
+    {
+      "char": "也",
+      "pinyin": "yě"
+    },
+    {
+      "char": "有",
+      "pinyin": "yǒu"
+    },
+    {
+      "char": "它",
+      "pinyin": "tā"
+    },
+    {
+      "char": "的",
+      "pinyin": "de"
+    },
+    {
+      "char": "局",
+      "pinyin": "jú"
+    },
+    {
+      "char": "限",
+      "pinyin": "xiàn"
+    },
+    {
+      "char": "性",
+      "pinyin": "xìng"
+    },
+    {
+      "char": "。",
+      "pinyin": ""
+    },
+    {
+      "char": "我",
+      "pinyin": "wǒ"
+    },
+    {
+      "char": "们",
+      "pinyin": "men"
+    },
+    {
+      "char": "在",
+      "pinyin": "zài"
+    },
+    {
+      "char": "网",
+      "pinyin": "wǎng"
+    },
+    {
+      "char": "上",
+      "pinyin": "shàng"
+    },
+    {
+      "char": "看",
+      "pinyin": "kàn"
+    },
+    {
+      "char": "到",
+      "pinyin": "dào"
+    },
+    {
+      "char": "的",
+      "pinyin": "de"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "只",
+      "pinyin": "zhī"
+    },
+    {
+      "char": "是",
+      "pinyin": "shì"
+    },
+    {
+      "char": "对",
+      "pinyin": "duì"
+    },
+    {
+      "char": "方",
+      "pinyin": "fāng"
+    },
+    {
+      "char": "精",
+      "pinyin": "jīng"
+    },
+    {
+      "char": "心",
+      "pinyin": "xīn"
+    },
+    {
+      "char": "修",
+      "pinyin": "xiū"
+    },
+    {
+      "char": "饰",
+      "pinyin": "shì"
+    },
+    {
+      "char": "过",
+      "pinyin": "guò"
+    },
+    {
+      "char": "的",
+      "pinyin": "de"
+    },
+    {
+      "char": "一",
+      "pinyin": "yī"
+    },
+    {
+      "char": "面",
+      "pinyin": "miàn"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "无",
+      "pinyin": "wú"
+    },
+    {
+      "char": "法",
+      "pinyin": "fǎ"
+    },
+    {
+      "char": "真",
+      "pinyin": "zhēn"
+    },
+    {
+      "char": "正",
+      "pinyin": "zhèng"
+    },
+    {
+      "char": "了",
+      "pinyin": "liǎo"
+    },
+    {
+      "char": "解",
+      "pinyin": "jiě"
+    },
+    {
+      "char": "一",
+      "pinyin": "yī"
+    },
+    {
+      "char": "个",
+      "pinyin": "gè"
+    },
+    {
+      "char": "人",
+      "pinyin": "rén"
+    },
+    {
+      "char": "。",
+      "pinyin": ""
+    },
+    {
+      "char": "真",
+      "pinyin": "zhēn"
+    },
+    {
+      "char": "正",
+      "pinyin": "zhèng"
+    },
+    {
+      "char": "的",
+      "pinyin": "de"
+    },
+    {
+      "char": "友",
+      "pinyin": "yǒu"
+    },
+    {
+      "char": "谊",
+      "pinyin": "yì"
+    },
+    {
+      "char": "需",
+      "pinyin": "xū"
+    },
+    {
+      "char": "要",
+      "pinyin": "yào"
+    },
+    {
+      "char": "面",
+      "pinyin": "miàn"
+    },
+    {
+      "char": "对",
+      "pinyin": "duì"
+    },
+    {
+      "char": "面",
+      "pinyin": "miàn"
+    },
+    {
+      "char": "的",
+      "pinyin": "de"
+    },
+    {
+      "char": "相",
+      "pinyin": "xiāng"
+    },
+    {
+      "char": "处",
+      "pinyin": "chù"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "需",
+      "pinyin": "xū"
+    },
+    {
+      "char": "要",
+      "pinyin": "yào"
+    },
+    {
+      "char": "在",
+      "pinyin": "zài"
+    },
+    {
+      "char": "困",
+      "pinyin": "kùn"
+    },
+    {
+      "char": "难",
+      "pinyin": "nán"
+    },
+    {
+      "char": "时",
+      "pinyin": "shí"
+    },
+    {
+      "char": "互",
+      "pinyin": "hù"
+    },
+    {
+      "char": "相",
+      "pinyin": "xiāng"
+    },
+    {
+      "char": "扶",
+      "pinyin": "fú"
+    },
+    {
+      "char": "持",
+      "pinyin": "chí"
+    },
+    {
+      "char": "。",
+      "pinyin": ""
+    },
+    {
+      "char": "因",
+      "pinyin": "yīn"
+    },
+    {
+      "char": "此",
+      "pinyin": "cǐ"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "我",
+      "pinyin": "wǒ"
+    },
+    {
+      "char": "们",
+      "pinyin": "men"
+    },
+    {
+      "char": "在",
+      "pinyin": "zài"
+    },
+    {
+      "char": "享",
+      "pinyin": "xiǎng"
+    },
+    {
+      "char": "受",
+      "pinyin": "shòu"
+    },
+    {
+      "char": "网",
+      "pinyin": "wǎng"
+    },
+    {
+      "char": "络",
+      "pinyin": "luò"
+    },
+    {
+      "char": "便",
+      "pinyin": "biàn"
+    },
+    {
+      "char": "利",
+      "pinyin": "lì"
+    },
+    {
+      "char": "的",
+      "pinyin": "de"
+    },
+    {
+      "char": "同",
+      "pinyin": "tóng"
+    },
+    {
+      "char": "时",
+      "pinyin": "shí"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "不",
+      "pinyin": "bù"
+    },
+    {
+      "char": "要",
+      "pinyin": "yào"
+    },
+    {
+      "char": "忽",
+      "pinyin": "hū"
+    },
+    {
+      "char": "视",
+      "pinyin": "shì"
+    },
+    {
+      "char": "身",
+      "pinyin": "shēn"
+    },
+    {
+      "char": "边",
+      "pinyin": "biān"
+    },
+    {
+      "char": "真",
+      "pinyin": "zhēn"
+    },
+    {
+      "char": "实",
+      "pinyin": "shí"
+    },
+    {
+      "char": "的",
+      "pinyin": "de"
+    },
+    {
+      "char": "朋",
+      "pinyin": "péng"
+    },
+    {
+      "char": "友",
+      "pinyin": "yǒu"
+    },
+    {
+      "char": "。",
+      "pinyin": ""
+    }
+  ]
+}

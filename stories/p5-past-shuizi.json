@@ -1,0 +1,680 @@
+{
+  "id": "p5-past-shuizi",
+  "title": "珍惜水资源",
+  "level": "P5",
+  "estMinutes": 5,
+  "tags": [
+    "past-years",
+    "environment"
+  ],
+  "tokens": [
+    {
+      "char": "水",
+      "pinyin": "shuǐ"
+    },
+    {
+      "char": "是",
+      "pinyin": "shì"
+    },
+    {
+      "char": "生",
+      "pinyin": "shēng"
+    },
+    {
+      "char": "命",
+      "pinyin": "mìng"
+    },
+    {
+      "char": "之",
+      "pinyin": "zhī"
+    },
+    {
+      "char": "源",
+      "pinyin": "yuán"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "地",
+      "pinyin": "dì"
+    },
+    {
+      "char": "球",
+      "pinyin": "qiú"
+    },
+    {
+      "char": "上",
+      "pinyin": "shàng"
+    },
+    {
+      "char": "所",
+      "pinyin": "suǒ"
+    },
+    {
+      "char": "有",
+      "pinyin": "yǒu"
+    },
+    {
+      "char": "生",
+      "pinyin": "shēng"
+    },
+    {
+      "char": "物",
+      "pinyin": "wù"
+    },
+    {
+      "char": "都",
+      "pinyin": "dōu"
+    },
+    {
+      "char": "离",
+      "pinyin": "lí"
+    },
+    {
+      "char": "不",
+      "pinyin": "bù"
+    },
+    {
+      "char": "开",
+      "pinyin": "kāi"
+    },
+    {
+      "char": "水",
+      "pinyin": "shuǐ"
+    },
+    {
+      "char": "。",
+      "pinyin": ""
+    },
+    {
+      "char": "然",
+      "pinyin": "rán"
+    },
+    {
+      "char": "而",
+      "pinyin": "ér"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "地",
+      "pinyin": "dì"
+    },
+    {
+      "char": "球",
+      "pinyin": "qiú"
+    },
+    {
+      "char": "上",
+      "pinyin": "shàng"
+    },
+    {
+      "char": "可",
+      "pinyin": "kě"
+    },
+    {
+      "char": "供",
+      "pinyin": "gòng"
+    },
+    {
+      "char": "人",
+      "pinyin": "rén"
+    },
+    {
+      "char": "类",
+      "pinyin": "lèi"
+    },
+    {
+      "char": "使",
+      "pinyin": "shǐ"
+    },
+    {
+      "char": "用",
+      "pinyin": "yòng"
+    },
+    {
+      "char": "的",
+      "pinyin": "de"
+    },
+    {
+      "char": "淡",
+      "pinyin": "dàn"
+    },
+    {
+      "char": "水",
+      "pinyin": "shuǐ"
+    },
+    {
+      "char": "资",
+      "pinyin": "zī"
+    },
+    {
+      "char": "源",
+      "pinyin": "yuán"
+    },
+    {
+      "char": "非",
+      "pinyin": "fēi"
+    },
+    {
+      "char": "常",
+      "pinyin": "cháng"
+    },
+    {
+      "char": "有",
+      "pinyin": "yǒu"
+    },
+    {
+      "char": "限",
+      "pinyin": "xiàn"
+    },
+    {
+      "char": "。",
+      "pinyin": ""
+    },
+    {
+      "char": "新",
+      "pinyin": "xīn"
+    },
+    {
+      "char": "加",
+      "pinyin": "jiā"
+    },
+    {
+      "char": "坡",
+      "pinyin": "pō"
+    },
+    {
+      "char": "地",
+      "pinyin": "dì"
+    },
+    {
+      "char": "域",
+      "pinyin": "yù"
+    },
+    {
+      "char": "狭",
+      "pinyin": "xiá"
+    },
+    {
+      "char": "小",
+      "pinyin": "xiǎo"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "没",
+      "pinyin": "méi"
+    },
+    {
+      "char": "有",
+      "pinyin": "yǒu"
+    },
+    {
+      "char": "天",
+      "pinyin": "tiān"
+    },
+    {
+      "char": "然",
+      "pinyin": "rán"
+    },
+    {
+      "char": "湖",
+      "pinyin": "hú"
+    },
+    {
+      "char": "泊",
+      "pinyin": "bó"
+    },
+    {
+      "char": "和",
+      "pinyin": "hé"
+    },
+    {
+      "char": "大",
+      "pinyin": "dà"
+    },
+    {
+      "char": "型",
+      "pinyin": "xíng"
+    },
+    {
+      "char": "河",
+      "pinyin": "hé"
+    },
+    {
+      "char": "流",
+      "pinyin": "liú"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "所",
+      "pinyin": "suǒ"
+    },
+    {
+      "char": "以",
+      "pinyin": "yǐ"
+    },
+    {
+      "char": "特",
+      "pinyin": "tè"
+    },
+    {
+      "char": "别",
+      "pinyin": "bié"
+    },
+    {
+      "char": "重",
+      "pinyin": "zhòng"
+    },
+    {
+      "char": "视",
+      "pinyin": "shì"
+    },
+    {
+      "char": "水",
+      "pinyin": "shuǐ"
+    },
+    {
+      "char": "资",
+      "pinyin": "zī"
+    },
+    {
+      "char": "源",
+      "pinyin": "yuán"
+    },
+    {
+      "char": "的",
+      "pinyin": "de"
+    },
+    {
+      "char": "开",
+      "pinyin": "kāi"
+    },
+    {
+      "char": "发",
+      "pinyin": "fā"
+    },
+    {
+      "char": "和",
+      "pinyin": "hé"
+    },
+    {
+      "char": "保",
+      "pinyin": "bǎo"
+    },
+    {
+      "char": "护",
+      "pinyin": "hù"
+    },
+    {
+      "char": "。",
+      "pinyin": ""
+    },
+    {
+      "char": "新",
+      "pinyin": "xīn"
+    },
+    {
+      "char": "加",
+      "pinyin": "jiā"
+    },
+    {
+      "char": "坡",
+      "pinyin": "pō"
+    },
+    {
+      "char": "研",
+      "pinyin": "yán"
+    },
+    {
+      "char": "发",
+      "pinyin": "fā"
+    },
+    {
+      "char": "出",
+      "pinyin": "chū"
+    },
+    {
+      "char": "新",
+      "pinyin": "xīn"
+    },
+    {
+      "char": "生",
+      "pinyin": "shēng"
+    },
+    {
+      "char": "水",
+      "pinyin": "shuǐ"
+    },
+    {
+      "char": "技",
+      "pinyin": "jì"
+    },
+    {
+      "char": "术",
+      "pinyin": "shù"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "把",
+      "pinyin": "bǎ"
+    },
+    {
+      "char": "废",
+      "pinyin": "fèi"
+    },
+    {
+      "char": "水",
+      "pinyin": "shuǐ"
+    },
+    {
+      "char": "循",
+      "pinyin": "xún"
+    },
+    {
+      "char": "环",
+      "pinyin": "huán"
+    },
+    {
+      "char": "再",
+      "pinyin": "zài"
+    },
+    {
+      "char": "利",
+      "pinyin": "lì"
+    },
+    {
+      "char": "用",
+      "pinyin": "yòng"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "解",
+      "pinyin": "jiě"
+    },
+    {
+      "char": "决",
+      "pinyin": "jué"
+    },
+    {
+      "char": "了",
+      "pinyin": "liǎo"
+    },
+    {
+      "char": "部",
+      "pinyin": "bù"
+    },
+    {
+      "char": "分",
+      "pinyin": "fēn"
+    },
+    {
+      "char": "用",
+      "pinyin": "yòng"
+    },
+    {
+      "char": "水",
+      "pinyin": "shuǐ"
+    },
+    {
+      "char": "需",
+      "pinyin": "xū"
+    },
+    {
+      "char": "求",
+      "pinyin": "qiú"
+    },
+    {
+      "char": "。",
+      "pinyin": ""
+    },
+    {
+      "char": "我",
+      "pinyin": "wǒ"
+    },
+    {
+      "char": "们",
+      "pinyin": "men"
+    },
+    {
+      "char": "每",
+      "pinyin": "měi"
+    },
+    {
+      "char": "个",
+      "pinyin": "gè"
+    },
+    {
+      "char": "人",
+      "pinyin": "rén"
+    },
+    {
+      "char": "也",
+      "pinyin": "yě"
+    },
+    {
+      "char": "应",
+      "pinyin": "yìng"
+    },
+    {
+      "char": "该",
+      "pinyin": "gāi"
+    },
+    {
+      "char": "养",
+      "pinyin": "yǎng"
+    },
+    {
+      "char": "成",
+      "pinyin": "chéng"
+    },
+    {
+      "char": "节",
+      "pinyin": "jié"
+    },
+    {
+      "char": "约",
+      "pinyin": "yuē"
+    },
+    {
+      "char": "用",
+      "pinyin": "yòng"
+    },
+    {
+      "char": "水",
+      "pinyin": "shuǐ"
+    },
+    {
+      "char": "的",
+      "pinyin": "de"
+    },
+    {
+      "char": "好",
+      "pinyin": "hǎo"
+    },
+    {
+      "char": "习",
+      "pinyin": "xí"
+    },
+    {
+      "char": "惯",
+      "pinyin": "guàn"
+    },
+    {
+      "char": "：",
+      "pinyin": ""
+    },
+    {
+      "char": "及",
+      "pinyin": "jí"
+    },
+    {
+      "char": "时",
+      "pinyin": "shí"
+    },
+    {
+      "char": "关",
+      "pinyin": "guān"
+    },
+    {
+      "char": "好",
+      "pinyin": "hǎo"
+    },
+    {
+      "char": "水",
+      "pinyin": "shuǐ"
+    },
+    {
+      "char": "龙",
+      "pinyin": "lóng"
+    },
+    {
+      "char": "头",
+      "pinyin": "tóu"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "循",
+      "pinyin": "xún"
+    },
+    {
+      "char": "环",
+      "pinyin": "huán"
+    },
+    {
+      "char": "利",
+      "pinyin": "lì"
+    },
+    {
+      "char": "用",
+      "pinyin": "yòng"
+    },
+    {
+      "char": "清",
+      "pinyin": "qīng"
+    },
+    {
+      "char": "洗",
+      "pinyin": "xǐ"
+    },
+    {
+      "char": "食",
+      "pinyin": "shí"
+    },
+    {
+      "char": "物",
+      "pinyin": "wù"
+    },
+    {
+      "char": "的",
+      "pinyin": "de"
+    },
+    {
+      "char": "水",
+      "pinyin": "shuǐ"
+    },
+    {
+      "char": "来",
+      "pinyin": "lái"
+    },
+    {
+      "char": "浇",
+      "pinyin": "jiāo"
+    },
+    {
+      "char": "花",
+      "pinyin": "huā"
+    },
+    {
+      "char": "。",
+      "pinyin": ""
+    },
+    {
+      "char": "一",
+      "pinyin": "yī"
+    },
+    {
+      "char": "滴",
+      "pinyin": "dī"
+    },
+    {
+      "char": "水",
+      "pinyin": "shuǐ"
+    },
+    {
+      "char": "虽",
+      "pinyin": "suī"
+    },
+    {
+      "char": "小",
+      "pinyin": "xiǎo"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "汇",
+      "pinyin": "huì"
+    },
+    {
+      "char": "聚",
+      "pinyin": "jù"
+    },
+    {
+      "char": "起",
+      "pinyin": "qǐ"
+    },
+    {
+      "char": "来",
+      "pinyin": "lái"
+    },
+    {
+      "char": "却",
+      "pinyin": "què"
+    },
+    {
+      "char": "能",
+      "pinyin": "néng"
+    },
+    {
+      "char": "成",
+      "pinyin": "chéng"
+    },
+    {
+      "char": "就",
+      "pinyin": "jiù"
+    },
+    {
+      "char": "大",
+      "pinyin": "dà"
+    },
+    {
+      "char": "海",
+      "pinyin": "hǎi"
+    },
+    {
+      "char": "。",
+      "pinyin": ""
+    }
+  ]
+}

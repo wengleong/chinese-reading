@@ -1,0 +1,636 @@
+{
+  "id": "p5-challenge-suliao",
+  "title": "减少塑料垃圾",
+  "level": "P5",
+  "estMinutes": 5,
+  "tags": [
+    "challenge",
+    "environment"
+  ],
+  "tokens": [
+    {
+      "char": "海",
+      "pinyin": "hǎi"
+    },
+    {
+      "char": "洋",
+      "pinyin": "yáng"
+    },
+    {
+      "char": "污",
+      "pinyin": "wū"
+    },
+    {
+      "char": "染",
+      "pinyin": "rǎn"
+    },
+    {
+      "char": "越",
+      "pinyin": "yuè"
+    },
+    {
+      "char": "来",
+      "pinyin": "lái"
+    },
+    {
+      "char": "越",
+      "pinyin": "yuè"
+    },
+    {
+      "char": "严",
+      "pinyin": "yán"
+    },
+    {
+      "char": "重",
+      "pinyin": "zhòng"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "塑",
+      "pinyin": "sù"
+    },
+    {
+      "char": "料",
+      "pinyin": "liào"
+    },
+    {
+      "char": "垃",
+      "pinyin": "lā"
+    },
+    {
+      "char": "圾",
+      "pinyin": "jī"
+    },
+    {
+      "char": "是",
+      "pinyin": "shì"
+    },
+    {
+      "char": "主",
+      "pinyin": "zhǔ"
+    },
+    {
+      "char": "要",
+      "pinyin": "yào"
+    },
+    {
+      "char": "原",
+      "pinyin": "yuán"
+    },
+    {
+      "char": "因",
+      "pinyin": "yīn"
+    },
+    {
+      "char": "之",
+      "pinyin": "zhī"
+    },
+    {
+      "char": "一",
+      "pinyin": "yī"
+    },
+    {
+      "char": "。",
+      "pinyin": ""
+    },
+    {
+      "char": "科",
+      "pinyin": "kē"
+    },
+    {
+      "char": "学",
+      "pinyin": "xué"
+    },
+    {
+      "char": "家",
+      "pinyin": "jiā"
+    },
+    {
+      "char": "估",
+      "pinyin": "gū"
+    },
+    {
+      "char": "计",
+      "pinyin": "jì"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "全",
+      "pinyin": "quán"
+    },
+    {
+      "char": "球",
+      "pinyin": "qiú"
+    },
+    {
+      "char": "每",
+      "pinyin": "měi"
+    },
+    {
+      "char": "年",
+      "pinyin": "nián"
+    },
+    {
+      "char": "有",
+      "pinyin": "yǒu"
+    },
+    {
+      "char": "八",
+      "pinyin": "bā"
+    },
+    {
+      "char": "百",
+      "pinyin": "bǎi"
+    },
+    {
+      "char": "万",
+      "pinyin": "wàn"
+    },
+    {
+      "char": "吨",
+      "pinyin": "dūn"
+    },
+    {
+      "char": "塑",
+      "pinyin": "sù"
+    },
+    {
+      "char": "料",
+      "pinyin": "liào"
+    },
+    {
+      "char": "流",
+      "pinyin": "liú"
+    },
+    {
+      "char": "入",
+      "pinyin": "rù"
+    },
+    {
+      "char": "海",
+      "pinyin": "hǎi"
+    },
+    {
+      "char": "洋",
+      "pinyin": "yáng"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "危",
+      "pinyin": "wēi"
+    },
+    {
+      "char": "害",
+      "pinyin": "hài"
+    },
+    {
+      "char": "无",
+      "pinyin": "wú"
+    },
+    {
+      "char": "数",
+      "pinyin": "shù"
+    },
+    {
+      "char": "海",
+      "pinyin": "hǎi"
+    },
+    {
+      "char": "洋",
+      "pinyin": "yáng"
+    },
+    {
+      "char": "生",
+      "pinyin": "shēng"
+    },
+    {
+      "char": "物",
+      "pinyin": "wù"
+    },
+    {
+      "char": "的",
+      "pinyin": "de"
+    },
+    {
+      "char": "生",
+      "pinyin": "shēng"
+    },
+    {
+      "char": "命",
+      "pinyin": "mìng"
+    },
+    {
+      "char": "。",
+      "pinyin": ""
+    },
+    {
+      "char": "一",
+      "pinyin": "yī"
+    },
+    {
+      "char": "只",
+      "pinyin": "zhī"
+    },
+    {
+      "char": "海",
+      "pinyin": "hǎi"
+    },
+    {
+      "char": "龟",
+      "pinyin": "guī"
+    },
+    {
+      "char": "误",
+      "pinyin": "wù"
+    },
+    {
+      "char": "食",
+      "pinyin": "shí"
+    },
+    {
+      "char": "漂",
+      "pinyin": "piāo"
+    },
+    {
+      "char": "浮",
+      "pinyin": "fú"
+    },
+    {
+      "char": "的",
+      "pinyin": "de"
+    },
+    {
+      "char": "塑",
+      "pinyin": "sù"
+    },
+    {
+      "char": "料",
+      "pinyin": "liào"
+    },
+    {
+      "char": "袋",
+      "pinyin": "dài"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "会",
+      "pinyin": "huì"
+    },
+    {
+      "char": "以",
+      "pinyin": "yǐ"
+    },
+    {
+      "char": "为",
+      "pinyin": "wèi"
+    },
+    {
+      "char": "自",
+      "pinyin": "zì"
+    },
+    {
+      "char": "己",
+      "pinyin": "jǐ"
+    },
+    {
+      "char": "已",
+      "pinyin": "yǐ"
+    },
+    {
+      "char": "经",
+      "pinyin": "jīng"
+    },
+    {
+      "char": "吃",
+      "pinyin": "chī"
+    },
+    {
+      "char": "饱",
+      "pinyin": "bǎo"
+    },
+    {
+      "char": "了",
+      "pinyin": "liǎo"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "最",
+      "pinyin": "zuì"
+    },
+    {
+      "char": "终",
+      "pinyin": "zhōng"
+    },
+    {
+      "char": "饿",
+      "pinyin": "è"
+    },
+    {
+      "char": "死",
+      "pinyin": "sǐ"
+    },
+    {
+      "char": "。",
+      "pinyin": ""
+    },
+    {
+      "char": "面",
+      "pinyin": "miàn"
+    },
+    {
+      "char": "对",
+      "pinyin": "duì"
+    },
+    {
+      "char": "这",
+      "pinyin": "zhè"
+    },
+    {
+      "char": "个",
+      "pinyin": "gè"
+    },
+    {
+      "char": "严",
+      "pinyin": "yán"
+    },
+    {
+      "char": "峻",
+      "pinyin": "jùn"
+    },
+    {
+      "char": "的",
+      "pinyin": "de"
+    },
+    {
+      "char": "问",
+      "pinyin": "wèn"
+    },
+    {
+      "char": "题",
+      "pinyin": "tí"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "我",
+      "pinyin": "wǒ"
+    },
+    {
+      "char": "们",
+      "pinyin": "men"
+    },
+    {
+      "char": "每",
+      "pinyin": "měi"
+    },
+    {
+      "char": "个",
+      "pinyin": "gè"
+    },
+    {
+      "char": "人",
+      "pinyin": "rén"
+    },
+    {
+      "char": "都",
+      "pinyin": "dōu"
+    },
+    {
+      "char": "责",
+      "pinyin": "zé"
+    },
+    {
+      "char": "无",
+      "pinyin": "wú"
+    },
+    {
+      "char": "旁",
+      "pinyin": "páng"
+    },
+    {
+      "char": "贷",
+      "pinyin": "dài"
+    },
+    {
+      "char": "。",
+      "pinyin": ""
+    },
+    {
+      "char": "我",
+      "pinyin": "wǒ"
+    },
+    {
+      "char": "们",
+      "pinyin": "men"
+    },
+    {
+      "char": "可",
+      "pinyin": "kě"
+    },
+    {
+      "char": "以",
+      "pinyin": "yǐ"
+    },
+    {
+      "char": "自",
+      "pinyin": "zì"
+    },
+    {
+      "char": "带",
+      "pinyin": "dài"
+    },
+    {
+      "char": "购",
+      "pinyin": "gòu"
+    },
+    {
+      "char": "物",
+      "pinyin": "wù"
+    },
+    {
+      "char": "袋",
+      "pinyin": "dài"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "拒",
+      "pinyin": "jù"
+    },
+    {
+      "char": "绝",
+      "pinyin": "jué"
+    },
+    {
+      "char": "一",
+      "pinyin": "yī"
+    },
+    {
+      "char": "次",
+      "pinyin": "cì"
+    },
+    {
+      "char": "性",
+      "pinyin": "xìng"
+    },
+    {
+      "char": "塑",
+      "pinyin": "sù"
+    },
+    {
+      "char": "料",
+      "pinyin": "liào"
+    },
+    {
+      "char": "产",
+      "pinyin": "chǎn"
+    },
+    {
+      "char": "品",
+      "pinyin": "pǐn"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "积",
+      "pinyin": "jī"
+    },
+    {
+      "char": "极",
+      "pinyin": "jí"
+    },
+    {
+      "char": "参",
+      "pinyin": "cān"
+    },
+    {
+      "char": "与",
+      "pinyin": "yǔ"
+    },
+    {
+      "char": "海",
+      "pinyin": "hǎi"
+    },
+    {
+      "char": "滩",
+      "pinyin": "tān"
+    },
+    {
+      "char": "清",
+      "pinyin": "qīng"
+    },
+    {
+      "char": "洁",
+      "pinyin": "jié"
+    },
+    {
+      "char": "活",
+      "pinyin": "huó"
+    },
+    {
+      "char": "动",
+      "pinyin": "dòng"
+    },
+    {
+      "char": "。",
+      "pinyin": ""
+    },
+    {
+      "char": "只",
+      "pinyin": "zhī"
+    },
+    {
+      "char": "有",
+      "pinyin": "yǒu"
+    },
+    {
+      "char": "大",
+      "pinyin": "dà"
+    },
+    {
+      "char": "家",
+      "pinyin": "jiā"
+    },
+    {
+      "char": "齐",
+      "pinyin": "qí"
+    },
+    {
+      "char": "心",
+      "pinyin": "xīn"
+    },
+    {
+      "char": "协",
+      "pinyin": "xié"
+    },
+    {
+      "char": "力",
+      "pinyin": "lì"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "才",
+      "pinyin": "cái"
+    },
+    {
+      "char": "能",
+      "pinyin": "néng"
+    },
+    {
+      "char": "拯",
+      "pinyin": "zhěng"
+    },
+    {
+      "char": "救",
+      "pinyin": "jiù"
+    },
+    {
+      "char": "我",
+      "pinyin": "wǒ"
+    },
+    {
+      "char": "们",
+      "pinyin": "men"
+    },
+    {
+      "char": "的",
+      "pinyin": "de"
+    },
+    {
+      "char": "海",
+      "pinyin": "hǎi"
+    },
+    {
+      "char": "洋",
+      "pinyin": "yáng"
+    },
+    {
+      "char": "。",
+      "pinyin": ""
+    }
+  ]
+}

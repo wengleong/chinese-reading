@@ -1,0 +1,33 @@
+{
+  "name": "chinese-reading",
+  "version": "1.0.0",
+  "description": "A browser-based daily reading app for primary school students (P3–P6). Pick a Chinese story, listen to a read-along voice highlight each character, optionally show Hanyu Pinyin, and record yourself reading aloud.",
+  "main": "sw.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "dependencies": {
+    "pinyin-pro": "^3.28.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.59.1",
+    "serve": "^14.2.6"
+  },
+  "scripts": {
+    "test": "node --test tests/unit.test.js",
+    "test:e2e": "playwright test",
+    "serve": "npx serve . -p 4000"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wengleong/chinese-reading.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/wengleong/chinese-reading/issues"
+  },
+  "homepage": "https://github.com/wengleong/chinese-reading#readme"
+}

@@ -1,0 +1,18 @@
+{
+  "id": "p4-pic-caichang",
+  "type": "picture",
+  "title": "菜市场的早晨",
+  "level": "P4",
+  "estMinutes": 4,
+  "tags": ["picture", "community"],
+  "scene": "清晨，菜市场里人声鼎沸，热闹非凡。",
+  "sceneParts": [
+    { "emoji": "🥬", "label": "蔬菜" },
+    { "emoji": "🐟", "label": "鱼" },
+    { "emoji": "🧑‍🍳", "label": "摊主" },
+    { "emoji": "👜", "label": "顾客" },
+    { "emoji": "💰", "label": "付钱" },
+    { "emoji": "🌅", "label": "清晨" }
+  ],
+  "keyElements": ["菜市场", "摊主", "顾客", "蔬菜", "新鲜", "热闹", "讨价还价", "买菜", "早晨", "忙碌"]
+}
