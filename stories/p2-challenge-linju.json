@@ -1,0 +1,452 @@
+{
+  "id": "p2-challenge-linju",
+  "title": "好邻居",
+  "level": "P2",
+  "estMinutes": 3,
+  "tags": [
+    "challenge",
+    "community"
+  ],
+  "tokens": [
+    {
+      "char": "王",
+      "pinyin": "wáng"
+    },
+    {
+      "char": "婆",
+      "pinyin": "pó"
+    },
+    {
+      "char": "婆",
+      "pinyin": "pó"
+    },
+    {
+      "char": "住",
+      "pinyin": "zhù"
+    },
+    {
+      "char": "在",
+      "pinyin": "zài"
+    },
+    {
+      "char": "我",
+      "pinyin": "wǒ"
+    },
+    {
+      "char": "们",
+      "pinyin": "men"
+    },
+    {
+      "char": "楼",
+      "pinyin": "lóu"
+    },
+    {
+      "char": "上",
+      "pinyin": "shàng"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "她",
+      "pinyin": "tā"
+    },
+    {
+      "char": "年",
+      "pinyin": "nián"
+    },
+    {
+      "char": "纪",
+      "pinyin": "jì"
+    },
+    {
+      "char": "大",
+      "pinyin": "dà"
+    },
+    {
+      "char": "了",
+      "pinyin": "liǎo"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "行",
+      "pinyin": "xíng"
+    },
+    {
+      "char": "动",
+      "pinyin": "dòng"
+    },
+    {
+      "char": "不",
+      "pinyin": "bù"
+    },
+    {
+      "char": "方",
+      "pinyin": "fāng"
+    },
+    {
+      "char": "便",
+      "pinyin": "biàn"
+    },
+    {
+      "char": "。",
+      "pinyin": ""
+    },
+    {
+      "char": "每",
+      "pinyin": "měi"
+    },
+    {
+      "char": "次",
+      "pinyin": "cì"
+    },
+    {
+      "char": "下",
+      "pinyin": "xià"
+    },
+    {
+      "char": "雨",
+      "pinyin": "yǔ"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "妈",
+      "pinyin": "mā"
+    },
+    {
+      "char": "妈",
+      "pinyin": "mā"
+    },
+    {
+      "char": "都",
+      "pinyin": "dōu"
+    },
+    {
+      "char": "帮",
+      "pinyin": "bāng"
+    },
+    {
+      "char": "她",
+      "pinyin": "tā"
+    },
+    {
+      "char": "收",
+      "pinyin": "shōu"
+    },
+    {
+      "char": "好",
+      "pinyin": "hǎo"
+    },
+    {
+      "char": "晾",
+      "pinyin": "liàng"
+    },
+    {
+      "char": "在",
+      "pinyin": "zài"
+    },
+    {
+      "char": "走",
+      "pinyin": "zǒu"
+    },
+    {
+      "char": "廊",
+      "pinyin": "láng"
+    },
+    {
+      "char": "的",
+      "pinyin": "de"
+    },
+    {
+      "char": "衣",
+      "pinyin": "yī"
+    },
+    {
+      "char": "服",
+      "pinyin": "fú"
+    },
+    {
+      "char": "。",
+      "pinyin": ""
+    },
+    {
+      "char": "下",
+      "pinyin": "xià"
+    },
+    {
+      "char": "楼",
+      "pinyin": "lóu"
+    },
+    {
+      "char": "梯",
+      "pinyin": "tī"
+    },
+    {
+      "char": "时",
+      "pinyin": "shí"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "我",
+      "pinyin": "wǒ"
+    },
+    {
+      "char": "们",
+      "pinyin": "men"
+    },
+    {
+      "char": "会",
+      "pinyin": "huì"
+    },
+    {
+      "char": "搀",
+      "pinyin": "chān"
+    },
+    {
+      "char": "扶",
+      "pinyin": "fú"
+    },
+    {
+      "char": "她",
+      "pinyin": "tā"
+    },
+    {
+      "char": "慢",
+      "pinyin": "màn"
+    },
+    {
+      "char": "慢",
+      "pinyin": "màn"
+    },
+    {
+      "char": "走",
+      "pinyin": "zǒu"
+    },
+    {
+      "char": "。",
+      "pinyin": ""
+    },
+    {
+      "char": "王",
+      "pinyin": "wáng"
+    },
+    {
+      "char": "婆",
+      "pinyin": "pó"
+    },
+    {
+      "char": "婆",
+      "pinyin": "pó"
+    },
+    {
+      "char": "总",
+      "pinyin": "zǒng"
+    },
+    {
+      "char": "是",
+      "pinyin": "shì"
+    },
+    {
+      "char": "笑",
+      "pinyin": "xiào"
+    },
+    {
+      "char": "着",
+      "pinyin": "zhe"
+    },
+    {
+      "char": "说",
+      "pinyin": "shuō"
+    },
+    {
+      "char": "：",
+      "pinyin": ""
+    },
+    {
+      "char": "\"",
+      "pinyin": ""
+    },
+    {
+      "char": "有",
+      "pinyin": "yǒu"
+    },
+    {
+      "char": "你",
+      "pinyin": "nǐ"
+    },
+    {
+      "char": "们",
+      "pinyin": "men"
+    },
+    {
+      "char": "这",
+      "pinyin": "zhè"
+    },
+    {
+      "char": "样",
+      "pinyin": "yàng"
+    },
+    {
+      "char": "的",
+      "pinyin": "de"
+    },
+    {
+      "char": "好",
+      "pinyin": "hǎo"
+    },
+    {
+      "char": "邻",
+      "pinyin": "lín"
+    },
+    {
+      "char": "居",
+      "pinyin": "jū"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "我",
+      "pinyin": "wǒ"
+    },
+    {
+      "char": "真",
+      "pinyin": "zhēn"
+    },
+    {
+      "char": "幸",
+      "pinyin": "xìng"
+    },
+    {
+      "char": "福",
+      "pinyin": "fú"
+    },
+    {
+      "char": "！",
+      "pinyin": ""
+    },
+    {
+      "char": "\"",
+      "pinyin": ""
+    },
+    {
+      "char": "远",
+      "pinyin": "yuǎn"
+    },
+    {
+      "char": "亲",
+      "pinyin": "qīn"
+    },
+    {
+      "char": "不",
+      "pinyin": "bù"
+    },
+    {
+      "char": "如",
+      "pinyin": "rú"
+    },
+    {
+      "char": "近",
+      "pinyin": "jìn"
+    },
+    {
+      "char": "邻",
+      "pinyin": "lín"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "我",
+      "pinyin": "wǒ"
+    },
+    {
+      "char": "们",
+      "pinyin": "men"
+    },
+    {
+      "char": "要",
+      "pinyin": "yào"
+    },
+    {
+      "char": "关",
+      "pinyin": "guān"
+    },
+    {
+      "char": "心",
+      "pinyin": "xīn"
+    },
+    {
+      "char": "身",
+      "pinyin": "shēn"
+    },
+    {
+      "char": "边",
+      "pinyin": "biān"
+    },
+    {
+      "char": "的",
+      "pinyin": "de"
+    },
+    {
+      "char": "人",
+      "pinyin": "rén"
+    },
+    {
+      "char": "，",
+      "pinyin": ""
+    },
+    {
+      "char": "一",
+      "pinyin": "yī"
+    },
+    {
+      "char": "起",
+      "pinyin": "qǐ"
+    },
+    {
+      "char": "建",
+      "pinyin": "jiàn"
+    },
+    {
+      "char": "设",
+      "pinyin": "shè"
+    },
+    {
+      "char": "温",
+      "pinyin": "wēn"
+    },
+    {
+      "char": "暖",
+      "pinyin": "nuǎn"
+    },
+    {
+      "char": "的",
+      "pinyin": "de"
+    },
+    {
+      "char": "社",
+      "pinyin": "shè"
+    },
+    {
+      "char": "区",
+      "pinyin": "qū"
+    },
+    {
+      "char": "。",
+      "pinyin": ""
+    }
+  ]
+}
