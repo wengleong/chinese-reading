@@ -1322,6 +1322,22 @@ button.danger {
   margin: 0;
 }
 
+/* ---- Picture illustration ---- */
+.picture-illustration {
+  width: 100%;
+  max-width: 600px;
+  height: auto;
+  border-radius: 12px;
+  border: 1.5px solid var(--border);
+  display: block;
+  margin: 0 auto 16px;
+}
+.picture-scene-compact ~ .picture-illustration,
+.picture-illustration.compact {
+  max-width: 280px;
+  margin-bottom: 8px;
+}
+
 /* ---- Picture oral — question phases ---- */
 .picture-question-counter {
   font-size: 0.85rem;
