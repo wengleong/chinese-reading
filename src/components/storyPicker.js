@@ -8,12 +8,13 @@ import { getPassedStoryIds } from "../lib/students.js";
 
 const LEVEL_ORDER = ["P1", "P2", "P3", "P4", "P5", "P6"];
 
+// Module-level so filters survive re-renders triggered by story selection
+let activeLevel = null;
+let activeType = null;
+
 export function renderStoryPicker({ root, stories, activeId, activeStudentId, onPick }) {
   root.innerHTML = "";
   const passedIds = activeStudentId ? getPassedStoryIds(activeStudentId) : new Set();
-
-  let activeLevel = null; // null = all levels
-  let activeType = null;  // null | 'challenge' | 'past-years' | 'picture'
 
   // Header
   const header = document.createElement("div");
