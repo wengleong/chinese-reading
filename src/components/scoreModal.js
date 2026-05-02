@@ -241,11 +241,11 @@ export function openScoreModal({ student, story, scoreResult, fluency = 50, tran
           <div class="score-cat-bar-wrap"><div class="score-cat-bar" id="bar-flu" style="background:${barColor(fluency)}"></div></div>
           <span class="score-cat-val">${fluency}</span>
         </div>
-        <div class="score-cat-row">
+        ${!isPicture ? `<div class="score-cat-row">
           <span class="score-cat-label">表达力 Expression</span>
           <div class="score-cat-bar-wrap"><div class="score-cat-bar" id="bar-exp" style="background:var(--muted)"></div></div>
           <span class="score-cat-val" id="exp-val">…</span>
-        </div>
+        </div>` : ''}
       </div>
 
       ${passed ? `

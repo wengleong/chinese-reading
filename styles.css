@@ -1283,11 +1283,6 @@ button.danger {
   color: white;
   font-weight: 600;
 }
-.filter-tab-group {
-  display: flex;
-  gap: 4px;
-}
-
 /* ---- Picture reader scene card ---- */
 .picture-reader-card {
   padding: 16px;
@@ -1325,16 +1320,4 @@ button.danger {
   font-style: italic;
   text-align: center;
   margin: 0;
-}
-.picture-score-row {
-  display: flex;
-  justify-content: space-between;
-  font-size: 14px;
-  margin: 4px 0;
-}
-.picture-no-score {
-  text-align: center;
-  color: var(--muted);
-  font-size: 14px;
-  padding: 16px;
 }

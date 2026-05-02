@@ -143,7 +143,6 @@ renderRecorder({
         onDone: () => { studentPanelCtl?.refresh(); refreshPicker(); },
       });
     }
-    studentPanelCtl?.refresh();
   },
 });
 

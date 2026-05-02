@@ -57,6 +57,8 @@ const SYNC_UP_DONE_KEY = 'cr-synced-up';
 async function syncUp() {
   if (!isLoggedIn()) return;
   if (localStorage.getItem(SYNC_UP_DONE_KEY)) return;
+  // Mark done first so a JSON parse error doesn't loop on every login
+  localStorage.setItem(SYNC_UP_DONE_KEY, '1');
   try {
     const students = JSON.parse(localStorage.getItem('cr-students') || '[]');
     const pushes = [];
@@ -70,7 +72,6 @@ async function syncUp() {
       }
     }
     await Promise.allSettled(pushes);
-    localStorage.setItem(SYNC_UP_DONE_KEY, '1');
   } catch {}
 }
 
