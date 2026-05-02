@@ -1,6 +1,6 @@
 // Displays a scene card for picture description stories.
-// Phase 0: full scene card + description prompt.
-// Phase 1-3: compact scene + question counter + question text.
+// Phase 0: illustration + description prompt.
+// Phase 1-3: compact illustration + question counter + question text.
 // Returns { setActiveIndex(){}, clearActive(){}, setPhase(phase, questionText) }.
 
 export function renderPictureReader({ root, story }) {
@@ -13,34 +13,17 @@ export function renderPictureReader({ root, story }) {
   title.className = 'story-title';
   title.textContent = story.title;
 
-  // Illustration image (if available) — shown prominently above scene grid
+  // Illustration
   const imgPath = `stories/images/${story.id}.jpg`;
   const storyImg = document.createElement('img');
   storyImg.className = 'picture-illustration';
   storyImg.alt = story.title;
-  storyImg.hidden = true; // shown once loaded successfully
   // Listeners must be attached before setting src — if the image is cached,
   // the load event fires synchronously during src assignment.
-  storyImg.addEventListener('load', () => { storyImg.hidden = false; scene.hidden = true; });
-  storyImg.addEventListener('error', () => { storyImg.hidden = true; scene.hidden = false; });
+  storyImg.addEventListener('load', () => { storyImg.hidden = false; });
+  storyImg.addEventListener('error', () => { storyImg.hidden = true; });
+  storyImg.hidden = true;
   storyImg.src = imgPath;
-
-  // Scene grid — rendered once, CSS class toggled for compact mode
-  const scene = document.createElement('div');
-  scene.className = 'picture-scene';
-  for (const part of (story.sceneParts || [])) {
-    const item = document.createElement('div');
-    item.className = 'picture-scene-item';
-    const emoji = document.createElement('span');
-    emoji.className = 'scene-emoji';
-    emoji.textContent = part.emoji;
-    const label = document.createElement('span');
-    label.className = 'scene-label';
-    label.textContent = part.label;
-    item.appendChild(emoji);
-    item.appendChild(label);
-    scene.appendChild(item);
-  }
 
   // Phase 0 elements
   const prompt = document.createElement('p');
@@ -62,7 +45,6 @@ export function renderPictureReader({ root, story }) {
 
   card.appendChild(title);
   card.appendChild(storyImg);
-  card.appendChild(scene);
   card.appendChild(prompt);
   card.appendChild(hint);
   card.appendChild(questionCounter);
@@ -72,14 +54,12 @@ export function renderPictureReader({ root, story }) {
   function setPhase(phase, questionText) {
     if (phase === 0) {
       storyImg.classList.remove('compact');
-      scene.classList.remove('picture-scene-compact');
       prompt.hidden = false;
       hint.hidden = false;
       questionCounter.hidden = true;
       questionCard.hidden = true;
     } else {
       storyImg.classList.add('compact');
-      scene.classList.add('picture-scene-compact');
       prompt.hidden = true;
       hint.hidden = true;
       questionCounter.hidden = false;
