@@ -12,6 +12,8 @@ COPY api/src/ ./api/src/
 COPY index.html styles.css manifest.webmanifest sw.js ./public/
 COPY src/ ./public/src/
 COPY stories/ ./public/stories/
+# verify images directory is present (invalidates Docker cache on each build)
+RUN ls /app/public/stories/images/ || (echo "ERROR: stories/images missing from build context" && exit 1)
 COPY icons/ ./public/icons/
 
 EXPOSE 3001
