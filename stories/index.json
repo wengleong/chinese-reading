@@ -28,6 +28,20 @@
     "tags": ["学校", "日常"]
   },
   {
+    "id": "p1-challenge-jiawu",
+    "title": "帮妈妈做家务",
+    "level": "P1",
+    "estMinutes": 3,
+    "tags": ["challenge", "family"]
+  },
+  {
+    "id": "p1-challenge-diqiu",
+    "title": "保护地球",
+    "level": "P1",
+    "estMinutes": 3,
+    "tags": ["challenge", "environment"]
+  },
+  {
     "id": "p2-bangzhu",
     "title": "帮助老婆婆",
     "level": "P2",
@@ -54,6 +68,20 @@
     "level": "P2",
     "estMinutes": 3,
     "tags": ["自然", "环境"]
+  },
+  {
+    "id": "p2-challenge-linju",
+    "title": "好邻居",
+    "level": "P2",
+    "estMinutes": 3,
+    "tags": ["challenge", "community"]
+  },
+  {
+    "id": "p2-challenge-fenlei",
+    "title": "垃圾分类",
+    "level": "P2",
+    "estMinutes": 3,
+    "tags": ["challenge", "environment"]
   },
   {
     "id": "p3-huanjing",
@@ -91,6 +119,35 @@
     "tags": ["运动", "健康"]
   },
   {
+    "id": "p3-challenge-keji",
+    "title": "科技让生活更方便",
+    "level": "P3",
+    "estMinutes": 4,
+    "tags": ["challenge", "technology"]
+  },
+  {
+    "id": "p3-challenge-zhuren",
+    "title": "助人为乐",
+    "level": "P3",
+    "estMinutes": 4,
+    "tags": ["challenge", "community"]
+  },
+  {
+    "id": "p3-past-jiankang",
+    "title": "健康饮食",
+    "level": "P3",
+    "estMinutes": 3,
+    "tags": ["past-years", "healthy"]
+  },
+  {
+    "id": "p3-pic-gongyuan",
+    "title": "公园里的一天",
+    "level": "P3",
+    "estMinutes": 3,
+    "tags": ["picture", "community"],
+    "type": "picture"
+  },
+  {
     "id": "p4-aixin",
     "title": "爱心义卖",
     "level": "P4",
@@ -124,6 +181,35 @@
     "level": "P4",
     "estMinutes": 4,
     "tags": ["fable", "animals"]
+  },
+  {
+    "id": "p4-challenge-wangluo",
+    "title": "网络与友谊",
+    "level": "P4",
+    "estMinutes": 4,
+    "tags": ["challenge", "technology"]
+  },
+  {
+    "id": "p4-challenge-heli",
+    "title": "种族和谐",
+    "level": "P4",
+    "estMinutes": 4,
+    "tags": ["challenge", "singapore"]
+  },
+  {
+    "id": "p4-past-jinglao",
+    "title": "敬老爱老",
+    "level": "P4",
+    "estMinutes": 4,
+    "tags": ["past-years", "community"]
+  },
+  {
+    "id": "p4-pic-caichang",
+    "title": "菜市场的早晨",
+    "level": "P4",
+    "estMinutes": 4,
+    "tags": ["picture", "community"],
+    "type": "picture"
   },
   {
     "id": "p5-huanqiu",
@@ -161,6 +247,35 @@
     "tags": ["意志", "励志"]
   },
   {
+    "id": "p5-challenge-suliao",
+    "title": "减少塑料垃圾",
+    "level": "P5",
+    "estMinutes": 5,
+    "tags": ["challenge", "environment"]
+  },
+  {
+    "id": "p5-challenge-yigong",
+    "title": "义工精神",
+    "level": "P5",
+    "estMinutes": 5,
+    "tags": ["challenge", "community"]
+  },
+  {
+    "id": "p5-past-shuizi",
+    "title": "珍惜水资源",
+    "level": "P5",
+    "estMinutes": 5,
+    "tags": ["past-years", "environment"]
+  },
+  {
+    "id": "p5-pic-ditie",
+    "title": "地铁上的好人好事",
+    "level": "P5",
+    "estMinutes": 5,
+    "tags": ["picture", "community"],
+    "type": "picture"
+  },
+  {
     "id": "p6-kexue",
     "title": "探索宇宙的奥秘",
     "level": "P6",
@@ -194,5 +309,34 @@
     "level": "P6",
     "estMinutes": 6,
     "tags": ["idiom", "classical"]
+  },
+  {
+    "id": "p6-challenge-shuzi",
+    "title": "数字时代的挑战",
+    "level": "P6",
+    "estMinutes": 6,
+    "tags": ["challenge", "technology"]
+  },
+  {
+    "id": "p6-challenge-xinjiapo",
+    "title": "新加坡精神",
+    "level": "P6",
+    "estMinutes": 6,
+    "tags": ["challenge", "singapore"]
+  },
+  {
+    "id": "p6-past-zerengr",
+    "title": "社会责任与个人成长",
+    "level": "P6",
+    "estMinutes": 6,
+    "tags": ["past-years", "community"]
+  },
+  {
+    "id": "p6-pic-yisaihui",
+    "title": "学校义卖会",
+    "level": "P6",
+    "estMinutes": 6,
+    "tags": ["picture", "community"],
+    "type": "picture"
   }
 ]
