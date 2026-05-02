@@ -120,9 +120,13 @@ export async function syncDown() {
         if (toAdd.length) {
           local.sessions = [...local.sessions, ...toAdd]
             .sort((a, b) => (b.completedAt ?? 0) - (a.completedAt ?? 0));
-          local.totalPoints = local.sessions
-            .filter(s => s.passed)
-            .reduce((sum, s) => sum + (s.pointsEarned ?? 0), 0);
+          const bestPerDay = {};
+          for (const s of local.sessions) {
+            if (!s.passed) continue;
+            const k = `${s.date}|${s.storyId}`;
+            bestPerDay[k] = Math.max(bestPerDay[k] || 0, s.pointsEarned ?? 0);
+          }
+          local.totalPoints = Object.values(bestPerDay).reduce((sum, v) => sum + v, 0);
           localStorage.setItem(key, JSON.stringify(local));
         }
       }
