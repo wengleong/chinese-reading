@@ -173,9 +173,11 @@ export function openScoreModal({ student, story, scoreResult, fluency = 50, tran
   const progressBefore = getProgress(student.id);
   const badgesBefore = getEarnedBadgeIds(progressBefore, currentStreak);
 
-  addSession(student.id, {
+  const { isPersonalBest } = addSession(student.id, {
     id: sessionId ?? `sess-${Date.now()}`,
     date: today, storyId: story.id, storyTitle: story.title,
+    storyTags: story.tags || [],
+    storyType: story.type || 'passage',
     score, passed, pointsEarned, transcript: transcript || '',
     completedAt: Date.now(),
   });
@@ -195,6 +197,8 @@ export function openScoreModal({ student, story, scoreResult, fluency = 50, tran
   overlay.innerHTML = `
     <div class="confetti-stage" id="score-confetti"></div>
     <div class="modal-card score-modal-v2" role="dialog" aria-modal="true">
+      <button class="score-close-btn" id="score-close" aria-label="Close">✕</button>
+      ${isPersonalBest ? `<div class="personal-best-banner" id="pb-banner">🏆 新纪录 Personal Best!</div>` : ''}
       <div class="score-hero">
         <svg class="score-ring-svg" viewBox="0 0 120 120" aria-hidden="true">
           <circle class="score-ring-track" cx="60" cy="60" r="50"/>
@@ -274,6 +278,7 @@ export function openScoreModal({ student, story, scoreResult, fluency = 50, tran
   function close() { overlay.remove(); }
   overlay.querySelector('#score-retry').addEventListener('click', () => { close(); onRetry?.(); });
   overlay.querySelector('#score-done').addEventListener('click', () => { close(); onDone?.(); });
+  overlay.querySelector('#score-close').addEventListener('click', () => { close(); onDone?.(); });
 
   if (newBadges.length) showBadgeCelebration(newBadges);
 
