@@ -155,7 +155,7 @@ function todayIso() {
 
 // scoreResult = { accuracy, coverage, overall }
 // fluency     = 0-100 from computeFluency()
-export function openScoreModal({ student, story, scoreResult, fluency = 50, transcript, sessionId, onRetry, onDone }) {
+export function openScoreModal({ student, story, scoreResult, fluency = 50, transcript, sessionId, onRetry, onDone, pictureFeedback = null }) {
   const score = scoreResult?.overall ?? scoreResult ?? 0; // backward-compat if bare number passed
   const accuracy  = scoreResult?.accuracy  ?? score;
   const coverage  = scoreResult?.coverage  ?? score;
@@ -192,6 +192,11 @@ export function openScoreModal({ student, story, scoreResult, fluency = 50, tran
   // Category bar colour helper
   function barColor(v) { return v >= 80 ? 'var(--good)' : v >= 60 ? 'var(--accent)' : 'var(--danger)'; }
 
+  const isPicture = story.type === 'picture';
+  const cat1Label = isPicture ? '内容 Content'  : '准确性 Accuracy';
+  const cat2Label = isPicture ? '语言 Language' : '完整性 Coverage';
+  const cat3Label = isPicture ? '节奏 Pace'     : '流利度 Fluency';
+
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
   overlay.innerHTML = `
@@ -215,17 +220,17 @@ export function openScoreModal({ student, story, scoreResult, fluency = 50, tran
 
       <div class="score-categories">
         <div class="score-cat-row">
-          <span class="score-cat-label">准确性 Accuracy</span>
+          <span class="score-cat-label">${cat1Label}</span>
           <div class="score-cat-bar-wrap"><div class="score-cat-bar" id="bar-acc" style="background:${barColor(accuracy)}"></div></div>
           <span class="score-cat-val">${accuracy}</span>
         </div>
         <div class="score-cat-row">
-          <span class="score-cat-label">完整性 Coverage</span>
+          <span class="score-cat-label">${cat2Label}</span>
           <div class="score-cat-bar-wrap"><div class="score-cat-bar" id="bar-cov" style="background:${barColor(coverage)}"></div></div>
           <span class="score-cat-val">${coverage}</span>
         </div>
         <div class="score-cat-row">
-          <span class="score-cat-label">流利度 Fluency</span>
+          <span class="score-cat-label">${cat3Label}</span>
           <div class="score-cat-bar-wrap"><div class="score-cat-bar" id="bar-flu" style="background:${barColor(fluency)}"></div></div>
           <span class="score-cat-val">${fluency}</span>
         </div>
@@ -283,32 +288,39 @@ export function openScoreModal({ student, story, scoreResult, fluency = 50, tran
   if (newBadges.length) showBadgeCelebration(newBadges);
 
   // Fetch AI feedback — updates Expression bar + tips
-  const storyText = story.tokens.filter(t => t.pinyin).map(t => t.char).join('');
-  getAiFeedback(story.title, storyText, transcript, scoreResult ?? { accuracy: score, coverage: score, overall: score }, fluency)
-    .then(result => {
-      if (!overlay.isConnected) return;
-      const feedbackEl = overlay.querySelector('#score-feedback');
-      const expVal = overlay.querySelector('#exp-val');
-      const expBar = overlay.querySelector('#bar-exp');
+  if (pictureFeedback) {
+    const feedbackEl = overlay.querySelector('#score-feedback');
+    if (feedbackEl) {
+      feedbackEl.innerHTML = `<p class="score-feedback-text">✨ ${pictureFeedback}</p>`;
+    }
+  } else if (!isPicture) {
+    const storyText = story.tokens.filter(t => t.pinyin).map(t => t.char).join('');
+    getAiFeedback(story.title, storyText, transcript, scoreResult ?? { accuracy: score, coverage: score, overall: score }, fluency)
+      .then(result => {
+        if (!overlay.isConnected) return;
+        const feedbackEl = overlay.querySelector('#score-feedback');
+        const expVal = overlay.querySelector('#exp-val');
+        const expBar = overlay.querySelector('#bar-exp');
 
-      if (result) {
-        const exp = Math.max(0, Math.min(100, result.expression_score ?? fluency));
-        if (expVal) expVal.textContent = exp;
-        if (expBar) {
-          expBar.style.background = barColor(exp);
-          animateBar(expBar, exp, 0);
+        if (result) {
+          const exp = Math.max(0, Math.min(100, result.expression_score ?? fluency));
+          if (expVal) expVal.textContent = exp;
+          if (expBar) {
+            expBar.style.background = barColor(exp);
+            animateBar(expBar, exp, 0);
+          }
+          const tips = [result.accuracy_tip, result.coverage_tip, result.fluency_tip].filter(Boolean);
+          feedbackEl.innerHTML = `
+            ${result.highlight ? `<p class="score-feedback-highlight">🌟 ${result.highlight}</p>` : ''}
+            <p class="score-feedback-text">✨ ${result.feedback}</p>
+            ${tips.map(t => `<p class="score-feedback-tip">💡 ${t}</p>`).join('')}`;
+        } else {
+          if (expVal) expVal.textContent = fluency;
+          if (expBar) { expBar.style.background = barColor(fluency); animateBar(expBar, fluency, 0); }
+          feedbackEl.innerHTML = `<p class="score-feedback-text">${passed
+            ? '🎉 Great reading! Keep practising every day!'
+            : '💪 Almost there — try again and you\'ll get it!'}</p>`;
         }
-        const tips = [result.accuracy_tip, result.coverage_tip, result.fluency_tip].filter(Boolean);
-        feedbackEl.innerHTML = `
-          ${result.highlight ? `<p class="score-feedback-highlight">🌟 ${result.highlight}</p>` : ''}
-          <p class="score-feedback-text">✨ ${result.feedback}</p>
-          ${tips.map(t => `<p class="score-feedback-tip">💡 ${t}</p>`).join('')}`;
-      } else {
-        if (expVal) expVal.textContent = fluency;
-        if (expBar) { expBar.style.background = barColor(fluency); animateBar(expBar, fluency, 0); }
-        feedbackEl.innerHTML = `<p class="score-feedback-text">${passed
-          ? '🎉 Great reading! Keep practising every day!'
-          : '💪 Almost there — try again and you\'ll get it!'}</p>`;
-      }
-    });
+      });
+  }
 }
