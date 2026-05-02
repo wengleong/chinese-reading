@@ -1,0 +1,18 @@
+{
+  "id": "p3-pic-gongyuan",
+  "type": "picture",
+  "title": "公园里的一天",
+  "level": "P3",
+  "estMinutes": 3,
+  "tags": ["picture", "community"],
+  "scene": "一个阳光明媚的下午，公园里热闹极了。",
+  "sceneParts": [
+    { "emoji": "🌳", "label": "大树" },
+    { "emoji": "👴", "label": "老人" },
+    { "emoji": "👧", "label": "小孩" },
+    { "emoji": "🌸", "label": "花朵" },
+    { "emoji": "🦆", "label": "鸭子" },
+    { "emoji": "☀️", "label": "阳光" }
+  ],
+  "keyElements": ["公园", "老人", "小孩", "玩耍", "花草", "树木", "阳光", "休息", "快乐", "散步"]
+}
