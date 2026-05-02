@@ -1,364 +1,714 @@
 [
   {
-    "id": "p1-dongwu",
-    "title": "小动物的朋友",
+    "id": "p1-challenge-diqiu",
+    "title": "保护地球",
     "level": "P1",
     "estMinutes": 3,
-    "tags": ["动物", "友谊"]
-  },
-  {
-    "id": "p1-jiaren",
-    "title": "我的家人",
-    "level": "P1",
-    "estMinutes": 3,
-    "tags": ["家庭", "日常"]
-  },
-  {
-    "id": "p1-jieri",
-    "title": "过新年",
-    "level": "P1",
-    "estMinutes": 3,
-    "tags": ["节日", "新年"]
-  },
-  {
-    "id": "p1-xuexiao",
-    "title": "我爱上学",
-    "level": "P1",
-    "estMinutes": 3,
-    "tags": ["学校", "日常"]
+    "tags": [
+      "challenge",
+      "environment"
+    ]
   },
   {
     "id": "p1-challenge-jiawu",
     "title": "帮妈妈做家务",
     "level": "P1",
     "estMinutes": 3,
-    "tags": ["challenge", "family"]
+    "tags": [
+      "challenge",
+      "family"
+    ]
   },
   {
-    "id": "p1-challenge-diqiu",
-    "title": "保护地球",
+    "id": "p1-challenge-shijian",
+    "title": "时间管理",
+    "level": "P1",
+    "tags": [
+      "challenge",
+      "time-management"
+    ],
+    "estMinutes": 3
+  },
+  {
+    "id": "p1-dongwu",
+    "title": "小动物的朋友",
     "level": "P1",
     "estMinutes": 3,
-    "tags": ["challenge", "environment"]
+    "tags": [
+      "动物",
+      "友谊"
+    ]
+  },
+  {
+    "id": "p1-jiaren",
+    "title": "我的家人",
+    "level": "P1",
+    "estMinutes": 3,
+    "tags": [
+      "家庭",
+      "日常"
+    ]
+  },
+  {
+    "id": "p1-jieri",
+    "title": "过新年",
+    "level": "P1",
+    "estMinutes": 3,
+    "tags": [
+      "节日",
+      "新年"
+    ]
+  },
+  {
+    "id": "p1-past-qinlao",
+    "title": "勤劳的小红",
+    "level": "P1",
+    "tags": [
+      "past-years",
+      "diligence"
+    ],
+    "estMinutes": 3
+  },
+  {
+    "id": "p1-pic-jiaoshi",
+    "title": "快乐的课室",
+    "level": "P1",
+    "tags": [
+      "picture",
+      "education"
+    ],
+    "estMinutes": 3,
+    "type": "picture"
+  },
+  {
+    "id": "p1-xuexiao",
+    "title": "我爱上学",
+    "level": "P1",
+    "estMinutes": 3,
+    "tags": [
+      "学校",
+      "日常"
+    ]
   },
   {
     "id": "p2-bangzhu",
     "title": "帮助老婆婆",
     "level": "P2",
     "estMinutes": 3,
-    "tags": ["助人", "品德"]
-  },
-  {
-    "id": "p2-xiguan",
-    "title": "好习惯从小养成",
-    "level": "P2",
-    "estMinutes": 3,
-    "tags": ["习惯", "品德"]
-  },
-  {
-    "id": "p2-youyi",
-    "title": "好朋友",
-    "level": "P2",
-    "estMinutes": 3,
-    "tags": ["友谊", "日常"]
-  },
-  {
-    "id": "p2-ziran",
-    "title": "美丽的大自然",
-    "level": "P2",
-    "estMinutes": 3,
-    "tags": ["自然", "环境"]
-  },
-  {
-    "id": "p2-challenge-linju",
-    "title": "好邻居",
-    "level": "P2",
-    "estMinutes": 3,
-    "tags": ["challenge", "community"]
+    "tags": [
+      "助人",
+      "品德"
+    ]
   },
   {
     "id": "p2-challenge-fenlei",
     "title": "垃圾分类",
     "level": "P2",
     "estMinutes": 3,
-    "tags": ["challenge", "environment"]
+    "tags": [
+      "challenge",
+      "environment"
+    ]
   },
   {
-    "id": "p3-huanjing",
-    "title": "保护我们的地球",
-    "level": "P3",
-    "estMinutes": 4,
-    "tags": ["环保", "地球"]
-  },
-  {
-    "id": "p3-jieyue",
-    "title": "节约用水从我做起",
-    "level": "P3",
-    "estMinutes": 4,
-    "tags": ["节约", "水资源"]
-  },
-  {
-    "id": "p3-shequ",
-    "title": "社区里的温暖",
-    "level": "P3",
-    "estMinutes": 4,
-    "tags": ["社区", "助人"]
-  },
-  {
-    "id": "p3-xiaomao-diaoyu",
-    "title": "小猫钓鱼",
-    "level": "P3",
+    "id": "p2-challenge-linju",
+    "title": "好邻居",
+    "level": "P2",
     "estMinutes": 3,
-    "tags": ["fable", "animals"]
+    "tags": [
+      "challenge",
+      "community"
+    ]
   },
   {
-    "id": "p3-yundong",
-    "title": "运动让我更健康",
+    "id": "p2-challenge-wenhua",
+    "title": "文化传承",
+    "level": "P2",
+    "tags": [
+      "challenge",
+      "culture"
+    ],
+    "estMinutes": 3
+  },
+  {
+    "id": "p2-past-chengshi",
+    "title": "诚实的阿明",
+    "level": "P2",
+    "tags": [
+      "past-years",
+      "honesty"
+    ],
+    "estMinutes": 3
+  },
+  {
+    "id": "p2-pic-caochang",
+    "title": "运动会的早晨",
+    "level": "P2",
+    "tags": [
+      "picture",
+      "sports"
+    ],
+    "estMinutes": 3,
+    "type": "picture"
+  },
+  {
+    "id": "p2-xiguan",
+    "title": "好习惯从小养成",
+    "level": "P2",
+    "estMinutes": 3,
+    "tags": [
+      "习惯",
+      "品德"
+    ]
+  },
+  {
+    "id": "p2-youyi",
+    "title": "好朋友",
+    "level": "P2",
+    "estMinutes": 3,
+    "tags": [
+      "友谊",
+      "日常"
+    ]
+  },
+  {
+    "id": "p2-ziran",
+    "title": "美丽的大自然",
+    "level": "P2",
+    "estMinutes": 3,
+    "tags": [
+      "自然",
+      "环境"
+    ]
+  },
+  {
+    "id": "p3-challenge-jiankang",
+    "title": "健康生活",
     "level": "P3",
-    "estMinutes": 4,
-    "tags": ["运动", "健康"]
+    "tags": [
+      "challenge",
+      "healthy"
+    ],
+    "estMinutes": 4
   },
   {
     "id": "p3-challenge-keji",
     "title": "科技让生活更方便",
     "level": "P3",
     "estMinutes": 4,
-    "tags": ["challenge", "technology"]
+    "tags": [
+      "challenge",
+      "technology"
+    ]
   },
   {
     "id": "p3-challenge-zhuren",
     "title": "助人为乐",
     "level": "P3",
     "estMinutes": 4,
-    "tags": ["challenge", "community"]
+    "tags": [
+      "challenge",
+      "community"
+    ]
+  },
+  {
+    "id": "p3-huanjing",
+    "title": "保护我们的地球",
+    "level": "P3",
+    "estMinutes": 4,
+    "tags": [
+      "环保",
+      "地球"
+    ]
+  },
+  {
+    "id": "p3-jieyue",
+    "title": "节约用水从我做起",
+    "level": "P3",
+    "estMinutes": 4,
+    "tags": [
+      "节约",
+      "水资源"
+    ]
   },
   {
     "id": "p3-past-jiankang",
     "title": "健康饮食",
     "level": "P3",
     "estMinutes": 3,
-    "tags": ["past-years", "healthy"]
+    "tags": [
+      "past-years",
+      "healthy"
+    ]
+  },
+  {
+    "id": "p3-past-yundong",
+    "title": "运动场上",
+    "level": "P3",
+    "tags": [
+      "past-years",
+      "sports"
+    ],
+    "estMinutes": 4
   },
   {
     "id": "p3-pic-gongyuan",
     "title": "公园里的一天",
     "level": "P3",
     "estMinutes": 3,
-    "tags": ["picture", "community"],
+    "tags": [
+      "picture",
+      "community"
+    ],
     "type": "picture"
+  },
+  {
+    "id": "p3-pic-tushuguan",
+    "title": "图书馆里",
+    "level": "P3",
+    "tags": [
+      "picture",
+      "education"
+    ],
+    "estMinutes": 3,
+    "type": "picture"
+  },
+  {
+    "id": "p3-shequ",
+    "title": "社区里的温暖",
+    "level": "P3",
+    "estMinutes": 4,
+    "tags": [
+      "社区",
+      "助人"
+    ]
+  },
+  {
+    "id": "p3-xiaomao-diaoyu",
+    "title": "小猫钓鱼",
+    "level": "P3",
+    "estMinutes": 3,
+    "tags": [
+      "fable",
+      "animals"
+    ]
+  },
+  {
+    "id": "p3-yundong",
+    "title": "运动让我更健康",
+    "level": "P3",
+    "estMinutes": 4,
+    "tags": [
+      "运动",
+      "健康"
+    ]
   },
   {
     "id": "p4-aixin",
     "title": "爱心义卖",
     "level": "P4",
     "estMinutes": 4,
-    "tags": ["爱心", "义工"]
-  },
-  {
-    "id": "p4-chuantong",
-    "title": "端午节的故事",
-    "level": "P4",
-    "estMinutes": 4,
-    "tags": ["传统文化", "节日"]
-  },
-  {
-    "id": "p4-jianchi",
-    "title": "坚持就是胜利",
-    "level": "P4",
-    "estMinutes": 4,
-    "tags": ["坚持", "毅力"]
-  },
-  {
-    "id": "p4-keji",
-    "title": "科技改变生活",
-    "level": "P4",
-    "estMinutes": 4,
-    "tags": ["科技", "生活"]
-  },
-  {
-    "id": "p4-wuya-heshui",
-    "title": "乌鸦喝水",
-    "level": "P4",
-    "estMinutes": 4,
-    "tags": ["fable", "animals"]
-  },
-  {
-    "id": "p4-challenge-wangluo",
-    "title": "网络与友谊",
-    "level": "P4",
-    "estMinutes": 4,
-    "tags": ["challenge", "technology"]
+    "tags": [
+      "爱心",
+      "义工"
+    ]
   },
   {
     "id": "p4-challenge-heli",
     "title": "种族和谐",
     "level": "P4",
     "estMinutes": 4,
-    "tags": ["challenge", "singapore"]
+    "tags": [
+      "challenge",
+      "singapore"
+    ]
+  },
+  {
+    "id": "p4-challenge-wangluo",
+    "title": "网络与友谊",
+    "level": "P4",
+    "estMinutes": 4,
+    "tags": [
+      "challenge",
+      "technology"
+    ]
+  },
+  {
+    "id": "p4-challenge-zeren",
+    "title": "负责任的小华",
+    "level": "P4",
+    "tags": [
+      "challenge",
+      "responsibility"
+    ],
+    "estMinutes": 4
+  },
+  {
+    "id": "p4-chuantong",
+    "title": "端午节的故事",
+    "level": "P4",
+    "estMinutes": 4,
+    "tags": [
+      "传统文化",
+      "节日"
+    ]
+  },
+  {
+    "id": "p4-jianchi",
+    "title": "坚持就是胜利",
+    "level": "P4",
+    "estMinutes": 4,
+    "tags": [
+      "坚持",
+      "毅力"
+    ]
+  },
+  {
+    "id": "p4-keji",
+    "title": "科技改变生活",
+    "level": "P4",
+    "estMinutes": 4,
+    "tags": [
+      "科技",
+      "生活"
+    ]
   },
   {
     "id": "p4-past-jinglao",
     "title": "敬老爱老",
     "level": "P4",
     "estMinutes": 4,
-    "tags": ["past-years", "community"]
+    "tags": [
+      "past-years",
+      "community"
+    ]
+  },
+  {
+    "id": "p4-past-keji",
+    "title": "科技与生活",
+    "level": "P4",
+    "tags": [
+      "past-years",
+      "technology"
+    ],
+    "estMinutes": 4
   },
   {
     "id": "p4-pic-caichang",
     "title": "菜市场的早晨",
     "level": "P4",
     "estMinutes": 4,
-    "tags": ["picture", "community"],
+    "tags": [
+      "picture",
+      "community"
+    ],
     "type": "picture"
   },
   {
-    "id": "p5-huanqiu",
-    "title": "世界是个大家庭",
-    "level": "P5",
-    "estMinutes": 5,
-    "tags": ["全球", "文化"]
+    "id": "p4-pic-yiyuan",
+    "title": "医院里的关怀",
+    "level": "P4",
+    "tags": [
+      "picture",
+      "community"
+    ],
+    "estMinutes": 4,
+    "type": "picture"
   },
   {
-    "id": "p5-lishi",
-    "title": "新加坡的建国故事",
-    "level": "P5",
-    "estMinutes": 5,
-    "tags": ["历史", "新加坡"]
+    "id": "p4-wuya-heshui",
+    "title": "乌鸦喝水",
+    "level": "P4",
+    "estMinutes": 4,
+    "tags": [
+      "fable",
+      "animals"
+    ]
   },
   {
-    "id": "p5-pinde",
-    "title": "诚实的力量",
+    "id": "p5-challenge-chuangxin",
+    "title": "创新精神",
     "level": "P5",
-    "estMinutes": 5,
-    "tags": ["品德", "诚实"]
-  },
-  {
-    "id": "p5-shouzhu-daitu",
-    "title": "守株待兔",
-    "level": "P5",
-    "estMinutes": 5,
-    "tags": ["idiom", "classical"]
-  },
-  {
-    "id": "p5-yizhi",
-    "title": "钢铁般的意志",
-    "level": "P5",
-    "estMinutes": 5,
-    "tags": ["意志", "励志"]
+    "tags": [
+      "challenge",
+      "innovation"
+    ],
+    "estMinutes": 5
   },
   {
     "id": "p5-challenge-suliao",
     "title": "减少塑料垃圾",
     "level": "P5",
     "estMinutes": 5,
-    "tags": ["challenge", "environment"]
+    "tags": [
+      "challenge",
+      "environment"
+    ]
   },
   {
     "id": "p5-challenge-yigong",
     "title": "义工精神",
     "level": "P5",
     "estMinutes": 5,
-    "tags": ["challenge", "community"]
+    "tags": [
+      "challenge",
+      "community"
+    ]
+  },
+  {
+    "id": "p5-huanqiu",
+    "title": "世界是个大家庭",
+    "level": "P5",
+    "estMinutes": 5,
+    "tags": [
+      "全球",
+      "文化"
+    ]
+  },
+  {
+    "id": "p5-lishi",
+    "title": "新加坡的建国故事",
+    "level": "P5",
+    "estMinutes": 5,
+    "tags": [
+      "历史",
+      "新加坡"
+    ]
+  },
+  {
+    "id": "p5-past-jiaoyu",
+    "title": "教育的价值",
+    "level": "P5",
+    "tags": [
+      "past-years",
+      "education"
+    ],
+    "estMinutes": 5
   },
   {
     "id": "p5-past-shuizi",
     "title": "珍惜水资源",
     "level": "P5",
     "estMinutes": 5,
-    "tags": ["past-years", "environment"]
+    "tags": [
+      "past-years",
+      "environment"
+    ]
+  },
+  {
+    "id": "p5-past-zhiyuan",
+    "title": "义工服务",
+    "level": "P5",
+    "tags": [
+      "past-years",
+      "community"
+    ],
+    "estMinutes": 5
   },
   {
     "id": "p5-pic-ditie",
     "title": "地铁上的好人好事",
     "level": "P5",
     "estMinutes": 5,
-    "tags": ["picture", "community"],
+    "tags": [
+      "picture",
+      "community"
+    ],
     "type": "picture"
   },
   {
-    "id": "p6-kexue",
-    "title": "探索宇宙的奥秘",
-    "level": "P6",
-    "estMinutes": 6,
-    "tags": ["科学", "宇宙"]
+    "id": "p5-pic-huanbao",
+    "title": "环保回收站",
+    "level": "P5",
+    "tags": [
+      "picture",
+      "environment"
+    ],
+    "estMinutes": 4,
+    "type": "picture"
   },
   {
-    "id": "p6-minzu",
-    "title": "多元种族的新加坡",
-    "level": "P6",
-    "estMinutes": 6,
-    "tags": ["种族和谐", "新加坡"]
+    "id": "p5-pic-jiaotong",
+    "title": "安全过马路",
+    "level": "P5",
+    "tags": [
+      "picture",
+      "safety"
+    ],
+    "estMinutes": 4,
+    "type": "picture"
   },
   {
-    "id": "p6-shengming",
-    "title": "生命的价值",
-    "level": "P6",
-    "estMinutes": 6,
-    "tags": ["生命", "价值观"]
+    "id": "p5-pinde",
+    "title": "诚实的力量",
+    "level": "P5",
+    "estMinutes": 5,
+    "tags": [
+      "品德",
+      "诚实"
+    ]
   },
   {
-    "id": "p6-zeren",
-    "title": "公民的社会责任",
-    "level": "P6",
-    "estMinutes": 6,
-    "tags": ["社会责任", "公民"]
+    "id": "p5-shouzhu-daitu",
+    "title": "守株待兔",
+    "level": "P5",
+    "estMinutes": 5,
+    "tags": [
+      "idiom",
+      "classical"
+    ]
   },
   {
-    "id": "p6-zixiang-maodun",
-    "title": "自相矛盾",
-    "level": "P6",
-    "estMinutes": 6,
-    "tags": ["idiom", "classical"]
+    "id": "p5-yizhi",
+    "title": "钢铁般的意志",
+    "level": "P5",
+    "estMinutes": 5,
+    "tags": [
+      "意志",
+      "励志"
+    ]
   },
   {
     "id": "p6-challenge-shuzi",
     "title": "数字时代的挑战",
     "level": "P6",
     "estMinutes": 6,
-    "tags": ["challenge", "technology"]
+    "tags": [
+      "challenge",
+      "technology"
+    ]
+  },
+  {
+    "id": "p6-challenge-weilai",
+    "title": "展望未来",
+    "level": "P6",
+    "tags": [
+      "challenge",
+      "future"
+    ],
+    "estMinutes": 5
   },
   {
     "id": "p6-challenge-xinjiapo",
     "title": "新加坡精神",
     "level": "P6",
     "estMinutes": 6,
-    "tags": ["challenge", "singapore"]
+    "tags": [
+      "challenge",
+      "singapore"
+    ]
+  },
+  {
+    "id": "p6-kexue",
+    "title": "探索宇宙的奥秘",
+    "level": "P6",
+    "estMinutes": 6,
+    "tags": [
+      "科学",
+      "宇宙"
+    ]
+  },
+  {
+    "id": "p6-minzu",
+    "title": "多元种族的新加坡",
+    "level": "P6",
+    "estMinutes": 6,
+    "tags": [
+      "种族和谐",
+      "新加坡"
+    ]
+  },
+  {
+    "id": "p6-past-huanjing",
+    "title": "爱护环境",
+    "level": "P6",
+    "tags": [
+      "past-years",
+      "environment"
+    ],
+    "estMinutes": 5
+  },
+  {
+    "id": "p6-past-minzu",
+    "title": "种族和谐",
+    "level": "P6",
+    "tags": [
+      "past-years",
+      "harmony"
+    ],
+    "estMinutes": 5
   },
   {
     "id": "p6-past-zerengr",
     "title": "社会责任与个人成长",
     "level": "P6",
     "estMinutes": 6,
-    "tags": ["past-years", "community"]
+    "tags": [
+      "past-years",
+      "community"
+    ]
+  },
+  {
+    "id": "p6-pic-keji",
+    "title": "科技改变生活",
+    "level": "P6",
+    "tags": [
+      "picture",
+      "technology"
+    ],
+    "estMinutes": 4,
+    "type": "picture"
   },
   {
     "id": "p6-pic-yisaihui",
     "title": "学校义卖会",
     "level": "P6",
     "estMinutes": 6,
-    "tags": ["picture", "community"],
+    "tags": [
+      "picture",
+      "community"
+    ],
     "type": "picture"
   },
-  { "id": "p1-challenge-shijian", "title": "时间管理", "level": "P1", "tags": ["challenge", "time-management"], "estMinutes": 3 },
-  { "id": "p1-past-qinlao", "title": "勤劳的小红", "level": "P1", "tags": ["past-years", "diligence"], "estMinutes": 3 },
-  { "id": "p1-pic-jiaoshi", "title": "快乐的课室", "level": "P1", "tags": ["picture", "education"], "estMinutes": 3, "type": "picture" },
-  { "id": "p2-challenge-wenhua", "title": "文化传承", "level": "P2", "tags": ["challenge", "culture"], "estMinutes": 3 },
-  { "id": "p2-past-chengshi", "title": "诚实的阿明", "level": "P2", "tags": ["past-years", "honesty"], "estMinutes": 3 },
-  { "id": "p2-pic-caochang", "title": "运动会的早晨", "level": "P2", "tags": ["picture", "sports"], "estMinutes": 3, "type": "picture" },
-  { "id": "p3-challenge-jiankang", "title": "健康生活", "level": "P3", "tags": ["challenge", "healthy"], "estMinutes": 4 },
-  { "id": "p3-past-yundong", "title": "运动场上", "level": "P3", "tags": ["past-years", "sports"], "estMinutes": 4 },
-  { "id": "p3-pic-tushuguan", "title": "图书馆里", "level": "P3", "tags": ["picture", "education"], "estMinutes": 3, "type": "picture" },
-  { "id": "p4-challenge-zeren", "title": "负责任的小华", "level": "P4", "tags": ["challenge", "responsibility"], "estMinutes": 4 },
-  { "id": "p4-past-keji", "title": "科技与生活", "level": "P4", "tags": ["past-years", "technology"], "estMinutes": 4 },
-  { "id": "p4-pic-yiyuan", "title": "医院里的关怀", "level": "P4", "tags": ["picture", "community"], "estMinutes": 4, "type": "picture" },
-  { "id": "p5-challenge-chuangxin", "title": "创新精神", "level": "P5", "tags": ["challenge", "innovation"], "estMinutes": 5 },
-  { "id": "p5-past-zhiyuan", "title": "义工服务", "level": "P5", "tags": ["past-years", "community"], "estMinutes": 5 },
-  { "id": "p5-past-jiaoyu", "title": "教育的价值", "level": "P5", "tags": ["past-years", "education"], "estMinutes": 5 },
-  { "id": "p5-pic-huanbao", "title": "环保回收站", "level": "P5", "tags": ["picture", "environment"], "estMinutes": 4, "type": "picture" },
-  { "id": "p5-pic-jiaotong", "title": "安全过马路", "level": "P5", "tags": ["picture", "safety"], "estMinutes": 4, "type": "picture" },
-  { "id": "p6-challenge-weilai", "title": "展望未来", "level": "P6", "tags": ["challenge", "future"], "estMinutes": 5 },
-  { "id": "p6-past-huanjing", "title": "爱护环境", "level": "P6", "tags": ["past-years", "environment"], "estMinutes": 5 },
-  { "id": "p6-past-minzu", "title": "种族和谐", "level": "P6", "tags": ["past-years", "harmony"], "estMinutes": 5 },
-  { "id": "p6-pic-zhiyuan", "title": "义工服务日", "level": "P6", "tags": ["picture", "community"], "estMinutes": 4, "type": "picture" },
-  { "id": "p6-pic-keji", "title": "科技改变生活", "level": "P6", "tags": ["picture", "technology"], "estMinutes": 4, "type": "picture" }
+  {
+    "id": "p6-pic-zhiyuan",
+    "title": "义工服务日",
+    "level": "P6",
+    "tags": [
+      "picture",
+      "community"
+    ],
+    "estMinutes": 4,
+    "type": "picture"
+  },
+  {
+    "id": "p6-shengming",
+    "title": "生命的价值",
+    "level": "P6",
+    "estMinutes": 6,
+    "tags": [
+      "生命",
+      "价值观"
+    ]
+  },
+  {
+    "id": "p6-zeren",
+    "title": "公民的社会责任",
+    "level": "P6",
+    "estMinutes": 6,
+    "tags": [
+      "社会责任",
+      "公民"
+    ]
+  },
+  {
+    "id": "p6-zixiang-maodun",
+    "title": "自相矛盾",
+    "level": "P6",
+    "estMinutes": 6,
+    "tags": [
+      "idiom",
+      "classical"
+    ]
+  }
 ]

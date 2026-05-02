@@ -78,7 +78,7 @@ async function generateImage(storyId) {
 
   console.log(`🎨 Generating ${storyId}…`);
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${API_KEY}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-fast-generate-001:predict?key=${API_KEY}`;
   const body = {
     instances: [{ prompt }],
     parameters: {
