@@ -3,6 +3,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { parseModelJsonBlock } from '../src/lib/pictureScorer.js';
 
 // ---------------------------------------------------------------------------
 // computeTotalPoints
@@ -186,4 +187,24 @@ test('selectQuestions fallback: null returns generic', () => {
   const result = selectQuestionsFallback(null);
   assert.equal(result.length, 3);
   assert.equal(result[0], '你觉得图片里发生了什么事？');
+});
+
+// ---------------------------------------------------------------------------
+// pictureScorer parser hardening
+// ---------------------------------------------------------------------------
+test('parseModelJsonBlock: parses clean JSON', () => {
+  const parsed = parseModelJsonBlock('{"content_score": 80, "language_score": 70, "expression_score": 75}');
+  assert.equal(parsed.content_score, 80);
+  assert.equal(parsed.language_score, 70);
+  assert.equal(parsed.expression_score, 75);
+});
+
+test('parseModelJsonBlock: parses fenced JSON with extra text', () => {
+  const parsed = parseModelJsonBlock('Here is the result:\n```json\n{"selected":[2,0,1]}\n```\nGood luck!');
+  assert.deepEqual(parsed.selected, [2, 0, 1]);
+});
+
+test('parseModelJsonBlock: returns null when no JSON object exists', () => {
+  const parsed = parseModelJsonBlock('no json here');
+  assert.equal(parsed, null);
 });

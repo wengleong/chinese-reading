@@ -9,6 +9,64 @@ const GENERIC_QUESTIONS = [
   '你从这幅图片学到了什么？',
 ];
 
+function extractFirstJsonObject(text) {
+  const start = text.indexOf('{');
+  if (start === -1) return null;
+
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let i = start; i < text.length; i += 1) {
+    const ch = text[i];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (ch === '\\') escaped = true;
+      else if (ch === '"') inString = false;
+      continue;
+    }
+
+    if (ch === '"') {
+      inString = true;
+      continue;
+    }
+    if (ch === '{') depth += 1;
+    else if (ch === '}') {
+      depth -= 1;
+      if (depth === 0) return text.slice(start, i + 1);
+    }
+  }
+  return null;
+}
+
+export function parseModelJsonBlock(rawText) {
+  if (!rawText || typeof rawText !== 'string') return null;
+  const cleaned = rawText.trim()
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```$/i, '');
+  const candidate = extractFirstJsonObject(cleaned) || cleaned;
+  try {
+    return JSON.parse(candidate);
+  } catch {
+    return null;
+  }
+}
+
+function extractTextFromModelResponse(data) {
+  const blocks = data?.content;
+  if (!Array.isArray(blocks)) return '';
+  return blocks
+    .filter(b => b?.type === 'text' && typeof b?.text === 'string')
+    .map(b => b.text)
+    .join('\n')
+    .trim();
+}
+
+function toBoundedScore(value, fallback) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(0, Math.min(100, Math.round(n)));
+}
+
 // Select 3 questions from story.questions most relevant to the student's description.
 // Falls back to first 3 (or generic) if AI call fails or story has no questions.
 export async function selectQuestions({ story, descriptionTranscript }) {
@@ -33,9 +91,8 @@ Return JSON only (no code fences): {"selected": [index, index, index]}`;
       max_tokens: 60,
       messages: [{ role: 'user', content: prompt }],
     });
-    const raw = data.content[0].text.trim()
-      .replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
-    const result = JSON.parse(raw);
+    const result = parseModelJsonBlock(extractTextFromModelResponse(data));
+    if (!result) throw new Error('bad response');
     const indices = result.selected;
     if (!Array.isArray(indices) || indices.length !== 3) throw new Error('bad response');
     const selected = indices.map(i => questions[i]).filter(Boolean);
@@ -89,12 +146,11 @@ Return JSON only (no code fences):
       max_tokens: 250,
       messages: [{ role: 'user', content: prompt }],
     });
-    const raw = data.content[0].text.trim()
-      .replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
-    const result = JSON.parse(raw);
-    const contentScore = Math.max(0, Math.min(100, result.content_score ?? coveragePct));
-    const languageScore = Math.max(0, Math.min(100, result.language_score ?? 50));
-    const expressionScore = Math.max(0, Math.min(100, result.expression_score ?? 50));
+    const result = parseModelJsonBlock(extractTextFromModelResponse(data));
+    if (!result) throw new Error('bad response');
+    const contentScore = toBoundedScore(result.content_score, coveragePct);
+    const languageScore = toBoundedScore(result.language_score, 50);
+    const expressionScore = toBoundedScore(result.expression_score, 50);
     const overall = Math.round(contentScore * 0.4 + languageScore * 0.4 + expressionScore * 0.2);
     return {
       contentScore,
