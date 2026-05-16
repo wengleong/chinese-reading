@@ -43,6 +43,10 @@ async function callClaude(familyId, body) {
     },
     body: JSON.stringify(body),
   });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw Object.assign(new Error(err.error?.message || 'Anthropic API error'), { status: 502 });
+  }
   return res.json();
 }
 
@@ -64,11 +68,11 @@ function buildSchedule(examDateStr) {
   for (let i = 0; i < diffDays - 1; i++) {
     const d = new Date(today);
     d.setDate(d.getDate() + i);
-    schedule.push({ date: d.toISOString().slice(0, 10), mode: 'practice' });
+    schedule.push({ date: d.toLocaleDateString('sv-SE', { timeZone: 'Asia/Singapore' }), mode: 'practice' });
   }
   const dayBefore = new Date(exam);
   dayBefore.setDate(dayBefore.getDate() - 1);
-  schedule.push({ date: dayBefore.toISOString().slice(0, 10), mode: 'mock' });
+  schedule.push({ date: dayBefore.toLocaleDateString('sv-SE', { timeZone: 'Asia/Singapore' }), mode: 'mock' });
   return schedule;
 }
 
@@ -92,6 +96,8 @@ router.post('/exams', async (req, res) => {
     const { studentId, title, examDate, words } = req.body;
     if (!studentId || !title || !examDate || !Array.isArray(words))
       return res.status(400).json({ error: 'Missing required fields' });
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(examDate))
+      return res.status(400).json({ error: 'examDate must be YYYY-MM-DD format' });
     await assertStudentOwner(studentId, req.familyId);
     const schedule = buildSchedule(examDate);
     const { rows } = await db.query(
@@ -120,6 +126,7 @@ router.patch('/exams/:id', async (req, res) => {
     const { rows } = await db.query(
       `UPDATE tingxie_exams SET ${updates.join(', ')} WHERE id = $${idx} RETURNING *`, vals
     );
+    if (!rows.length) return res.status(404).json({ error: 'Exam not found' });
     res.json(rows[0]);
   } catch (e) { res.status(e.status || 500).json({ error: e.message }); }
 });
@@ -176,10 +183,10 @@ router.post('/extract', upload.single('file'), async (req, res) => {
       const { pdf } = await import('pdf-to-img');
       const pages = [];
       for await (const page of await pdf(req.file.buffer, { scale: 2 })) {
-        pages.push(page);
-        if (pages.length > 5) {
+        if (pages.length >= 5) {
           return res.status(400).json({ error: 'PDF too long — please upload just the word list page.' });
         }
+        pages.push(page);
       }
       imageContents = pages.map(buf => ({
         type: 'image',
@@ -286,6 +293,8 @@ router.post('/grade-batch', async (req, res) => {
     const { studentId, items } = req.body;
     if (!studentId || !Array.isArray(items) || !items.length)
       return res.status(400).json({ error: 'studentId and items[] required' });
+    if (items.length > 40)
+      return res.status(400).json({ error: 'Too many items — max 40 per batch' });
     await assertStudentOwner(studentId, req.familyId);
 
     const content = items.flatMap((item, i) => [
