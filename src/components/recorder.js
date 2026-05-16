@@ -113,12 +113,18 @@ export function renderRecorder({ root, getCurrentStory, getActiveStudent, onSave
         await new Promise(resolve => {
           const r = recognition;
           recognition = null;
-          const timeout = setTimeout(resolve, 1500);
-          r.onend = () => { clearTimeout(timeout); resolve(); };
-          try { r.stop(); } catch { clearTimeout(timeout); resolve(); }
+          // 2s covers slow iOS devices; onend fires sooner on desktop.
+          const timeout = setTimeout(resolve, 2000);
+          // Use addEventListener to avoid clobbering any internal browser handler.
+          r.addEventListener('end', () => { clearTimeout(timeout); resolve(); }, { once: true });
+          try { r.stop(); } catch {
+            // stop() throws if recognition already ended (e.g. silence timeout).
+            // Wait briefly for any pending onresult events before giving up.
+            clearTimeout(timeout);
+            setTimeout(resolve, 300);
+          }
         });
       }
-      recognition = null;
       stream.getTracks().forEach(t => t.stop());
 
       const story = getCurrentStory?.();
