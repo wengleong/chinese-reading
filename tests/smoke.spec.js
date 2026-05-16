@@ -128,9 +128,9 @@ test.describe('Picture Story view', () => {
     await expect(page.locator('.picture-reader-card')).toBeVisible();
   });
 
-  test('shows scene emoji grid inside picture-scene', async ({ page }) => {
-    await expect(page.locator('.picture-scene')).toBeVisible();
-    await expect(page.locator('.scene-emoji').first()).toBeVisible();
+  test('shows picture illustration image inside card', async ({ page }) => {
+    // Picture stories render a static image (.picture-illustration), not a scene emoji grid.
+    await expect(page.locator('.picture-reader-card img.picture-illustration')).toBeAttached();
   });
 
   test('hides TTS playback controls', async ({ page }) => {
@@ -162,34 +162,34 @@ test.describe('Picture oral phase transitions', () => {
     await page.waitForSelector('.picture-reader-card', { timeout: 8000 });
   });
 
-  test('phase 0: shows description prompt, hides question card', async ({ page }) => {
+  test('phase 0: shows description prompt, hides question card; step counter always visible', async ({ page }) => {
+    // Phase 0: prompt visible, question card hidden, step counter always shown
     await expect(page.locator('.picture-prompt')).toBeVisible();
     await expect(page.locator('.picture-question-card')).toBeHidden();
-    await expect(page.locator('.picture-question-counter')).toBeHidden();
+    await expect(page.locator('.picture-question-counter')).toBeVisible();
   });
 
-  test('phase 1: shows question counter and card after DOM manipulation', async ({ page }) => {
+  test('phase 1: setPhase() hides prompt and shows question card', async ({ page }) => {
+    // Simulate phase transition by directly manipulating the DOM elements
+    // that setPhase() controls (without .picture-scene, which no longer exists)
     await page.evaluate(() => {
       const root = document.getElementById('story-reader');
       if (!root) return;
-      const scene = root.querySelector('.picture-scene');
       const prompt = root.querySelector('.picture-prompt');
       const counter = root.querySelector('.picture-question-counter');
       const qcard = root.querySelector('.picture-question-card');
-      if (!scene || !prompt || !counter || !qcard) return;
-      scene.classList.add('picture-scene-compact');
+      if (!prompt || !counter || !qcard) return;
       prompt.hidden = true;
-      counter.hidden = false;
-      counter.textContent = '第1题 共3题';
+      counter.textContent = '录音 2 / 4 · 第1题 Question 1';
       qcard.hidden = false;
       qcard.textContent = '你平时喜欢去公园做什么活动？';
     });
 
     await expect(page.locator('.picture-prompt')).toBeHidden();
     await expect(page.locator('.picture-question-counter')).toBeVisible();
-    await expect(page.locator('.picture-question-counter')).toContainText('第1题 共3题');
+    await expect(page.locator('.picture-question-counter')).toContainText('第1题');
     await expect(page.locator('.picture-question-card')).toBeVisible();
-    await expect(page.locator('.picture-scene')).toHaveClass(/picture-scene-compact/);
+    await expect(page.locator('.picture-question-card')).toContainText('你平时喜欢去公园做什么活动？');
   });
 });
 
