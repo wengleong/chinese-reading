@@ -106,7 +106,18 @@ export function renderRecorder({ root, getCurrentStory, getActiveStudent, onSave
     chunks = [];
     mediaRecorder.ondataavailable = (e) => { if (e.data?.size > 0) chunks.push(e.data); };
     mediaRecorder.onstop = async () => {
-      try { recognition?.stop(); } catch {}
+      // Wait for recognition to deliver its final results before scoring.
+      // On iOS/mobile the last onresult fires async after stop() — without
+      // this wait the transcript is always empty and the score is always 0.
+      if (recognition) {
+        await new Promise(resolve => {
+          const r = recognition;
+          recognition = null;
+          const timeout = setTimeout(resolve, 1500);
+          r.onend = () => { clearTimeout(timeout); resolve(); };
+          try { r.stop(); } catch { clearTimeout(timeout); resolve(); }
+        });
+      }
       recognition = null;
       stream.getTracks().forEach(t => t.stop());
 

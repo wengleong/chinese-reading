@@ -210,17 +210,28 @@ export function scoreTranscript(storyTokens, transcript) {
 export function computeFluency({ avgConfidence, timingGaps, durationMs, storyLength }) {
   let score = 50; // baseline when no signal available
 
-  // Confidence signal (0-1 → 0-50 contribution)
-  if (avgConfidence > 0) score = avgConfidence * 50;
+  const hasConfidence = avgConfidence > 0;
+  const hasTiming = timingGaps && timingGaps.length >= 2;
 
-  // Timing regularity: low variance in gaps = smooth reading
-  if (timingGaps && timingGaps.length >= 2) {
+  if (hasConfidence && hasTiming) {
+    // Both signals available: each contributes 0–50, together 0–100
+    const confidenceScore = avgConfidence * 50;
     const mean = timingGaps.reduce((a, b) => a + b, 0) / timingGaps.length;
     const variance = timingGaps.reduce((a, b) => a + (b - mean) ** 2, 0) / timingGaps.length;
-    const cv = mean > 0 ? Math.sqrt(variance) / mean : 1; // coefficient of variation
-    const timingScore = Math.max(0, 1 - cv) * 50; // 0-50 contribution
-    score = (score + timingScore) / 2 * 2; // average both signals, keep 0-100
+    const cv = mean > 0 ? Math.sqrt(variance) / mean : 1;
+    const timingScore = Math.max(0, 1 - cv) * 50;
+    score = confidenceScore + timingScore;
+  } else if (hasConfidence) {
+    // Confidence only (common on mobile) — map to full 0–100 range
+    score = avgConfidence * 100;
+  } else if (hasTiming) {
+    // Timing only — map to full 0–100 range
+    const mean = timingGaps.reduce((a, b) => a + b, 0) / timingGaps.length;
+    const variance = timingGaps.reduce((a, b) => a + (b - mean) ** 2, 0) / timingGaps.length;
+    const cv = mean > 0 ? Math.sqrt(variance) / mean : 1;
+    score = Math.max(0, 1 - cv) * 100;
   }
+  // else: no signals — score stays at 50 baseline
 
   // Pace check: if reading was very fast (< 1s per 5 chars) it may be rushed
   if (durationMs > 0 && storyLength > 0) {
