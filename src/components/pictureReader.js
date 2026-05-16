@@ -42,6 +42,26 @@ export function renderPictureReader({ root, story }) {
     mediaEl = storyImg;
   }
 
+  // Channel credit — video only
+  let creditEl = null;
+  if (isVideo && story.channel) {
+    creditEl = document.createElement('p');
+    creditEl.className = 'video-credit';
+    const link = document.createElement('a');
+    link.href = story.channelUrl || `https://www.youtube.com`;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.textContent = story.channel;
+    creditEl.append('Video by ', link, ' on YouTube');
+  }
+
+  // Step counter — always visible
+  const questionCounter = document.createElement('p');
+  questionCounter.className = 'picture-question-counter';
+  questionCounter.textContent = isVideo
+    ? '录音 1 / 4 · 看视频说话 Describe the video'
+    : '录音 1 / 4 · 看图说话 Describe the picture';
+
   // Phase 0 description prompt
   const prompt = document.createElement('p');
   prompt.className = 'picture-prompt';
@@ -49,13 +69,15 @@ export function renderPictureReader({ root, story }) {
     ? '观看视频后，用中文描述视频内容及你的看法。Watch the video, then describe it in Chinese.'
     : '请用中文描述以上图片内容。Describe what you see in Chinese.';
 
-  const hint = document.createElement('p');
-  hint.className = 'picture-hint';
-  hint.textContent = story.scene || '';
+  // Question card — phases 1-3
+  const questionCard = document.createElement('div');
+  questionCard.className = 'picture-question-card';
+  questionCard.hidden = true;
 
-  // SCFRAS hints panel — video only, collapsed by default
+  // SCFRAS hints panel — video only
+  // Contains scene context + SCFRAS list, both behind the toggle
   let hintsPanel = null;
-  if (isVideo && Array.isArray(story.hints) && story.hints.length > 0) {
+  if (isVideo) {
     hintsPanel = document.createElement('div');
     hintsPanel.className = 'scfras-hints';
 
@@ -64,63 +86,61 @@ export function renderPictureReader({ root, story }) {
     toggle.textContent = '💡 答题提示 Hints ▾';
     toggle.setAttribute('aria-expanded', 'false');
 
-    const list = document.createElement('ul');
-    list.className = 'scfras-list';
-    list.hidden = true;
+    const body = document.createElement('div');
+    body.className = 'scfras-body';
+    body.hidden = true;
 
-    for (const h of story.hints) {
-      const li = document.createElement('li');
-      li.textContent = h;
-      list.appendChild(li);
+    if (story.scene) {
+      const sceneP = document.createElement('p');
+      sceneP.className = 'scfras-scene';
+      sceneP.textContent = story.scene;
+      body.appendChild(sceneP);
+    }
+
+    if (Array.isArray(story.hints) && story.hints.length > 0) {
+      const list = document.createElement('ul');
+      list.className = 'scfras-list';
+      for (const h of story.hints) {
+        const li = document.createElement('li');
+        li.textContent = h;
+        list.appendChild(li);
+      }
+      body.appendChild(list);
     }
 
     toggle.addEventListener('click', () => {
-      const willExpand = list.hidden;
-      list.hidden = !willExpand;
+      const willExpand = body.hidden;
+      body.hidden = !willExpand;
       toggle.setAttribute('aria-expanded', String(willExpand));
       toggle.textContent = willExpand ? '💡 答题提示 Hints ▴' : '💡 答题提示 Hints ▾';
     });
 
     hintsPanel.appendChild(toggle);
-    hintsPanel.appendChild(list);
+    hintsPanel.appendChild(body);
   }
 
-  // Step counter — shown in all phases
-  const questionCounter = document.createElement('p');
-  questionCounter.className = 'picture-question-counter';
-  questionCounter.textContent = isVideo
-    ? '录音 1 / 4 · 看视频说话 Describe the video'
-    : '录音 1 / 4 · 看图说话 Describe the picture';
-
-  const questionCard = document.createElement('div');
-  questionCard.className = 'picture-question-card';
-  questionCard.hidden = true;
-
+  // DOM order: title → media → credit → step counter → prompt/question → hints
   card.appendChild(title);
   card.appendChild(mediaEl);
-  card.appendChild(prompt);
-  card.appendChild(hint);
-  if (hintsPanel) card.appendChild(hintsPanel);
+  if (creditEl) card.appendChild(creditEl);
   card.appendChild(questionCounter);
+  card.appendChild(prompt);
   card.appendChild(questionCard);
+  if (hintsPanel) card.appendChild(hintsPanel);
   root.appendChild(card);
 
   function setPhase(phase, questionText) {
     if (phase === 0) {
       prompt.hidden = false;
-      hint.hidden = false;
-      if (hintsPanel) hintsPanel.hidden = false;
+      questionCard.hidden = true;
       questionCounter.textContent = isVideo
         ? '录音 1 / 4 · 看视频说话 Describe the video'
         : '录音 1 / 4 · 看图说话 Describe the picture';
-      questionCard.hidden = true;
     } else {
       prompt.hidden = true;
-      hint.hidden = true;
-      if (hintsPanel) hintsPanel.hidden = false;
-      questionCounter.textContent = `录音 ${phase + 1} / 4 · 第${phase}题 Question ${phase}`;
       questionCard.hidden = false;
       questionCard.textContent = questionText || '';
+      questionCounter.textContent = `录音 ${phase + 1} / 4 · 第${phase}题 Question ${phase}`;
     }
   }
 
