@@ -17,6 +17,7 @@ app.use('/api/students',   require('./routes/students'));
 app.use('/api/sessions',   require('./routes/sessions'));
 app.use('/api/recordings', require('./routes/recordings'));
 app.use('/api/generate',   require('./routes/generate'));
+app.use('/api/tingxie',    require('./routes/tingxie'));
 
 app.get('/health', (_, res) => res.json({ ok: true }));
 
