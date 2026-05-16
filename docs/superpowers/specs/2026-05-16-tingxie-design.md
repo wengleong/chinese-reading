@@ -65,13 +65,17 @@ Tap any exam chip → opens detail view:
 - Delete individual words, add missing words manually
 - One-tap confirm → `POST /api/tingxie/exams`
 
-**Auto-schedule generation:** On exam creation, backend computes the revision schedule from creation date to exam date:
-- Early days (>5 days out): spaced repetition — all words day 1, then focus on weak words
-- Middle days (3–5 days out): weak words + full-set review
-- Day before exam: full mock
-- Exam day: no scheduled session
-- **Edge case — 1 day out:** schedule is just one full practice session today
-- **Edge case — same day as exam:** no schedule generated; show "好好加油！Good luck today!" message with option to do a quick practice anyway
+**Auto-schedule generation:** On exam creation, backend stores a fixed session-type calendar (dates + practice/mock labels). The `schedule` column stores `[{ date, mode }]` only — not word selections, since no session history exists yet.
+
+The schedule structure:
+- Early days (>5 days out): `mode: 'practice'` each day
+- Middle days (3–5 days out): `mode: 'practice'` each day
+- Day before exam: `mode: 'mock'`
+- Exam day: no entry
+- **Edge case — 1 day out:** one `mode: 'practice'` entry for today
+- **Edge case — same day as exam:** no schedule; show "好好加油！Good luck today!" with option to do a quick practice anyway
+
+**Word selection is computed dynamically at session start** — not stored in the schedule. The frontend fetches past session results for this exam, computes which words are weak (wrong ≥1 time), and applies the repetition rules (weak: 3×, new: 2×, mastered: 1×). This is what makes spaced repetition work — if word selection were stored at exam creation time there would be no session history to adapt from.
 
 ---
 
@@ -88,7 +92,7 @@ All tingxie data stored in backend DB, scoped by family and student. No localSto
 | title | TEXT | e.g. "词语单元一" |
 | exam_date | DATE | |
 | words | JSONB | `[{ hanzi, pinyin, type, sentence? }]` |
-| schedule | JSONB | computed array of `{ date, mode, wordIndices[] }` |
+| schedule | JSONB | computed array of `{ date, mode }` — dates and types only; word selection is dynamic |
 | created_at | TIMESTAMPTZ | |
 
 ### `tingxie_sessions`
@@ -111,7 +115,8 @@ All tingxie data stored in backend DB, scoped by family and student. No localSto
 - `POST /api/tingxie/extract` — Claude Vision paper extraction
 - `POST /api/tingxie/sessions` — save completed session
 - `GET /api/tingxie/sessions?examId=` — session history
-- `POST /api/tingxie/grade` — Claude Vision OCR grading for a single character image; body includes `{ studentId, hanzi, imageB64 }` so the backend can fetch this student's past confirmed-correct examples for few-shot context
+- `POST /api/tingxie/grade` — Claude Vision OCR grading for a single character (practice mode); body `{ studentId, hanzi, imageB64 }`; backend fetches up to 2 confirmed-correct past drawings of that exact character by this student for few-shot context
+- `POST /api/tingxie/grade-batch` — batch grading for mock exam; body `{ studentId, items: [{ hanzi, imageB64 }] }`; returns `[{ hanzi, read, correct }]`
 
 ---
 
@@ -123,11 +128,11 @@ All tingxie data stored in backend DB, scoped by family and student. No localSto
 - 米字格 guide lines (horizontal, vertical, inner square) in light gray
 - Freehand touch drawing, black strokes on white
 - Clear button per character
-- Submit button sends each canvas as a PNG (base64) to `POST /api/tingxie/grade`
+- Submit button behaviour differs by mode (see below)
 
-**Grading:** Claude Vision receives the canvas image + the correct character. Returns:
-- `{ read: string, correct: boolean, tip?: string }`
-- `tip` is only returned when wrong — a specific visual hint about the difference (e.g. "你写的是'己'，正确答案是'已' — 注意最后一笔")
+**Practice grading (immediate):** On submit, each character canvas sent to `POST /api/tingxie/grade` one at a time. Returns `{ read, correct, tip? }` immediately so the student sees instant feedback before moving to the next word.
+
+**Mock grading (batch):** Canvases are collected in memory as the student progresses. After the final word is submitted, all images sent together to `POST /api/tingxie/grade-batch` — a single API call returning an array of results. This avoids 40 sequential round-trips for a 20-word exam. Body: `{ studentId, items: [{ hanzi, imageB64 }] }`. Returns `[{ hanzi, read, correct }]` (no tips in mock mode).
 
 ---
 
@@ -171,7 +176,7 @@ All tingxie data stored in backend DB, scoped by family and student. No localSto
 - Wrong words automatically queued into next practice session (+2 repetitions each)
 - Points awarded: +80 for passing, +40 for 90%+, +80 for 100%, +25 for improving on personal best
 
-**Retake:** Student can retake a mock at any time. Best score per exam per day counts for badges/leaderboard.
+**Retake:** Student can retake a mock at any time. Best score per exam per day counts for badges.
 
 ---
 
@@ -180,8 +185,9 @@ All tingxie data stored in backend DB, scoped by family and student. No localSto
 Each practice session stores the drawn canvas image (base64, compressed) alongside the grading result in `tingxie_sessions.results[].imageB64`.
 
 When grading a mock exam attempt, the `POST /api/tingxie/grade` prompt includes:
-- 2–3 examples of this student's previously confirmed-correct drawings of similar characters (fetched from past sessions)
-- Presented as few-shot images: "Here is how this student writes [char] correctly: [image]"
+- Up to 2 confirmed-correct drawings of **that exact character** by this student (fetched from past `tingxie_sessions.results` where `correct: true` and `hanzi === target`)
+- Presented as few-shot images: "Here is how this student correctly writes [char]: [image1], [image2]"
+- If no past correct drawings exist for that character, no few-shot context is included — Claude grades from the image alone
 
 Effect: the more practice sessions a student completes, the better calibrated Claude's grading becomes to that student's specific handwriting style. This is in-context few-shot learning — no fine-tuning required.
 
@@ -219,7 +225,9 @@ All tingxie points and badges integrate into the existing `cr-progress` system (
 | Tingxie Champion | 🏆 | Pass 5 mock exams with score ≥90% |
 
 ### Points and badge integration with localStorage
-Tingxie session data lives in the cloud DB. Points and badges use the existing `cr-progress` localStorage system. Bridge: after saving a tingxie session to the cloud, call a new `addTingxieSession()` function (analogous to existing `addSession()`) that writes a lightweight record into `cr-progress.sessions` with `storyType: 'tingxie'` and the computed `pointsEarned`. This lets existing badge checks and point totals work without modification.
+Tingxie session data lives in the cloud DB. Points and badges use the existing `cr-progress` localStorage system. Bridge: after saving a tingxie session to the cloud, call a new `addTingxieSession()` function that writes a lightweight record into `cr-progress.sessions` with `storyType: 'tingxie'` and the computed `pointsEarned`.
+
+**Double-counting guard:** All existing badge checks that count reading stories (e.g. `stories_5`, `stories_15`, `p4_master`) must filter to `storyType !== 'tingxie'`. Tingxie-specific badges check for `storyType === 'tingxie'`. This partition must be enforced in `src/lib/badges.js` as part of implementation.
 
 ### End-of-session summary
 - Practice: word-by-word grid (green/red), wrong words flagged for next session
