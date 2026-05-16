@@ -211,6 +211,7 @@ export function renderTingxieSession({ root, exam, sessions, mode, student, onDo
       .filter(s => s.storyId === examStoryId && s.passed)
       .map(s => s.score));
     if (passed && score > prevBest) points += 25;
+    const prevBadgeIds = getEarnedBadgeIds(prevProgress, 0);
 
     // Save to cloud
     await saveSession({
@@ -222,7 +223,7 @@ export function renderTingxieSession({ root, exam, sessions, mode, student, onDo
 
     // Bridge to localStorage gamification
     addTingxieSession(student.id, exam.id, { passed, score, pointsEarned: points, date: todaySG() });
-    checkAndShowBadges();
+    checkAndShowBadges(prevBadgeIds);
 
     showMockResults({ wordResults, score, passed, correctCount, total, points });
   }
@@ -240,8 +241,10 @@ export function renderTingxieSession({ root, exam, sessions, mode, student, onDo
       score,
     });
 
+    const prevProgressForBadges = getProgress(student.id);
+    const prevBadgeIds = getEarnedBadgeIds(prevProgressForBadges, 0);
     addTingxieSession(student.id, exam.id, { passed: true, score, pointsEarned: totalPts, date: todaySG() });
-    checkAndShowBadges();
+    checkAndShowBadges(prevBadgeIds);
 
     root.innerHTML = `<div class="tx-results tx-practice-done">
       <div class="tx-results-header tx-passed">
@@ -282,10 +285,9 @@ export function renderTingxieSession({ root, exam, sessions, mode, student, onDo
     if (passed) spawnTingxieConfetti(el.querySelector('.tx-results-header'), score);
   }
 
-  function checkAndShowBadges() {
+  function checkAndShowBadges(prevIds) {
     const progress = getProgress(student.id);
     const streak = 0;
-    const prevIds = new Set();
     const nowIds = getEarnedBadgeIds(progress, streak);
     const newBadges = STATIC_BADGES.filter(b => nowIds.has(b.id) && !prevIds.has(b.id));
     if (newBadges.length) showBadgeCelebration(newBadges);

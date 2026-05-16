@@ -59,7 +59,10 @@ export async function extractPaper(file) {
   const res = await fetch(`${BASE}/extract`, {
     method: 'POST', headers: { Authorization: `Bearer ${getToken()}` }, body: fd,
   });
-  return res.json();
+  const data = await res.json();
+  // Pass extraction errors through (extraction_failed has special handling in upload component)
+  if (!res.ok && data.error !== 'extraction_failed') throw new Error(data.error || 'Upload failed');
+  return data;
 }
 
 export async function gradeCharacter({ studentId, hanzi, imageB64 }) {
