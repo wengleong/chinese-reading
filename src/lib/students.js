@@ -60,10 +60,21 @@ export function getActiveStudent() {
 // ---- Progress ----
 
 // Returns total points counting only the best-scoring session per story per day.
+// Excludes tingxie sessions — those are counted separately by computeTingxiePoints.
 function computeTotalPoints(sessions) {
   const best = {};
   for (const s of sessions) {
-    if (!s.passed) continue;
+    if (!s.passed || s.storyType === 'tingxie') continue;
+    const key = `${s.date}|${s.storyId}`;
+    best[key] = Math.max(best[key] || 0, s.pointsEarned || 0);
+  }
+  return Object.values(best).reduce((sum, v) => sum + v, 0);
+}
+
+export function computeTingxiePoints(sessions) {
+  const best = {};
+  for (const s of sessions) {
+    if (!s.passed || s.storyType !== 'tingxie') continue;
     const key = `${s.date}|${s.storyId}`;
     best[key] = Math.max(best[key] || 0, s.pointsEarned || 0);
   }
@@ -85,6 +96,23 @@ export function getProgress(studentId) {
 
 function saveProgress(studentId, progress) {
   localStorage.setItem(PROGRESS_PREFIX + studentId, JSON.stringify(progress));
+}
+
+export function addTingxieSession(studentId, examId, { passed, score, pointsEarned, date, masteredWordCount, completedSchedules }) {
+  const progress = getProgress(studentId);
+  const session = {
+    storyId: `tingxie-${examId}`,
+    storyType: 'tingxie',
+    passed: !!passed,
+    score: score || 0,
+    pointsEarned: pointsEarned || 0,
+    date: date || todayIso(),
+  };
+  progress.sessions.unshift(session);
+  progress.totalPoints = computeTotalPoints(progress.sessions);
+  if (masteredWordCount !== undefined) progress.masteredWordCount = masteredWordCount;
+  if (completedSchedules !== undefined) progress.completedSchedules = completedSchedules;
+  saveProgress(studentId, progress);
 }
 
 export function addSession(studentId, session) {

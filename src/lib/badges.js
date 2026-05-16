@@ -5,10 +5,10 @@
 
 export const STATIC_BADGES = [
   { id: 'first_pass',   icon: '🌟', label: 'First Pass',              mascot: '🐣', color: '#f59f00', check: (p)    => p.sessions.filter(s => s.passed).length >= 1 },
-  { id: 'stories_5',   icon: '📚', label: '5 Stories',               mascot: '🦉', color: '#1971c2', check: (p)    => new Set(p.sessions.filter(s => s.passed).map(s => s.storyId)).size >= 5 },
-  { id: 'stories_15',  icon: '📗', label: '15 Stories',              mascot: '🦚', color: '#2f9e44', check: (p)    => new Set(p.sessions.filter(s => s.passed).map(s => s.storyId)).size >= 15 },
-  { id: 'stories_30',  icon: '📘', label: '30 Stories',              mascot: '🐬', color: '#1971c2', check: (p)    => new Set(p.sessions.filter(s => s.passed).map(s => s.storyId)).size >= 30 },
-  { id: 'perfect',     icon: '💯', label: 'Perfect Score',           mascot: '🌈', color: '#ae3ec9', check: (p)    => p.sessions.some(s => s.score >= 100) },
+  { id: 'stories_5',   icon: '📚', label: '5 Stories',               mascot: '🦉', color: '#1971c2', check: (p)    => new Set(p.sessions.filter(s => s.passed && s.storyType !== 'tingxie').map(s => s.storyId)).size >= 5 },
+  { id: 'stories_15',  icon: '📗', label: '15 Stories',              mascot: '🦚', color: '#2f9e44', check: (p)    => new Set(p.sessions.filter(s => s.passed && s.storyType !== 'tingxie').map(s => s.storyId)).size >= 15 },
+  { id: 'stories_30',  icon: '📘', label: '30 Stories',              mascot: '🐬', color: '#1971c2', check: (p)    => new Set(p.sessions.filter(s => s.passed && s.storyType !== 'tingxie').map(s => s.storyId)).size >= 30 },
+  { id: 'perfect',     icon: '💯', label: 'Perfect Score',           mascot: '🌈', color: '#ae3ec9', check: (p)    => p.sessions.filter(s => s.storyType !== 'tingxie').some(s => s.score >= 100) },
   { id: 'streak_7',    icon: '🔥', label: '7-Day Streak',            mascot: '🐯', color: '#e8590c', check: (p, k) => k >= 7 },
   { id: 'streak_30',   icon: '🏆', label: '30-Day Streak',           mascot: '🦁', color: '#e8590c', check: (p, k) => k >= 30 },
   { id: 'pts_100',     icon: '💎', label: '100 Points',              mascot: '🐬', color: '#1971c2', check: (p)    => p.totalPoints >= 100 },
@@ -24,6 +24,72 @@ export const STATIC_BADGES = [
   { id: 'pb',          icon: '🌈', label: '新纪录 Personal Best',         mascot: '🐦', color: '#f59f00', check: (p)    => p.sessions.some(s => s.isPersonalBest) },
   { id: 'p3_master',   icon: '📕', label: 'P3 Master',                   mascot: '🐨', color: '#2f9e44', check: (p)    => ['p3-xiaomao-diaoyu','p3-huanjing','p3-jieyue','p3-shequ','p3-yundong','p3-challenge-keji','p3-challenge-zhuren'].every(id => p.sessions.some(s => s.passed && s.storyId === id)) },
   { id: 'p6_master',   icon: '📙', label: 'P6 Master',                   mascot: '🦁', color: '#e03131', check: (p)    => ['p6-kexue','p6-minzu','p6-shengming','p6-zeren','p6-zixiang-maodun','p6-challenge-shuzi','p6-challenge-xinjiapo','p6-vid-environment','p6-vid-elders','p6-vid-resources'].every(id => p.sessions.some(s => s.passed && s.storyId === id)) },
+
+  { id: 'tingxie_first', icon: '✍️', label: 'First Tingxie', mascot: '🐣', color: '#e8590c',
+    check: (p) => p.sessions.some(s => s.storyType === 'tingxie') },
+
+  { id: 'tingxie_ace', icon: '🎯', label: 'Mock Ace', mascot: '🦅', color: '#ae3ec9',
+    check: (p) => p.sessions.some(s => s.storyType === 'tingxie' && s.score >= 100 && s.passed) },
+
+  { id: 'tingxie_streak', icon: '🔥', label: 'Streak Scholar', mascot: '🐯', color: '#e8590c',
+    check: (p) => {
+      const dates = [...new Set(
+        p.sessions.filter(s => s.storyType === 'tingxie').map(s => s.date)
+      )].sort();
+      if (dates.length < 5) return false;
+      for (let i = 4; i < dates.length; i++) {
+        let streak = true;
+        for (let j = 1; j <= 4; j++) {
+          const diff = (new Date(dates[i]) - new Date(dates[i - j])) / 86400000;
+          if (diff !== j) { streak = false; break; }
+        }
+        if (streak) return true;
+      }
+      return false;
+    }},
+
+  { id: 'tingxie_comeback', icon: '💪', label: 'Comeback Kid', mascot: '🐺', color: '#d63939',
+    check: (p) => {
+      const mocks = p.sessions
+        .filter(s => s.storyType === 'tingxie')
+        .sort((a, b) => new Date(a.date) - new Date(b.date));
+      for (let i = 1; i < mocks.length; i++) {
+        if (!mocks[i - 1].passed && mocks[i].passed &&
+            mocks[i - 1].storyId === mocks[i].storyId) return true;
+      }
+      return false;
+    }},
+
+  { id: 'tingxie_word_master', icon: '🧠', label: 'Word Master', mascot: '🦉', color: '#1971c2',
+    check: (p) => (p.masteredWordCount || 0) >= 50 },
+
+  { id: 'tingxie_prepared', icon: '📅', label: 'Prepared', mascot: '🦋', color: '#0ca678',
+    check: (p) => (p.completedSchedules || 0) >= 1 },
+
+  { id: 'tingxie_perfect_week', icon: '⭐', label: 'Perfect Week', mascot: '🌈', color: '#f59f00',
+    check: (p) => {
+      const dates = [...new Set(
+        p.sessions.filter(s => s.storyType === 'tingxie').map(s => s.date)
+      )].sort();
+      if (dates.length < 7) return false;
+      for (let i = 6; i < dates.length; i++) {
+        let streak = true;
+        for (let j = 1; j <= 6; j++) {
+          const diff = (new Date(dates[i]) - new Date(dates[i - j])) / 86400000;
+          if (diff !== j) { streak = false; break; }
+        }
+        if (streak) return true;
+      }
+      return false;
+    }},
+
+  { id: 'tingxie_champion', icon: '🏆', label: 'Tingxie Champion', mascot: '🦁', color: '#d63939',
+    check: (p) => {
+      const passedExams = new Set(
+        p.sessions.filter(s => s.storyType === 'tingxie' && s.score >= 90 && s.passed).map(s => s.storyId)
+      );
+      return passedExams.size >= 5;
+    }},
 ];
 
 export function getEarnedBadgeIds(progress, streak) {

@@ -437,3 +437,68 @@ test('computeWordQueue: multiple correct results in ONE session only count as 1 
   queue.forEach(w => counts[w.hanzi] = (counts[w.hanzi] || 0) + 1);
   assert.equal(counts['整齐'], 2); // still "new", not mastered
 });
+
+// ---------------------------------------------------------------------------
+// tingxie gamification
+// Tests addTingxieSession, computeTingxiePoints, and STATIC_BADGES guards.
+// A localStorage mock is installed on globalThis before each test.
+// ---------------------------------------------------------------------------
+import { addTingxieSession, computeTingxiePoints } from '../src/lib/students.js';
+import { STATIC_BADGES } from '../src/lib/badges.js';
+
+// Minimal in-memory localStorage mock
+function makeLocalStorageMock() {
+  const store = {};
+  return {
+    getItem: (k) => (k in store ? store[k] : null),
+    setItem: (k, v) => { store[k] = String(v); },
+    removeItem: (k) => { delete store[k]; },
+    clear: () => { for (const k of Object.keys(store)) delete store[k]; },
+  };
+}
+
+test('tingxie gamification: stories_5 badge does not count tingxie sessions', () => {
+  globalThis.localStorage = makeLocalStorageMock();
+  const examIds = ['exam-1', 'exam-2', 'exam-3', 'exam-4', 'exam-5'];
+  for (const examId of examIds) {
+    addTingxieSession('stu-1', examId, { passed: true, score: 80, pointsEarned: 100 });
+  }
+  const { sessions } = JSON.parse(localStorage.getItem('cr-progress-stu-1'));
+  const badge = STATIC_BADGES.find(b => b.id === 'stories_5');
+  assert.strictEqual(badge.check({ sessions, totalPoints: 0 }), false);
+});
+
+test('tingxie gamification: perfect badge does not count 100% mock tingxie', () => {
+  globalThis.localStorage = makeLocalStorageMock();
+  addTingxieSession('stu-2', 'exam-1', { passed: true, score: 100, pointsEarned: 140 });
+  const { sessions } = JSON.parse(localStorage.getItem('cr-progress-stu-2'));
+  const badge = STATIC_BADGES.find(b => b.id === 'perfect');
+  assert.strictEqual(badge.check({ sessions, totalPoints: 0 }), false);
+});
+
+test('tingxie gamification: tingxie_first badge triggers on first tingxie session', () => {
+  globalThis.localStorage = makeLocalStorageMock();
+  addTingxieSession('stu-3', 'exam-1', { passed: false, score: 50, pointsEarned: 0 });
+  const { sessions } = JSON.parse(localStorage.getItem('cr-progress-stu-3'));
+  const badge = STATIC_BADGES.find(b => b.id === 'tingxie_first');
+  assert.strictEqual(badge.check({ sessions, totalPoints: 0 }), true);
+});
+
+test('tingxie gamification: computeTingxiePoints deduplicates best per exam per day', () => {
+  globalThis.localStorage = makeLocalStorageMock();
+  const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Singapore' });
+  addTingxieSession('stu-4', 'exam-1', { passed: true, score: 80, pointsEarned: 80, date: today });
+  addTingxieSession('stu-4', 'exam-1', { passed: true, score: 90, pointsEarned: 120, date: today });
+  const { sessions } = JSON.parse(localStorage.getItem('cr-progress-stu-4'));
+  assert.strictEqual(computeTingxiePoints(sessions), 120);
+});
+
+test('tingxie gamification: tingxie_champion counts distinct exams not retakes', () => {
+  globalThis.localStorage = makeLocalStorageMock();
+  for (let i = 0; i < 5; i++) {
+    addTingxieSession('stu-5', 'exam-1', { passed: true, score: 95, pointsEarned: 140 });
+  }
+  const { sessions } = JSON.parse(localStorage.getItem('cr-progress-stu-5'));
+  const badge = STATIC_BADGES.find(b => b.id === 'tingxie_champion');
+  assert.strictEqual(badge.check({ sessions, totalPoints: 0 }), false);
+});
