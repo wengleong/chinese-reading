@@ -51,7 +51,7 @@ export const STATIC_BADGES = [
   { id: 'tingxie_comeback', icon: '💪', label: 'Comeback Kid', mascot: '🐺', color: '#d63939',
     check: (p) => {
       const mocks = p.sessions
-        .filter(s => s.storyType === 'tingxie')
+        .filter(s => s.storyType === 'tingxie' && s.mode === 'mock')
         .sort((a, b) => new Date(a.date) - new Date(b.date));
       for (let i = 1; i < mocks.length; i++) {
         if (!mocks[i - 1].passed && mocks[i].passed &&

@@ -61,10 +61,10 @@ export function showTingxieUpload({ studentId, onDone, onCancel }) {
         <div class="tx-confirm-body">
           ${extracted?.warning ? `<div class="tx-warning">⚠️ ${extracted.warning}</div>` : ''}
           <label class="tx-field-label">Exam title
-            <input class="tx-input" id="tx-title" value="${extracted?.title || ''}" placeholder="e.g. 词语单元一">
+            <input class="tx-input" id="tx-title" placeholder="e.g. 词语单元一">
           </label>
           <label class="tx-field-label">Exam date
-            <input class="tx-input" id="tx-date" type="date" value="${extracted?.examDate || ''}">
+            <input class="tx-input" id="tx-date" type="date">
           </label>
           <div class="tx-words-header">
             <span id="tx-word-count">Words (${words.length})</span>
@@ -79,6 +79,10 @@ export function showTingxieUpload({ studentId, onDone, onCancel }) {
       </div>`;
 
     overlay.querySelector('#tx-back').onclick = renderUpload;
+
+    // Set values programmatically to avoid XSS via AI-extracted content in HTML attributes
+    if (extracted?.title) overlay.querySelector('#tx-title').value = extracted.title;
+    if (extracted?.examDate) overlay.querySelector('#tx-date').value = extracted.examDate;
 
     const wordList = overlay.querySelector('#tx-word-list');
     const wordCount = overlay.querySelector('#tx-word-count');

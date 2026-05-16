@@ -13,7 +13,7 @@ import { parseModelJsonBlock } from '../src/lib/pictureScorer.js';
 function computeTotalPoints(sessions) {
   const best = {};
   for (const s of sessions) {
-    if (!s.passed) continue;
+    if (!s.passed || s.storyType === 'tingxie') continue;
     const key = `${s.date}|${s.storyId}`;
     best[key] = Math.max(best[key] || 0, s.pointsEarned || 0);
   }
@@ -77,6 +77,14 @@ test('computeTotalPoints: session with no pointsEarned field treats as 0', () =>
     { passed: true, date: '2024-01-01', storyId: 's1' }, // no pointsEarned
   ];
   assert.equal(computeTotalPoints(sessions), 0);
+});
+
+test('computeTotalPoints: tingxie sessions are excluded from reading points total', () => {
+  const sessions = [
+    { passed: true, date: '2024-01-01', storyId: 's1', pointsEarned: 100 },
+    { passed: true, date: '2024-01-01', storyId: 'tingxie-exam-1', storyType: 'tingxie', pointsEarned: 200 },
+  ];
+  assert.equal(computeTotalPoints(sessions), 100);
 });
 
 // ---------------------------------------------------------------------------

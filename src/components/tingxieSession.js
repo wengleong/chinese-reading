@@ -1,7 +1,7 @@
 // src/components/tingxieSession.js
 import { createCharCanvas } from './tingxieCanvas.js';
 import {
-  gradeCharacter, gradeBatch, saveSession, computeWordQueue, todaySG, canvasToBase64,
+  gradeCharacter, gradeBatch, saveSession, computeWordQueue, todaySG, canvasToBase64, countMasteredWords,
 } from '../lib/tingxie.js';
 import { addTingxieSession, getProgress } from '../lib/students.js';
 import { STATIC_BADGES, getEarnedBadgeIds } from '../lib/badges.js';
@@ -222,7 +222,12 @@ export function renderTingxieSession({ root, exam, sessions, mode, student, onDo
     });
 
     // Bridge to localStorage gamification
-    addTingxieSession(student.id, exam.id, { passed, score, pointsEarned: points, date: todaySG() });
+    const masteredWordCount = countMasteredWords(sessions);
+    const scheduleCompleted = isScheduleCompleted(exam.schedule, sessions, todaySG());
+    addTingxieSession(student.id, exam.id, {
+      passed, score, pointsEarned: points, date: todaySG(), mode: 'mock',
+      masteredWordCount, scheduleCompleted,
+    });
     checkAndShowBadges(prevBadgeIds);
 
     showMockResults({ wordResults, score, passed, correctCount, total, points });
@@ -243,7 +248,12 @@ export function renderTingxieSession({ root, exam, sessions, mode, student, onDo
 
     const prevProgressForBadges = getProgress(student.id);
     const prevBadgeIds = getEarnedBadgeIds(prevProgressForBadges, 0);
-    addTingxieSession(student.id, exam.id, { passed: true, score, pointsEarned: totalPts, date: todaySG() });
+    const masteredWordCount = countMasteredWords(sessions);
+    const scheduleCompleted = isScheduleCompleted(exam.schedule, sessions, todaySG());
+    addTingxieSession(student.id, exam.id, {
+      passed: true, score, pointsEarned: totalPts, date: todaySG(), mode: 'practice',
+      masteredWordCount, scheduleCompleted,
+    });
     checkAndShowBadges(prevBadgeIds);
 
     root.innerHTML = `<div class="tx-results tx-practice-done">
@@ -283,6 +293,15 @@ export function renderTingxieSession({ root, exam, sessions, mode, student, onDo
     root.appendChild(el);
 
     if (passed) spawnTingxieConfetti(el.querySelector('.tx-results-header'), score);
+  }
+
+  // Returns true if all scheduled dates up to today have a corresponding session.
+  function isScheduleCompleted(schedule, completedSessions, todayDate) {
+    if (!schedule?.length) return false;
+    const sessionDates = new Set(completedSessions.map(s => s.date));
+    sessionDates.add(todayDate); // today's session was just saved
+    const dueDates = schedule.filter(e => e.date <= todayDate).map(e => e.date);
+    return dueDates.length > 0 && dueDates.every(d => sessionDates.has(d));
   }
 
   function checkAndShowBadges(prevIds) {

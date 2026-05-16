@@ -10,7 +10,7 @@ const PORT = process.env.PORT || 3001;
 const publicDir = path.join(__dirname, '../../public');
 app.use(express.static(publicDir));
 
-app.use(express.json());
+app.use(express.json({ limit: '10mb' })); // grade-batch sends up to 40 base64 PNG images
 
 app.use('/api/families',   require('./routes/families'));
 app.use('/api/students',   require('./routes/students'));

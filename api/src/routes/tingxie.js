@@ -113,6 +113,8 @@ router.patch('/exams/:id', async (req, res) => {
   try {
     await assertExamOwner(req.params.id, req.familyId);
     const { title, examDate, words } = req.body;
+    if (examDate !== undefined && !/^\d{4}-\d{2}-\d{2}$/.test(examDate))
+      return res.status(400).json({ error: 'examDate must be YYYY-MM-DD format' });
     const updates = [], vals = [];
     let idx = 1;
     if (title     !== undefined) { updates.push(`title = $${idx++}`);     vals.push(title); }

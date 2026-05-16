@@ -98,11 +98,12 @@ function saveProgress(studentId, progress) {
   localStorage.setItem(PROGRESS_PREFIX + studentId, JSON.stringify(progress));
 }
 
-export function addTingxieSession(studentId, examId, { passed, score, pointsEarned, date, masteredWordCount, completedSchedules }) {
+export function addTingxieSession(studentId, examId, { passed, score, pointsEarned, date, mode, masteredWordCount, scheduleCompleted }) {
   const progress = getProgress(studentId);
   const session = {
     storyId: `tingxie-${examId}`,
     storyType: 'tingxie',
+    mode: mode || 'practice',
     passed: !!passed,
     score: score || 0,
     pointsEarned: pointsEarned || 0,
@@ -110,8 +111,18 @@ export function addTingxieSession(studentId, examId, { passed, score, pointsEarn
   };
   progress.sessions.unshift(session);
   progress.totalPoints = computeTotalPoints(progress.sessions);
-  if (masteredWordCount !== undefined) progress.masteredWordCount = masteredWordCount;
-  if (completedSchedules !== undefined) progress.completedSchedules = completedSchedules;
+  // masteredWordCount: take the highest observed across sessions (conservative cross-exam estimate)
+  if (masteredWordCount !== undefined) {
+    progress.masteredWordCount = Math.max(progress.masteredWordCount || 0, masteredWordCount);
+  }
+  // completedSchedules: track by exam ID to avoid double-counting retakes
+  if (scheduleCompleted) {
+    if (!progress.completedExamIds) progress.completedExamIds = [];
+    if (!progress.completedExamIds.includes(examId)) {
+      progress.completedExamIds.push(examId);
+      progress.completedSchedules = progress.completedExamIds.length;
+    }
+  }
   saveProgress(studentId, progress);
 }
 
