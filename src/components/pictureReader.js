@@ -74,10 +74,11 @@ export function renderPictureReader({ root, story }) {
   questionCard.className = 'picture-question-card';
   questionCard.hidden = true;
 
-  // SCFRAS hints panel — video only
+  // SCFRAS hints panel — video only, only when there's content to show
   // Contains scene context + SCFRAS list, both behind the toggle
   let hintsPanel = null;
-  if (isVideo) {
+  const hasHintContent = isVideo && (story.scene || (Array.isArray(story.hints) && story.hints.length > 0));
+  if (hasHintContent) {
     hintsPanel = document.createElement('div');
     hintsPanel.className = 'scfras-hints';
 

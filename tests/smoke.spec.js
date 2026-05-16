@@ -174,13 +174,11 @@ test.describe('Picture oral phase transitions', () => {
       if (!root) return;
       const scene = root.querySelector('.picture-scene');
       const prompt = root.querySelector('.picture-prompt');
-      const hint = root.querySelector('.picture-hint');
       const counter = root.querySelector('.picture-question-counter');
       const qcard = root.querySelector('.picture-question-card');
       if (!scene || !prompt || !counter || !qcard) return;
       scene.classList.add('picture-scene-compact');
       prompt.hidden = true;
-      if (hint) hint.hidden = true;
       counter.hidden = false;
       counter.textContent = '第1题 共3题';
       qcard.hidden = false;

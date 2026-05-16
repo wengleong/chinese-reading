@@ -1448,13 +1448,6 @@ button.danger {
   font-weight: 600;
   color: var(--ink);
 }
-.picture-hint {
-  font-size: 15px;
-  color: var(--muted);
-  font-style: italic;
-  text-align: center;
-  margin: 0 0 10px;
-}
 
 /* ---- Picture illustration ---- */
 .picture-illustration {
