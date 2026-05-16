@@ -363,3 +363,77 @@ test('scoring: video SCFRAS response with Chinese feedback', () => {
   assert.equal(overall, Math.round(85*0.4 + 78*0.4 + 72*0.2));
   assert.ok(result.feedback.includes('SCFRAS') || result.feedback.length > 0);
 });
+
+// ---------------------------------------------------------------------------
+// buildClientSchedule + computeWordQueue (from src/lib/tingxie.js)
+// ---------------------------------------------------------------------------
+import { buildClientSchedule, computeWordQueue } from '../src/lib/tingxie.js';
+
+// buildClientSchedule
+test('buildClientSchedule: returns empty array when exam is today', () => {
+  const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Singapore' });
+  assert.deepEqual(buildClientSchedule(today), []);
+});
+
+test('buildClientSchedule: one practice entry when exam is tomorrow', () => {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  const tomorrow = d.toLocaleDateString('sv-SE', { timeZone: 'Asia/Singapore' });
+  const sched = buildClientSchedule(tomorrow);
+  assert.equal(sched.length, 1);
+  assert.equal(sched[0].mode, 'practice');
+});
+
+test('buildClientSchedule: last entry before exam is mock', () => {
+  const d = new Date();
+  d.setDate(d.getDate() + 5);
+  const future = d.toLocaleDateString('sv-SE', { timeZone: 'Asia/Singapore' });
+  const sched = buildClientSchedule(future);
+  assert.equal(sched[sched.length - 1].mode, 'mock');
+  assert.ok(sched.slice(0, -1).every(e => e.mode === 'practice'));
+});
+
+// computeWordQueue
+const tingxieWords = [
+  { hanzi: '爱护', pinyin: 'ài hù', type: 'tingxie' },
+  { hanzi: '整齐', pinyin: 'zhěng qí', type: 'tingxie' },
+  { hanzi: '培养', pinyin: 'péi yǎng', type: 'tingxie' },
+];
+
+test('computeWordQueue: new words appear 2 times each', () => {
+  const queue = computeWordQueue(tingxieWords, []);
+  const counts = {};
+  queue.forEach(w => counts[w.hanzi] = (counts[w.hanzi] || 0) + 1);
+  assert.equal(counts['爱护'], 2);
+});
+
+test('computeWordQueue: weak word (wrong in last session) appears 3 times', () => {
+  const sessions = [{ results: [{ hanzi: '爱护', correct: false }] }];
+  const queue = computeWordQueue(tingxieWords, sessions);
+  const counts = {};
+  queue.forEach(w => counts[w.hanzi] = (counts[w.hanzi] || 0) + 1);
+  assert.equal(counts['爱护'], 3);
+});
+
+test('computeWordQueue: mastered word (correct in 3+ distinct sessions) appears 1 time', () => {
+  const sessions = [
+    { results: [{ hanzi: '整齐', correct: true }] },
+    { results: [{ hanzi: '整齐', correct: true }] },
+    { results: [{ hanzi: '整齐', correct: true }] },
+  ];
+  const queue = computeWordQueue(tingxieWords, sessions);
+  const counts = {};
+  queue.forEach(w => counts[w.hanzi] = (counts[w.hanzi] || 0) + 1);
+  assert.equal(counts['整齐'], 1);
+});
+
+test('computeWordQueue: multiple correct results in ONE session only count as 1 session pass', () => {
+  const sessions = [
+    { results: [{ hanzi: '整齐', correct: true }, { hanzi: '整齐', correct: true }] },
+    { results: [{ hanzi: '整齐', correct: true }] },
+  ];
+  const queue = computeWordQueue(tingxieWords, sessions);
+  const counts = {};
+  queue.forEach(w => counts[w.hanzi] = (counts[w.hanzi] || 0) + 1);
+  assert.equal(counts['整齐'], 2); // still "new", not mastered
+});
