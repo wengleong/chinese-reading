@@ -171,7 +171,7 @@ Return JSON only (no code fences):
       messages: [{ role: 'user', content: promptText }],
     });
     const result = parseModelJsonBlock(extractTextFromModelResponse(data));
-    if (!result) throw new Error('bad response');
+    if (!result) throw new Error('bad response: ' + extractTextFromModelResponse(data).slice(0, 100));
     const contentScore = toBoundedScore(result.content_score, coveragePct);
     const languageScore = toBoundedScore(result.language_score, 50);
     const expressionScore = toBoundedScore(result.expression_score, 50);
@@ -184,7 +184,8 @@ Return JSON only (no code fences):
       passed: overall >= 60,
       feedback: result.feedback || '',
     };
-  } catch {
+  } catch (err) {
+    console.error('[scorePicture] failed:', err?.message || err);
     return null;
   }
 }

@@ -45,6 +45,7 @@ const els = {
   pinyinToggle: document.getElementById("pinyin-toggle"),
   highlightToggle: document.getElementById("highlight-toggle"),
   playback: document.getElementById("playback-controls"),
+  toolbar: document.querySelector(".reader-toolbar"),
   recorder: document.getElementById("recorder"),
   recordings: document.getElementById("recordings-list"),
   settingsBtn: document.getElementById("settings-btn"),
@@ -229,15 +230,19 @@ async function pickStory(id) {
     pictureOralState = { phase: 0, questions: [], transcripts: [], durationMs: [] };
     readerCtl = renderPictureReader({ root: els.reader, story: activeStory });
     player = null;
-    // Hide TTS controls for picture stories
+    // Hide TTS controls, toolbar and recordings for oral stories
     els.playback.style.display = 'none';
     els.pinyinToggle.style.display = 'none';
     els.highlightToggle.style.display = 'none';
+    if (els.toolbar) els.toolbar.style.display = 'none';
+    els.recordings.style.display = 'none';
     recorderCtl.setStopLabel('■ 停止 Next →');
   } else {
     els.playback.style.display = '';
     els.pinyinToggle.style.display = '';
     els.highlightToggle.style.display = '';
+    if (els.toolbar) els.toolbar.style.display = '';
+    els.recordings.style.display = '';
     recorderCtl.setStopLabel('■ 停止 Stop & Score');
     readerCtl = renderStoryReader({ root: els.reader, story: activeStory });
     player = createPlayer({
