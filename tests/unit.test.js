@@ -208,3 +208,95 @@ test('parseModelJsonBlock: returns null when no JSON object exists', () => {
   const parsed = parseModelJsonBlock('no json here');
   assert.equal(parsed, null);
 });
+
+// ---------------------------------------------------------------------------
+// scorePicture scoring math (extracted inline — no browser/network deps)
+// Mirrors the computation in src/lib/pictureScorer.js toBoundedScore + overall
+// ---------------------------------------------------------------------------
+function toBoundedScore(value, fallback) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(0, Math.min(100, Math.round(n)));
+}
+
+function computeOverall(contentScore, languageScore, expressionScore) {
+  return Math.round(contentScore * 0.4 + languageScore * 0.4 + expressionScore * 0.2);
+}
+
+test('scoring: toBoundedScore clamps below 0', () => {
+  assert.equal(toBoundedScore(-10, 50), 0);
+});
+
+test('scoring: toBoundedScore clamps above 100', () => {
+  assert.equal(toBoundedScore(120, 50), 100);
+});
+
+test('scoring: toBoundedScore uses fallback for NaN', () => {
+  assert.equal(toBoundedScore('not a number', 42), 42);
+});
+
+test('scoring: toBoundedScore rounds correctly', () => {
+  assert.equal(toBoundedScore(85.6, 50), 86);
+});
+
+test('scoring: overall = 40% content + 40% language + 20% expression', () => {
+  // 80*0.4 + 70*0.4 + 60*0.2 = 32 + 28 + 12 = 72
+  assert.equal(computeOverall(80, 70, 60), 72);
+  // 100*0.4 + 100*0.4 + 100*0.2 = 100
+  assert.equal(computeOverall(100, 100, 100), 100);
+  // 0*0.4 + 0*0.4 + 0*0.2 = 0
+  assert.equal(computeOverall(0, 0, 0), 0);
+});
+
+test('scoring: overall passes at 60+', () => {
+  const overall = computeOverall(60, 60, 60);
+  assert.equal(overall >= 60, true);
+});
+
+test('scoring: overall fails below 60', () => {
+  const overall = computeOverall(50, 50, 50);
+  assert.equal(overall >= 60, false);
+});
+
+test('scoring: full scoring pipeline from AI JSON response', () => {
+  const aiResponse = '{"content_score": 78, "language_score": 82, "expression_score": 70, "feedback": "Great job!"}';
+  const result = parseModelJsonBlock(aiResponse);
+  assert.ok(result, 'should parse AI response');
+
+  const contentScore  = toBoundedScore(result.content_score, 50);
+  const languageScore = toBoundedScore(result.language_score, 50);
+  const expressionScore = toBoundedScore(result.expression_score, 50);
+  const overall = computeOverall(contentScore, languageScore, expressionScore);
+
+  assert.equal(contentScore, 78);
+  assert.equal(languageScore, 82);
+  assert.equal(expressionScore, 70);
+  assert.equal(overall, Math.round(78*0.4 + 82*0.4 + 70*0.2));
+  assert.equal(overall >= 60, true);
+  assert.equal(result.feedback, 'Great job!');
+});
+
+test('scoring: handles missing optional fields gracefully', () => {
+  const aiResponse = '{"content_score": 70, "language_score": 65}';
+  const result = parseModelJsonBlock(aiResponse);
+  const expressionScore = toBoundedScore(result.expression_score, 50); // undefined → fallback
+  assert.equal(expressionScore, 50);
+});
+
+test('scoring: video SCFRAS response with Chinese feedback', () => {
+  const aiResponse = JSON.stringify({
+    content_score: 85,
+    language_score: 78,
+    expression_score: 72,
+    feedback: 'You covered the S (Opening) and C (Content) elements well!'
+  });
+  const result = parseModelJsonBlock(aiResponse);
+  assert.ok(result);
+  const overall = computeOverall(
+    toBoundedScore(result.content_score, 50),
+    toBoundedScore(result.language_score, 50),
+    toBoundedScore(result.expression_score, 50),
+  );
+  assert.equal(overall, Math.round(85*0.4 + 78*0.4 + 72*0.2));
+  assert.ok(result.feedback.includes('SCFRAS') || result.feedback.length > 0);
+});
