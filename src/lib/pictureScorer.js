@@ -103,8 +103,8 @@ Return JSON only (no code fences): {"selected": [index, index, index]}`;
   }
 }
 
-// Score all picture oral responses together.
-// transcripts[0] = scene description, transcripts[1-3] = question answers.
+// Score all picture/video oral responses together.
+// transcripts[0] = scene/video description, transcripts[1-3] = question answers.
 // durations[0-3] = per-phase recording duration in ms.
 export async function scorePicture({ story, transcripts, durations }) {
   if (!isLoggedIn()) return null;
@@ -118,8 +118,32 @@ export async function scorePicture({ story, transcripts, durations }) {
     : 50;
 
   const totalSecs = Math.round((durations || []).reduce((s, d) => s + d, 0) / 1000);
+  const isVideo = story.type === 'video';
 
-  const prompt = `A Singapore primary school student (${story.level}) completed a picture oral exercise.
+  const promptText = isVideo
+    ? `A Singapore primary school student (${story.level}) completed a video oral exercise.
+Video topic: "${story.title}" — ${story.scene}
+Expected key elements: ${keyElements.join('、')}
+Key element coverage (local): ${coveragePct}/100
+
+The student is assessed using the SCFRAS framework (Opening, Content/Opinion, Feelings, Relate to experience, Action, Summary).
+
+Student's responses:
+[Video description & first impression]: ${transcripts[0] || '(none)'}
+[Question 1 answer]: ${transcripts[1] || '(none)'}
+[Question 2 answer]: ${transcripts[2] || '(none)'}
+[Question 3 answer]: ${transcripts[3] || '(none)'}
+Total speaking time: ${totalSecs} seconds
+
+You are an encouraging Chinese language teacher. Evaluate all responses together using the SCFRAS framework.
+Return JSON only (no code fences):
+{
+  "content_score": <0-100, clarity of opinion + use of SCFRAS structure + key element coverage>,
+  "language_score": <0-100, vocabulary richness, sentence variety, grammar>,
+  "expression_score": <0-100, fluency, confidence and elaboration informed by speaking time>,
+  "feedback": "<1-2 sentences of encouraging feedback in English, mentioning any SCFRAS elements done well>"
+}`
+    : `A Singapore primary school student (${story.level}) completed a picture oral exercise.
 Picture scene: "${story.scene}"
 Expected key elements: ${keyElements.join('、')}
 Key element coverage (local): ${coveragePct}/100
@@ -144,7 +168,7 @@ Return JSON only (no code fences):
     const data = await generateViaApi({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 250,
-      messages: [{ role: 'user', content: prompt }],
+      messages: [{ role: 'user', content: promptText }],
     });
     const result = parseModelJsonBlock(extractTextFromModelResponse(data));
     if (!result) throw new Error('bad response');

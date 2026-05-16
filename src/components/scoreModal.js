@@ -6,31 +6,11 @@ import {
   hasCompletedToday, getStudentStreak, getProgress,
 } from "../lib/students.js";
 import { isLoggedIn, generateViaApi } from '../lib/api.js';
+import { STATIC_BADGES, getEarnedBadgeIds, getWeeklyTargets } from '../lib/badges.js';
 
 const API_KEY_STORAGE = "anthropicApiKey";
 
-const BADGES = [
-  { id: 'first_pass',  icon: '🌟', label: 'First Pass',          mascot: '🐣', color: '#f59f00', check: (p)    => p.sessions.filter(s => s.passed).length >= 1 },
-  { id: 'stories_5',  icon: '📚', label: '5 Stories',            mascot: '🦉', color: '#1971c2', check: (p)    => new Set(p.sessions.filter(s => s.passed).map(s => s.storyId)).size >= 5 },
-  { id: 'perfect',    icon: '💯', label: 'Perfect Score',        mascot: '🌈', color: '#ae3ec9', check: (p)    => p.sessions.some(s => s.score >= 100) },
-  { id: 'streak_7',   icon: '🔥', label: '7-Day Streak',         mascot: '🐯', color: '#e8590c', check: (p, k) => k >= 7 },
-  { id: 'streak_30',  icon: '🏆', label: '30-Day Streak',        mascot: '🦁', color: '#e8590c', check: (p, k) => k >= 30 },
-  { id: 'pts_100',    icon: '💎', label: '100 Points',            mascot: '🐬', color: '#1971c2', check: (p)    => p.totalPoints >= 100 },
-  { id: 'pts_500',    icon: '👑', label: '500 Points',            mascot: '🦋', color: '#ae3ec9', check: (p)    => p.totalPoints >= 500 },
-  { id: 'pts_1000',   icon: '🎯', label: '1000 Points',           mascot: '🐉', color: '#e03131', check: (p)    => p.totalPoints >= 1000 },
-  { id: 'challenge_1', icon: '🗡️', label: '初试挑战 First Challenge', mascot: '🐺', color: '#9c36b5', check: (p) => p.sessions.some(s => s.passed && (s.storyTags || []).includes('challenge')) },
-  { id: 'challenge_5', icon: '⚔️', label: '挑战达人 5 Challenges',    mascot: '🦊', color: '#6741d9', check: (p) => new Set(p.sessions.filter(s => s.passed && (s.storyTags || []).includes('challenge')).map(s => s.storyId)).size >= 5 },
-  { id: 'exam_1',      icon: '🏅', label: '初上考场 Exam Debut',       mascot: '🦅', color: '#2f9e44', check: (p) => p.sessions.some(s => s.passed && (s.storyTags || []).includes('past-years')) },
-  { id: 'exam_3',      icon: '🎖️', label: '考试达人 Exam Pro',          mascot: '🦉', color: '#0ca678', check: (p) => new Set(p.sessions.filter(s => s.passed && (s.storyTags || []).includes('past-years')).map(s => s.storyId)).size >= 3 },
-  { id: 'picture_1',   icon: '📷', label: '看图说话 Picture Pro',        mascot: '🦜', color: '#1971c2', check: (p) => p.sessions.some(s => s.passed && s.storyType === 'picture') },
-  { id: 'pb',          icon: '🌈', label: '新纪录 Personal Best',        mascot: '🐦', color: '#f59f00', check: (p) => p.sessions.some(s => s.isPersonalBest) },
-  { id: 'p3_master',   icon: '📕', label: 'P3 Master',                  mascot: '🐨', color: '#2f9e44', check: (p) => ['p3-xiaomao-diaoyu','p3-huanjing','p3-jieyue','p3-shequ','p3-yundong','p3-challenge-keji','p3-challenge-zhuren'].every(id => p.sessions.some(s => s.passed && s.storyId === id)) },
-  { id: 'p6_master',   icon: '📙', label: 'P6 Master',                  mascot: '🦁', color: '#e03131', check: (p) => ['p6-kexue','p6-minzu','p6-shengming','p6-zeren','p6-zixiang-maodun','p6-challenge-shuzi','p6-challenge-xinjiapo'].every(id => p.sessions.some(s => s.passed && s.storyId === id)) },
-];
-
-function getEarnedBadgeIds(progress, streak) {
-  return new Set(BADGES.filter(b => b.check(progress, streak)).map(b => b.id));
-}
+const BADGES = STATIC_BADGES;
 
 function animateCount(el, to, duration = 900) {
   const start = performance.now();
@@ -199,10 +179,10 @@ export function openScoreModal({ student, story, scoreResult, fluency = 50, tran
   // Category bar colour helper
   function barColor(v) { return v >= 80 ? 'var(--good)' : v >= 60 ? 'var(--accent)' : 'var(--danger)'; }
 
-  const isPicture = story.type === 'picture';
-  const cat1Label = isPicture ? '内容 Content'  : '准确性 Accuracy';
-  const cat2Label = isPicture ? '语言 Language' : '完整性 Coverage';
-  const cat3Label = isPicture ? '表达 Expression' : '流利度 Fluency';
+  const isOral = story.type === 'picture' || story.type === 'video';
+  const cat1Label = isOral ? '内容 Content'  : '准确性 Accuracy';
+  const cat2Label = isOral ? '语言 Language' : '完整性 Coverage';
+  const cat3Label = isOral ? '表达 Expression' : '流利度 Fluency';
 
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
@@ -241,7 +221,7 @@ export function openScoreModal({ student, story, scoreResult, fluency = 50, tran
           <div class="score-cat-bar-wrap"><div class="score-cat-bar" id="bar-flu" style="background:${barColor(fluency)}"></div></div>
           <span class="score-cat-val">${fluency}</span>
         </div>
-        ${!isPicture ? `<div class="score-cat-row">
+        ${!isOral ? `<div class="score-cat-row">
           <span class="score-cat-label">表达力 Expression</span>
           <div class="score-cat-bar-wrap"><div class="score-cat-bar" id="bar-exp" style="background:var(--muted)"></div></div>
           <span class="score-cat-val" id="exp-val">…</span>
@@ -295,14 +275,14 @@ export function openScoreModal({ student, story, scoreResult, fluency = 50, tran
   if (newBadges.length) showBadgeCelebration(newBadges);
 
   // Fetch AI feedback — updates Expression bar + tips
-  if (isPicture) {
+  if (isOral) {
     const feedbackEl = overlay.querySelector('#score-feedback');
     if (feedbackEl) {
       feedbackEl.innerHTML = pictureFeedback
         ? `<p class="score-feedback-text">✨ ${pictureFeedback}</p>`
         : `<p class="score-feedback-text">${passed ? '好极了！继续加油！Keep it up!' : '再试一次，你一定能做到！Try again!'}</p>`;
     }
-  } else if (!isPicture) {
+  } else if (!isOral) {
     const storyText = story.tokens.filter(t => t.pinyin).map(t => t.char).join('');
     getAiFeedback(story.title, storyText, transcript, scoreResult ?? { accuracy: score, coverage: score, overall: score }, fluency)
       .then(result => {

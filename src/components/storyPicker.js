@@ -58,6 +58,7 @@ export function renderStoryPicker({ root, stories, activeId, activeStudentId, on
   typeBar.appendChild(makeTypeTab("挑战 Challenge", "challenge"));
   typeBar.appendChild(makeTypeTab("考试 Exam", "past-years"));
   typeBar.appendChild(makeTypeTab("看图 Picture", "picture"));
+  typeBar.appendChild(makeTypeTab("看视频 Video", "video"));
   root.appendChild(typeBar);
 
   // Level filter bar
@@ -91,6 +92,7 @@ export function renderStoryPicker({ root, stories, activeId, activeStudentId, on
       if (activeType === "challenge") return (s.tags || []).includes("challenge");
       if (activeType === "past-years") return (s.tags || []).includes("past-years");
       if (activeType === "picture") return s.type === "picture";
+      if (activeType === "video") return s.type === "video";
       // null = show all
       return true;
     });
@@ -120,7 +122,7 @@ export function renderStoryPicker({ root, stories, activeId, activeStudentId, on
         const tick = passedIds.has(story.id)
           ? '<span class="story-tick" aria-label="Completed">✅</span> '
           : '';
-        const typeTag = story.type === "picture" ? ' 📷' : '';
+        const typeTag = story.type === "picture" ? ' 📷' : story.type === "video" ? ' 🎬' : '';
         const challengeTag = (story.tags || []).includes("challenge") ? ' 🗡️' : '';
         const examTag = (story.tags || []).includes("past-years") ? ' 📝' : '';
         btn.innerHTML = `${tick}${story.title}${typeTag}${challengeTag}${examTag}<span class="meta">${story.estMinutes} min</span>`;

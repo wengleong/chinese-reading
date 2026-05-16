@@ -116,7 +116,7 @@ const recorderCtl = renderRecorder({
     const student = getActiveStudent();
     if (!student || !story) return;
 
-    if (story.type === 'picture') {
+    if (story.type === 'picture' || story.type === 'video') {
       const state = pictureOralState;
       if (!state) return;
       state.transcripts.push(transcript);
@@ -225,7 +225,7 @@ async function pickStory(id) {
     return;
   }
 
-  if (activeStory.type === 'picture') {
+  if (activeStory.type === 'picture' || activeStory.type === 'video') {
     pictureOralState = { phase: 0, questions: [], transcripts: [], durationMs: [] };
     readerCtl = renderPictureReader({ root: els.reader, story: activeStory });
     player = null;

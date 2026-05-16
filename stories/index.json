@@ -508,7 +508,7 @@
   {
     "id": "p5-pic-ditie",
     "title": "地铁上的好人好事",
-    "level": "P5",
+    "level": "P4",
     "estMinutes": 5,
     "tags": [
       "picture",
@@ -519,7 +519,7 @@
   {
     "id": "p5-pic-huanbao",
     "title": "环保回收站",
-    "level": "P5",
+    "level": "P4",
     "tags": [
       "picture",
       "environment"
@@ -530,13 +530,49 @@
   {
     "id": "p5-pic-jiaotong",
     "title": "安全过马路",
-    "level": "P5",
+    "level": "P4",
     "tags": [
       "picture",
       "safety"
     ],
     "estMinutes": 4,
     "type": "picture"
+  },
+  {
+    "id": "p5-vid-voideck",
+    "title": "邻里之间和睦相处",
+    "level": "P5",
+    "estMinutes": 8,
+    "tags": [
+      "video",
+      "community",
+      "singapore"
+    ],
+    "type": "video"
+  },
+  {
+    "id": "p5-vid-outdoor",
+    "title": "做运动",
+    "level": "P5",
+    "estMinutes": 8,
+    "tags": [
+      "video",
+      "health",
+      "sports"
+    ],
+    "type": "video"
+  },
+  {
+    "id": "p5-vid-neighbors",
+    "title": "关爱他人",
+    "level": "P5",
+    "estMinutes": 8,
+    "tags": [
+      "video",
+      "community",
+      "values"
+    ],
+    "type": "video"
   },
   {
     "id": "p5-pinde",
@@ -651,7 +687,7 @@
   {
     "id": "p6-pic-keji",
     "title": "科技改变生活",
-    "level": "P6",
+    "level": "P4",
     "tags": [
       "picture",
       "technology"
@@ -662,7 +698,7 @@
   {
     "id": "p6-pic-yisaihui",
     "title": "学校义卖会",
-    "level": "P6",
+    "level": "P4",
     "estMinutes": 6,
     "tags": [
       "picture",
@@ -673,13 +709,49 @@
   {
     "id": "p6-pic-zhiyuan",
     "title": "义工服务日",
-    "level": "P6",
+    "level": "P4",
     "tags": [
       "picture",
       "community"
     ],
     "estMinutes": 4,
     "type": "picture"
+  },
+  {
+    "id": "p6-vid-environment",
+    "title": "保护环境",
+    "level": "P6",
+    "estMinutes": 10,
+    "tags": [
+      "video",
+      "environment",
+      "society"
+    ],
+    "type": "video"
+  },
+  {
+    "id": "p6-vid-elders",
+    "title": "敬老爱老",
+    "level": "P6",
+    "estMinutes": 10,
+    "tags": [
+      "video",
+      "values",
+      "community"
+    ],
+    "type": "video"
+  },
+  {
+    "id": "p6-vid-resources",
+    "title": "节省资源",
+    "level": "P6",
+    "estMinutes": 10,
+    "tags": [
+      "video",
+      "environment",
+      "responsibility"
+    ],
+    "type": "video"
   },
   {
     "id": "p6-shengming",

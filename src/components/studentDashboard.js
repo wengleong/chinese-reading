@@ -4,27 +4,11 @@ import {
   getProgress, getStudentStreak, getBestStreak,
   getActivityDays, deleteStudent, setActiveStudentId, getActiveStudentId,
 } from "../lib/students.js";
+import { STATIC_BADGES, getDynamicTargets, getWeeklyTargets } from '../lib/badges.js';
 
 const MONTH_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
-const BADGES = [
-  { id: 'first_pass',  icon: '🌟', label: 'First Pass',          check: (p)    => p.sessions.filter(s => s.passed).length >= 1 },
-  { id: 'stories_5',  icon: '📚', label: '5 Stories',            check: (p)    => new Set(p.sessions.filter(s => s.passed).map(s => s.storyId)).size >= 5 },
-  { id: 'perfect',    icon: '💯', label: 'Perfect Score',        check: (p)    => p.sessions.some(s => s.score >= 100) },
-  { id: 'streak_7',   icon: '🔥', label: '7-Day Streak',         check: (p, k) => k >= 7 },
-  { id: 'streak_30',  icon: '🏆', label: '30-Day Streak',        check: (p, k) => k >= 30 },
-  { id: 'pts_100',    icon: '💎', label: '100 Points',            check: (p)    => p.totalPoints >= 100 },
-  { id: 'pts_500',    icon: '👑', label: '500 Points',            check: (p)    => p.totalPoints >= 500 },
-  { id: 'pts_1000',   icon: '🎯', label: '1000 Points',           check: (p)    => p.totalPoints >= 1000 },
-  { id: 'challenge_1', icon: '🗡️', label: '初试挑战 First Challenge', check: (p) => p.sessions.some(s => s.passed && (s.storyTags || []).includes('challenge')) },
-  { id: 'challenge_5', icon: '⚔️', label: '挑战达人 5 Challenges',    check: (p) => new Set(p.sessions.filter(s => s.passed && (s.storyTags || []).includes('challenge')).map(s => s.storyId)).size >= 5 },
-  { id: 'exam_1',      icon: '🏅', label: '初上考场 Exam Debut',       check: (p) => p.sessions.some(s => s.passed && (s.storyTags || []).includes('past-years')) },
-  { id: 'exam_3',      icon: '🎖️', label: '考试达人 Exam Pro',          check: (p) => new Set(p.sessions.filter(s => s.passed && (s.storyTags || []).includes('past-years')).map(s => s.storyId)).size >= 3 },
-  { id: 'picture_1',   icon: '📷', label: '看图说话 Picture Pro',        check: (p) => p.sessions.some(s => s.passed && s.storyType === 'picture') },
-  { id: 'pb',          icon: '🌈', label: '新纪录 Personal Best',        check: (p) => p.sessions.some(s => s.isPersonalBest) },
-  { id: 'p3_master',   icon: '📕', label: 'P3 Master',                  check: (p) => ['p3-xiaomao-diaoyu','p3-huanjing','p3-jieyue','p3-shequ','p3-yundong','p3-challenge-keji','p3-challenge-zhuren'].every(id => p.sessions.some(s => s.passed && s.storyId === id)) },
-  { id: 'p6_master',   icon: '📙', label: 'P6 Master',                  check: (p) => ['p6-kexue','p6-minzu','p6-shengming','p6-zeren','p6-zixiang-maodun','p6-challenge-shuzi','p6-challenge-xinjiapo'].every(id => p.sessions.some(s => s.passed && s.storyId === id)) },
-];
+const BADGES = STATIC_BADGES;
 
 function sgTime(ts) {
   return new Date(ts).toLocaleTimeString("en-SG", {
@@ -61,6 +45,17 @@ export function openStudentDashboard({ student, onDeleted, onClose }) {
   const MILESTONE = 500;
   const milestoneProgress = Math.min((totalPtsNum % MILESTONE) / MILESTONE * 100, 100);
   const earnedIds = new Set(BADGES.filter(b => b.check(progress, streak)).map(b => b.id));
+  const dynamicTargets = getDynamicTargets(progress, streak);
+  const weeklyTargets = getWeeklyTargets(progress, streak);
+
+  function renderTargetBar(current, target) {
+    const pct = Math.min(100, Math.round((current / target) * 100));
+    const color = pct >= 100 ? 'var(--good)' : 'var(--accent)';
+    return `<div class="dyn-progress-row">
+      <div class="dyn-target-bar-wrap"><div class="dyn-target-bar" style="width:${pct}%;background:${color}"></div></div>
+      <span class="dyn-target-count">${current} / ${target}</span>
+    </div>`;
+  }
 
   overlay.innerHTML = `
     <div class="modal-card dash-card-v2" role="dialog" aria-modal="true">
@@ -87,7 +82,32 @@ export function openStudentDashboard({ student, onDeleted, onClose }) {
         <div class="dash-sc"><span class="dash-sc-v">⭐ ${avgScore}</span><span class="dash-sc-l">Avg</span></div>
       </div>
 
-      <div class="dash-section-title" style="padding:0 16px 8px">Badges</div>
+      <div class="dash-section-title" style="padding:0 16px 6px">🎯 Next Goals</div>
+      <div class="dyn-targets">
+        ${dynamicTargets.map(t => `
+          <div class="dyn-target-row">
+            <span class="dyn-target-icon">${t.icon}</span>
+            <div class="dyn-target-info">
+              <span class="dyn-target-label">${t.label}</span>
+              ${renderTargetBar(t.current, t.target)}
+            </div>
+          </div>`).join('')}
+      </div>
+
+      <div class="dash-section-title" style="padding:8px 16px 6px">📅 This Week's Challenges</div>
+      <div class="weekly-targets">
+        ${weeklyTargets.map(t => `
+          <div class="weekly-target-row ${t.done ? 'done' : ''}">
+            <span class="weekly-target-check">${t.done ? '✅' : '⬜'}</span>
+            <span class="weekly-target-icon">${t.icon}</span>
+            <div class="weekly-target-info">
+              <span class="weekly-target-label">${t.label}</span>
+              ${!t.done ? renderTargetBar(t.current, t.target) : ''}
+            </div>
+          </div>`).join('')}
+      </div>
+
+      <div class="dash-section-title" style="padding:8px 16px 8px">Badges</div>
       <div class="dash-badge-wall">
         ${BADGES.map(b => `
           <div class="dash-badge ${earnedIds.has(b.id) ? 'earned' : 'locked'}" title="${b.label}">
