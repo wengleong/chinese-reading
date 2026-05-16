@@ -15,6 +15,7 @@ import { syncDown } from './lib/cloud.js';
 import { showFamilyOnboarding } from './components/familyOnboarding.js';
 import { renderPictureReader } from './components/pictureReader.js';
 import { scorePicture, selectQuestions } from './lib/pictureScorer.js';
+import { renderTingxieHome } from './components/tingxieHome.js';
 
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
   window.addEventListener("load", () => {
@@ -61,6 +62,42 @@ let pictureOralState = null;
 
 renderSettingsButton({ root: els.settingsBtn });
 
+// ---- Mode toggle ----
+const modeReadingBtn = document.getElementById('mode-reading');
+const modeTingxieBtn = document.getElementById('mode-tingxie');
+const appMain        = document.querySelector('.app-main');
+const tingxiePanel   = document.getElementById('tingxie-panel');
+let tingxieActive = false;
+
+function switchToReading() {
+  tingxieActive = false;
+  modeReadingBtn.classList.add('active');
+  modeTingxieBtn.classList.remove('active');
+  appMain.hidden = false;
+  tingxiePanel.hidden = true;
+}
+
+function switchToTingxie() {
+  if (!isLoggedIn()) {
+    alert('听写 requires a family account — please log in or sign up.');
+    return;
+  }
+  tingxieActive = true;
+  modeTingxieBtn.classList.add('active');
+  modeReadingBtn.classList.remove('active');
+  appMain.hidden = true;
+  tingxiePanel.hidden = false;
+  const student = getActiveStudent();
+  if (!student) {
+    tingxiePanel.innerHTML = '<p class="tx-hint" style="padding:20px">Please select a student above to start 听写.</p>';
+    return;
+  }
+  renderTingxieHome({ root: tingxiePanel, student });
+}
+
+modeReadingBtn.addEventListener('click', switchToReading);
+modeTingxieBtn.addEventListener('click', switchToTingxie);
+
 function refreshPicker(activeId = activeStory?.id ?? null) {
   if (!stories.length) return;
   renderStoryPicker({
@@ -75,7 +112,7 @@ function refreshPicker(activeId = activeStory?.id ?? null) {
 // Student panel — refresh on student change; also re-render picker to update ticks.
 let studentPanelCtl = renderStudentPanel({
   root: els.studentPanel,
-  onStudentChange: () => { studentPanelCtl?.refresh(); refreshPicker(); },
+  onStudentChange: () => { studentPanelCtl?.refresh(); refreshPicker(); if (tingxieActive) switchToTingxie(); },
 });
 
 renderPinyinToggle({ root: els.pinyinToggle, readerRoot: els.reader });

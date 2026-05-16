@@ -45,6 +45,13 @@
 
     <div id="student-panel" class="student-panel-wrapper"></div>
 
+    <div class="mode-toggle-wrapper">
+      <div class="mode-toggle" role="tablist">
+        <button class="mode-tab active" id="mode-reading" role="tab">📖🎤 阅读 &amp; 口试</button>
+        <button class="mode-tab" id="mode-tingxie" role="tab">✍️ 听写</button>
+      </div>
+    </div>
+
     <main class="app-main">
       <aside id="story-picker" class="story-picker" aria-label="Story library"></aside>
 
@@ -66,7 +73,7 @@
       </section>
     </main>
 
-
+    <div id="tingxie-panel" class="tingxie-panel" hidden></div>
 
     <script type="module" src="./src/app.js"></script>
   </body>
