@@ -135,18 +135,23 @@ Context: ${story.scene}
 Key vocabulary expected: ${keyElements.join('、')}
 Key element coverage detected locally: ${coveragePct}%
 
+Expected answer structures (Singapore school framework):
+- Description (描述题): S=Opening, C=Content/what you saw, F=Feelings, R=Reason/why, A=Action you would take, S=Summary
+- Sharing (分享题, e.g. "谈一谈你的经历"): 回答问题 → 经历 (detailed experience) → 感受 → 总结
+- Opinion (看法题, e.g. "你同意吗？为什么"): 回答问题 (state position) → 观点+解释 (2–3 points each with explanation/example) → 总结感受
+
 Student responses:
-[Description — use SCFRAS structure: Opening (S), Content (C), Feelings (F), Relate to experience (R), Action (A), Summary (S)]:
+[Description (描述题) — expected: S/C/F/R/A/S]:
 ${transcripts[0] || '(none)'}
 
 ${qLines}
 
 Total speaking time: ${totalSecs} seconds
 
-Evaluate holistically across all 4 responses.
+Score based on how well the student follows the expected structure for each question type. Infer question type from the question text.
 Return JSON only (no code fences):
 {
-  "content_score": <0-100: description covers S/C/F/R/A/S elements; Q answers are relevant, complete, and well-reasoned>,
+  "content_score": <0-100: description covers S/C/F/R/A/S; follow-up answers match expected structure for their question type, are relevant and elaborated>,
   "language_score": <0-100: vocabulary range, sentence variety, grammar accuracy>,
   "expression_score": <0-100: fluency and confidence — higher for longer, elaborated responses>,
   "feedback": "<2 sentences of encouraging English feedback: 1 strength, 1 specific tip>"
