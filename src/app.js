@@ -78,29 +78,19 @@ function switchToReading() {
 }
 
 function switchToTingxie() {
+  if (!isLoggedIn()) {
+    showFamilyOnboarding({
+      onDone: async () => { await syncDown().catch(() => {}); studentPanelCtl?.refresh(); switchToTingxie(); },
+      onSkip: () => {},
+    });
+    return;
+  }
+
   tingxieActive = true;
   modeTingxieBtn.classList.add('active');
   modeReadingBtn.classList.remove('active');
   appMain.hidden = true;
   tingxiePanel.hidden = false;
-
-  if (!isLoggedIn()) {
-    tingxiePanel.innerHTML = `
-      <div style="text-align:center;padding:40px 20px;">
-        <div style="font-size:48px;margin-bottom:12px;">✍️</div>
-        <p style="font-size:15px;color:#2b2b2b;margin-bottom:16px;">听写 requires a family account.</p>
-        <button class="tx-primary-btn" id="tx-login-btn" style="max-width:240px;margin:0 auto;display:block;">
-          Log in or sign up →
-        </button>
-      </div>`;
-    tingxiePanel.querySelector('#tx-login-btn').onclick = () => {
-      showFamilyOnboarding({
-        onDone: async () => { await syncDown().catch(() => {}); studentPanelCtl?.refresh(); switchToTingxie(); },
-        onSkip: switchToReading,
-      });
-    };
-    return;
-  }
 
   const student = getActiveStudent();
   if (!student) {

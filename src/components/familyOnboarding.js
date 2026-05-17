@@ -7,10 +7,6 @@ export function showFamilyOnboarding({ onDone, onSkip }) {
   overlay.className = 'modal-overlay onboarding-overlay';
   overlay.innerHTML = `
     <div class="modal-card onboarding-card" role="dialog" aria-modal="true">
-      <div class="onboarding-logo">📚</div>
-      <h2 class="modal-title" style="text-align:center">每日华文阅读</h2>
-      <p class="modal-hint" style="text-align:center">Save your progress across all devices</p>
-
       <div class="onboarding-tabs">
         <button class="onboarding-tab active" id="tab-join">Have a Code</button>
         <button class="onboarding-tab" id="tab-create">New Family</button>
@@ -23,7 +19,7 @@ export function showFamilyOnboarding({ onDone, onSkip }) {
           autocomplete="off" autocapitalize="characters" spellcheck="false" />
         <div class="modal-error" id="ob-join-err" hidden></div>
         <div class="modal-actions">
-          <button class="secondary" id="ob-skip">Use without code</button>
+          <button class="secondary" id="ob-skip">Skip</button>
           <button class="primary" id="ob-join-btn">Join →</button>
         </div>
       </div>
@@ -33,18 +29,16 @@ export function showFamilyOnboarding({ onDone, onSkip }) {
         <div class="modal-error" id="ob-create-err" hidden></div>
         <div class="modal-actions">
           <button class="secondary" id="ob-back">← Back</button>
-          <button class="primary" id="ob-create-btn">✨ Create Family</button>
+          <button class="primary" id="ob-create-btn">Create Family</button>
         </div>
       </div>
 
       <div id="panel-code" hidden>
-        <p class="modal-hint" style="text-align:center">Your family code is:</p>
+        <p class="modal-hint" style="text-align:center">Your family code:</p>
         <div class="onboarding-code-display" id="ob-code-display"></div>
-        <p class="modal-hint" style="text-align:center;color:var(--danger)">
-          ⚠️ Write this down! You need it to sign in on other devices.
-        </p>
-        <button class="secondary" id="ob-copy" style="width:100%;margin-bottom:8px">📋 Copy Code</button>
-        <button class="primary" id="ob-done" style="width:100%">Start Reading →</button>
+        <p class="modal-hint" style="text-align:center;color:var(--danger)">Write this down — you'll need it on other devices.</p>
+        <button class="secondary" id="ob-copy" style="width:100%;margin-bottom:8px">Copy Code</button>
+        <button class="primary" id="ob-done" style="width:100%">Done →</button>
       </div>
     </div>`;
 
