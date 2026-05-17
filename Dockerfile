@@ -5,8 +5,9 @@ WORKDIR /app
 COPY api/package.json api/package-lock.json ./api/
 RUN cd api && npm ci --production
 
-# Copy API source
+# Copy API source and migrations
 COPY api/src/ ./api/src/
+COPY api/migrations/ ./api/migrations/
 
 # Copy frontend static files into /app/public/
 COPY index.html styles.css manifest.webmanifest sw.js ./public/
