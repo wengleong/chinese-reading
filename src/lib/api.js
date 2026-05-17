@@ -33,7 +33,10 @@ async function req(method, path, body, isFormData = false) {
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.error || `API error ${res.status}`);
+    // Anthropic errors: { error: { type, message } }; our own errors: { error: string }
+    const msg = (typeof err.error === 'object' ? err.error?.message : err.error)
+      || `API error ${res.status}`;
+    throw new Error(msg);
   }
   return res.json();
 }

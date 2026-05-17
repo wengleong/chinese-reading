@@ -164,28 +164,24 @@ Return JSON only (no code fences):
   "feedback": "<1-2 sentences of encouraging feedback in English>"
 }`;
 
-  try {
-    const data = await generateViaApi({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 250,
-      messages: [{ role: 'user', content: promptText }],
-    });
-    const result = parseModelJsonBlock(extractTextFromModelResponse(data));
-    if (!result) throw new Error('bad response: ' + extractTextFromModelResponse(data).slice(0, 100));
-    const contentScore = toBoundedScore(result.content_score, coveragePct);
-    const languageScore = toBoundedScore(result.language_score, 50);
-    const expressionScore = toBoundedScore(result.expression_score, 50);
-    const overall = Math.round(contentScore * 0.4 + languageScore * 0.4 + expressionScore * 0.2);
-    return {
-      contentScore,
-      languageScore,
-      expressionScore,
-      overall,
-      passed: overall >= 60,
-      feedback: result.feedback || '',
-    };
-  } catch (err) {
-    console.error('[scorePicture] failed:', err?.message || err);
-    return null;
-  }
+  const data = await generateViaApi({
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 250,
+    messages: [{ role: 'user', content: promptText }],
+  });
+  const rawText = extractTextFromModelResponse(data);
+  const result = parseModelJsonBlock(rawText);
+  if (!result) throw new Error('Unexpected response from AI — please try again.\n\nDetail: ' + rawText.slice(0, 120));
+  const contentScore = toBoundedScore(result.content_score, coveragePct);
+  const languageScore = toBoundedScore(result.language_score, 50);
+  const expressionScore = toBoundedScore(result.expression_score, 50);
+  const overall = Math.round(contentScore * 0.4 + languageScore * 0.4 + expressionScore * 0.2);
+  return {
+    contentScore,
+    languageScore,
+    expressionScore,
+    overall,
+    passed: overall >= 60,
+    feedback: result.feedback || '',
+  };
 }

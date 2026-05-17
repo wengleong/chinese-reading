@@ -187,16 +187,19 @@ const recorderCtl = renderRecorder({
         recorderCtl.setStopLabel('■ 停止 Stop & Score');
       } else {
         // Q3 done — score all 4 responses
-        const picResult = await scorePicture({
-          story,
-          transcripts: state.transcripts,
-          durations: state.durationMs,
-        });
-        pictureOralState = null;
-        if (!picResult) {
-          alert('Unable to score — please try again.');
+        let picResult;
+        try {
+          picResult = await scorePicture({
+            story,
+            transcripts: state.transcripts,
+            durations: state.durationMs,
+          });
+        } catch (err) {
+          pictureOralState = null;
+          alert('Scoring failed: ' + (err.message || 'Unknown error'));
           return;
         }
+        pictureOralState = null;
         openScoreModal({
           student, story,
           scoreResult: {
