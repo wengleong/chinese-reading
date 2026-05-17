@@ -30,6 +30,13 @@
     .file-row {
       display: flex; flex-direction: column; gap: 12px; width: 100%;
     }
+    .add-more-row { margin-top: 12px; }
+    .add-more-btn { background: #2f9e44; }
+    .photo-count {
+      font-size: 1rem; font-weight: 700; color: #2f9e44;
+      background: #ebfbee; border-radius: 8px; padding: 10px 16px;
+      text-align: center; margin-bottom: 8px;
+    }
     .secondary-btn {
       background: #f4f0eb; color: #2b2b2b; border: none; border-radius: 12px;
       padding: 16px 24px; font-size: 0.95rem; font-weight: 500; cursor: pointer;
@@ -55,19 +62,35 @@
     <h1>📷 Upload Exam Paper</h1>
     <p class="hint" id="hint">Take photos of the exam paper(s). You can add multiple pages — AI will split them into separate exams.</p>
 
-    <div class="file-row" id="upload-section">
-      <label class="upload-btn">
-        <span class="icon">📷</span>
-        Take Photo
-        <input type="file" accept="image/*" capture="environment" hidden id="cam-input">
-      </label>
-      <label class="secondary-btn">
-        Choose from Library
-        <input type="file" accept="image/*" multiple hidden id="lib-input">
-      </label>
-    </div>
+    <div id="upload-section">
+      <div class="file-row" id="first-shot">
+        <label class="upload-btn">
+          <span class="icon">📷</span>
+          Take Photo
+          <input type="file" accept="image/*" capture="environment" hidden id="cam-input">
+        </label>
+        <label class="secondary-btn">
+          Choose from Library
+          <input type="file" accept="image/*" multiple hidden id="lib-input">
+        </label>
+      </div>
 
-    <div id="preview-list"></div>
+      <div id="added-section" hidden>
+        <p id="photo-count" class="photo-count"></p>
+        <div id="preview-list"></div>
+        <div class="file-row add-more-row">
+          <label class="upload-btn add-more-btn">
+            <span class="icon">📷</span>
+            Add Another Photo
+            <input type="file" accept="image/*" capture="environment" hidden id="cam-input-2">
+          </label>
+          <label class="secondary-btn">
+            Add from Library
+            <input type="file" accept="image/*" multiple hidden id="lib-input-2">
+          </label>
+        </div>
+      </div>
+    </div>
 
     <p id="status" class="status" hidden></p>
     <button id="done-btn" hidden>Send to App ✓</button>
@@ -82,6 +105,9 @@
     const previewList = document.getElementById('preview-list');
     const doneBtn = document.getElementById('done-btn');
     const statusEl = document.getElementById('status');
+    const photoCount = document.getElementById('photo-count');
+    const addedSection = document.getElementById('added-section');
+    const firstShot = document.getElementById('first-shot');
 
     function addFiles(files) {
       for (const f of files) {
@@ -92,13 +118,19 @@
         previewList.appendChild(img);
       }
       if (pending.length > 0) {
+        const n = pending.length;
+        photoCount.textContent = `${n} photo${n > 1 ? 's' : ''} added — each photo is kept`;
+        document.getElementById('hint').textContent = 'Add more pages, or tap Send when done.';
+        firstShot.hidden = true;
+        addedSection.hidden = false;
         doneBtn.hidden = false;
-        document.getElementById('hint').textContent = `${pending.length} photo${pending.length > 1 ? 's' : ''} selected. Add more or tap Send.`;
       }
     }
 
     document.getElementById('cam-input').addEventListener('change', e => addFiles(e.target.files));
     document.getElementById('lib-input').addEventListener('change', e => addFiles(e.target.files));
+    document.getElementById('cam-input-2').addEventListener('change', e => addFiles(e.target.files));
+    document.getElementById('lib-input-2').addEventListener('change', e => addFiles(e.target.files));
 
     doneBtn.addEventListener('click', async () => {
       if (!pending.length) return;

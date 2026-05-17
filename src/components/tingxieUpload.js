@@ -71,7 +71,7 @@ export function showTingxieUpload({ studentId, onDone, onCancel }) {
         <div class="tx-upload-body" style="align-items:center;text-align:center">
           <p class="tx-hint">Scan this QR code with your phone, then take photos of the exam paper(s).</p>
           <div id="tx-qr-box" style="margin:16px auto;max-width:220px"></div>
-          <p id="tx-qr-status" class="tx-hint" style="color:#6b6b6b">Waiting for phone upload…</p>
+          <p id="tx-qr-status" class="tx-hint" style="color:#6b6b6b">📱 Waiting for phone upload…</p>
         </div>
       </div>`;
     overlay.querySelector('#tx-back').onclick = renderUpload;
@@ -94,7 +94,15 @@ export function showTingxieUpload({ studentId, onDone, onCancel }) {
         const res = await pollUploadSession(session.token);
         if (res.status !== 'ready') return;
         cleanup();
-        overlay.querySelector('#tx-qr-status').textContent = 'Photos received! Extracting…';
+
+        const n = res.files.length;
+        // Replace QR + status with a full processing state
+        overlay.querySelector('#tx-qr-box').innerHTML = `<div style="font-size:3rem;margin:12px 0">⏳</div>`;
+        const statusEl = overlay.querySelector('#tx-qr-status');
+        statusEl.style.color = '#e8590c';
+        statusEl.style.fontWeight = '600';
+        statusEl.style.fontSize = '1rem';
+        statusEl.textContent = `${n} photo${n > 1 ? 's' : ''} received — extracting word list…`;
 
         // Convert base64 files to File objects for extraction
         const files = res.files.map((f, i) => {
@@ -106,7 +114,10 @@ export function showTingxieUpload({ studentId, onDone, onCancel }) {
 
         const result = await extractPaper(files);
         if (result.error === 'extraction_failed') {
-          overlay.querySelector('#tx-qr-status').innerHTML = `<span class="tx-error">Couldn't read the paper — try again or enter manually.</span>`;
+          overlay.querySelector('#tx-qr-box').innerHTML = `<div style="font-size:2.5rem;margin:12px 0">❌</div>`;
+          statusEl.style.color = '#c92a2a';
+          statusEl.style.fontWeight = 'normal';
+          statusEl.textContent = "Couldn't read the paper — try again or enter manually.";
           return;
         }
         renderConfirmMulti(result.exams || []);
