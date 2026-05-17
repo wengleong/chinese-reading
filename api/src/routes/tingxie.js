@@ -262,11 +262,9 @@ function addPinyin(exams) {
   }));
 }
 
-router.post('/extract', upload.array('files', 10), async (req, res) => {
+router.post('/extract', upload.fields([{ name: 'files', maxCount: 10 }, { name: 'file', maxCount: 1 }]), async (req, res) => {
   try {
-    // Support legacy single-file field name too
-    const files = req.files?.length ? req.files
-      : req.file ? [req.file] : [];
+    const files = [...(req.files?.files || []), ...(req.files?.file || [])];
     if (!files.length) return res.status(400).json({ error: 'No files uploaded' });
 
     const imageContents = (await Promise.all(files.map(fileToImageContents))).flat();
