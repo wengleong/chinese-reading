@@ -48,17 +48,51 @@ export function showTingxieUpload({ studentId, onDone, onCancel }) {
   }
 
   async function handleFiles(files) {
-    const status = overlay.querySelector('#tx-status');
-    status.className = 'tx-upload-status loading';
-    status.textContent = `Extracting from ${files.length} file${files.length > 1 ? 's' : ''}…`;
+    // Full-screen processing state — consistent with QR flow
+    overlay.innerHTML = `
+      <div class="tx-modal">
+        <div class="tx-modal-header">
+          <div></div>
+          <h2>Extracting Word List</h2>
+        </div>
+        <div class="tx-upload-body" style="align-items:center;text-align:center">
+          <div style="font-size:3rem;margin:16px 0">⏳</div>
+          <p style="font-weight:600;color:#e8590c;font-size:1rem">${files.length} file${files.length > 1 ? 's' : ''} uploaded — AI is extracting the word list…</p>
+          <p class="tx-hint" style="margin-top:8px">This usually takes 10–20 seconds.</p>
+        </div>
+      </div>`;
     try {
       const result = await extractPaper(files);
       if (result.error === 'extraction_failed') {
-        status.innerHTML = `<span class="tx-error">Couldn't read the paper clearly — try a clearer photo or enter words manually.</span>`;
+        overlay.innerHTML = `
+          <div class="tx-modal">
+            <div class="tx-modal-header">
+              <button class="tx-back-btn" id="tx-back">‹ Back</button>
+              <h2>Upload Exam Paper</h2>
+            </div>
+            <div class="tx-upload-body" style="align-items:center;text-align:center">
+              <div style="font-size:2.5rem;margin:12px 0">❌</div>
+              <p class="tx-error" style="text-align:center">Couldn't read the paper clearly — try a clearer photo or enter words manually.</p>
+            </div>
+          </div>`;
+        overlay.querySelector('#tx-back').onclick = renderUpload;
         return;
       }
       renderConfirmMulti(result.exams || []);
-    } catch (e) { status.innerHTML = `<span class="tx-error">${e.message}</span>`; }
+    } catch (e) {
+      overlay.innerHTML = `
+        <div class="tx-modal">
+          <div class="tx-modal-header">
+            <button class="tx-back-btn" id="tx-back">‹ Back</button>
+            <h2>Upload Exam Paper</h2>
+          </div>
+          <div class="tx-upload-body" style="align-items:center;text-align:center">
+            <div style="font-size:2.5rem;margin:12px 0">❌</div>
+            <p class="tx-error" style="text-align:center">${e.message}</p>
+          </div>
+        </div>`;
+      overlay.querySelector('#tx-back').onclick = renderUpload;
+    }
   }
 
   async function renderQr() {
@@ -151,10 +185,10 @@ export function showTingxieUpload({ studentId, onDone, onCancel }) {
         </div>
         <div class="tx-confirm-body">
           ${extracted?.warning ? `<div class="tx-warning" id="tx-warning">⚠️</div>` : ''}
-          <label class="tx-field-label">Exam title
+          <label class="tx-field-label">Exam title <span class="tx-required">*</span>
             <input class="tx-input" id="tx-title" placeholder="e.g. 词语单元一">
           </label>
-          <label class="tx-field-label">Exam date
+          <label class="tx-field-label">Exam date <span class="tx-required">*</span>
             <input class="tx-input" id="tx-date" type="date">
           </label>
           <div class="tx-words-header">

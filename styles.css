@@ -1585,6 +1585,7 @@ button.danger {
 .tx-upload-status.loading { color: #1971c2; }
 .tx-confirm-body { display: flex; flex-direction: column; gap: 12px; }
 .tx-field-label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: #6b6b6b; }
+.tx-required { color: #e8590c; font-weight: 700; }
 .tx-input { border: 1px solid #e0d8d0; border-radius: 8px; padding: 10px; font-size: 14px; }
 .tx-words-header { display: flex; justify-content: space-between; align-items: center; }
 .tx-add-word-btn { background: none; border: 1px solid #e8590c; color: #e8590c; border-radius: 8px; padding: 4px 10px; font-size: 12px; cursor: pointer; }
