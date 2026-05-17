@@ -3,14 +3,74 @@
 
 const express = require('express');
 const multer  = require('multer');
+const QRCode  = require('qrcode');
 const { pinyin } = require('pinyin-pro');
+const { v4: uuidv4 } = require('uuid');
 const db      = require('../db');
 const { requireAuth } = require('../auth');
 
 const router = express.Router();
-router.use(requireAuth);
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
+
+// ---- Phone upload sessions (in-memory, 15min TTL) ----
+// Sessions are created by authenticated desktop, uploaded to by phone (token-only auth).
+const uploadSessions = new Map();
+const SESSION_TTL_MS = 15 * 60 * 1000;
+
+function cleanSessions() {
+  const now = Date.now();
+  for (const [token, s] of uploadSessions) {
+    if (now - s.createdAt > SESSION_TTL_MS) uploadSessions.delete(token);
+  }
+}
+setInterval(cleanSessions, 60_000);
+
+// Create a session — returns token + QR code SVG
+router.post('/upload-session', requireAuth, async (req, res) => {
+  try {
+    const token = uuidv4();
+    uploadSessions.set(token, { createdAt: Date.now(), familyId: req.familyId, files: [], done: false });
+    const appOrigin = `${req.protocol}://${req.get('host')}`;
+    const uploadUrl = `${appOrigin}/phone-upload.html?token=${token}`;
+    const qrSvg = await QRCode.toString(uploadUrl, { type: 'svg', margin: 1 });
+    res.json({ token, qrSvg, uploadUrl });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Phone polls to check if it's already uploaded (optional, not currently used)
+// Phone submits one or more images — no JWT required, token is the credential
+router.post('/upload-session/:token', upload.array('files', 10), async (req, res) => {
+  try {
+    const session = uploadSessions.get(req.params.token);
+    if (!session) return res.status(404).json({ error: 'Session not found or expired' });
+    if (Date.now() - session.createdAt > SESSION_TTL_MS)
+      return res.status(410).json({ error: 'Session expired' });
+    const incoming = (req.files || []).map(f => ({
+      data: f.buffer.toString('base64'),
+      mimeType: f.mimetype.startsWith('image/') ? f.mimetype : 'image/jpeg',
+    }));
+    if (!incoming.length) return res.status(400).json({ error: 'No files received' });
+    session.files.push(...incoming);
+    session.done = true;
+    res.json({ ok: true, received: incoming.length });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Desktop polls until done
+router.get('/upload-session/:token', requireAuth, async (req, res) => {
+  try {
+    const session = uploadSessions.get(req.params.token);
+    if (!session) return res.status(404).json({ error: 'Session not found or expired' });
+    if (session.familyId !== req.familyId) return res.status(403).json({ error: 'Forbidden' });
+    if (!session.done) return res.json({ status: 'pending' });
+    const files = session.files;
+    uploadSessions.delete(req.params.token);
+    res.json({ status: 'ready', files });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.use(requireAuth);
 
 // ---- Helpers ----
 
@@ -173,65 +233,79 @@ router.post('/sessions', async (req, res) => {
 });
 
 // ---- Paper extraction ----
+// Accepts multiple files; returns { exams: [...] } — AI splits by title/date.
 
-router.post('/extract', upload.single('file'), async (req, res) => {
-  try {
-    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-
-    let imageContents = [];
-
-    if (req.file.mimetype === 'application/pdf') {
-      // pdf-to-img is ESM-only — must use dynamic import
-      const { pdf } = await import('pdf-to-img');
-      const pages = [];
-      for await (const page of await pdf(req.file.buffer, { scale: 2 })) {
-        if (pages.length >= 5) {
-          return res.status(400).json({ error: 'PDF too long — please upload just the word list page.' });
-        }
-        pages.push(page);
-      }
-      imageContents = pages.map(buf => ({
-        type: 'image',
-        source: { type: 'base64', media_type: 'image/png', data: buf.toString('base64') },
-      }));
-    } else {
-      const mt = req.file.mimetype.startsWith('image/') ? req.file.mimetype : 'image/jpeg';
-      imageContents = [{ type: 'image', source: { type: 'base64', media_type: mt, data: req.file.buffer.toString('base64') } }];
+async function fileToImageContents(file) {
+  if (file.mimetype === 'application/pdf') {
+    const { pdf } = await import('pdf-to-img');
+    const pages = [];
+    for await (const page of await pdf(file.buffer, { scale: 2 })) {
+      if (pages.length >= 5) break;
+      pages.push(page);
     }
+    return pages.map(buf => ({
+      type: 'image',
+      source: { type: 'base64', media_type: 'image/png', data: buf.toString('base64') },
+    }));
+  }
+  const mt = file.mimetype.startsWith('image/') ? file.mimetype : 'image/jpeg';
+  return [{ type: 'image', source: { type: 'base64', media_type: mt, data: file.buffer.toString('base64') } }];
+}
+
+function addPinyin(exams) {
+  return exams.map(exam => ({
+    ...exam,
+    words: (exam.words || []).map(w => ({
+      ...w,
+      pinyin: pinyin(w.hanzi, { toneType: 'symbol', separator: ' ' }),
+    })),
+  }));
+}
+
+router.post('/extract', upload.array('files', 10), async (req, res) => {
+  try {
+    // Support legacy single-file field name too
+    const files = req.files?.length ? req.files
+      : req.file ? [req.file] : [];
+    if (!files.length) return res.status(400).json({ error: 'No files uploaded' });
+
+    const imageContents = (await Promise.all(files.map(fileToImageContents))).flat();
 
     const claudeRes = await callClaude(req.familyId, {
       model: 'claude-opus-4-6',
-      max_tokens: 1024,
+      max_tokens: 2048,
       messages: [{
         role: 'user',
         content: [
           ...imageContents,
-          { type: 'text', text: `Extract the Chinese dictation (听写/默写) word list from this exam paper.
-Return ONLY valid JSON:
-{ "title": "exam title", "examDate": "YYYY-MM-DD or null", "words": [{ "hanzi": "词语", "type": "tingxie" }], "warning": "optional" }
-Rules: type is "tingxie" for 听写, "moxie" for 默写 (infer from headers). Max 30 words; if more set warning:"truncated".
-If no Chinese words found: { "error": "extraction_failed", "message": "..." }` },
+          { type: 'text', text: `You are extracting Chinese dictation (听写/默写) word lists from one or more exam papers.
+The images may contain one exam paper or several — split them by title or exam date.
+
+Return ONLY valid JSON (array of exam objects):
+[{ "title": "exam title", "examDate": "YYYY-MM-DD or null", "words": [{ "hanzi": "词语", "type": "tingxie" }], "warning": "optional" }]
+
+Rules:
+- type is "tingxie" for 听写, "moxie" for 默写 (infer from section headers)
+- Max 30 words per exam; if more set warning: "truncated"
+- If different titles or dates are visible, create separate exam objects
+- If no Chinese words found anywhere: [{ "error": "extraction_failed", "message": "..." }]` },
         ],
       }],
     });
 
-    let extracted;
+    let exams;
     try {
       const text = claudeRes.content?.[0]?.text || '';
-      extracted = JSON.parse((text.match(/\{[\s\S]*\}/) || ['{}'])[0]);
+      exams = JSON.parse((text.match(/\[[\s\S]*\]/) || ['[]'])[0]);
     } catch {
       return res.status(422).json({ error: 'extraction_failed', message: 'Could not parse AI response' });
     }
 
-    if (extracted.error === 'extraction_failed') return res.status(422).json(extracted);
+    if (!Array.isArray(exams) || !exams.length)
+      return res.status(422).json({ error: 'extraction_failed', message: 'No exams found' });
+    if (exams[0]?.error === 'extraction_failed') return res.status(422).json(exams[0]);
 
-    if (Array.isArray(extracted.words)) {
-      extracted.words = extracted.words.map(w => ({
-        ...w,
-        pinyin: pinyin(w.hanzi, { toneType: 'symbol', separator: ' ' }),
-      }));
-    }
-    res.json(extracted);
+    res.json({ exams: addPinyin(exams) });
   } catch (e) { res.status(e.status || 500).json({ error: e.message }); }
 });
 

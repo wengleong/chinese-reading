@@ -1,11 +1,18 @@
 // src/components/tingxieUpload.js
-import { extractPaper, createExam } from '../lib/tingxie.js';
+import { extractPaper, createExam, createUploadSession, pollUploadSession } from '../lib/tingxie.js';
 
 export function showTingxieUpload({ studentId, onDone, onCancel }) {
   const overlay = document.createElement('div');
   overlay.className = 'tx-overlay';
 
+  let pollInterval = null;
+
+  function cleanup() {
+    if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
+  }
+
   function renderUpload() {
+    cleanup();
     overlay.innerHTML = `
       <div class="tx-modal">
         <div class="tx-modal-header">
@@ -13,16 +20,19 @@ export function showTingxieUpload({ studentId, onDone, onCancel }) {
           <h2>Upload Exam Paper</h2>
         </div>
         <div class="tx-upload-body">
-          <p class="tx-hint">Take a photo or upload a PDF — AI extracts the word list.</p>
+          <p class="tx-hint">Take photos or upload files — AI extracts the word list and splits multiple exams automatically.</p>
           <div class="tx-upload-options">
             <label class="tx-upload-btn">
               📷<span>Take Photo</span>
-              <input type="file" accept="image/*" capture="environment" hidden id="tx-cam">
+              <input type="file" accept="image/*" capture="environment" multiple hidden id="tx-cam">
             </label>
             <label class="tx-upload-btn">
-              📄<span>Choose File</span>
-              <input type="file" accept="image/*,application/pdf" hidden id="tx-file">
+              📄<span>Choose Files</span>
+              <input type="file" accept="image/*,application/pdf" multiple hidden id="tx-file">
             </label>
+            <button class="tx-upload-btn" id="tx-qr">
+              <span style="font-size:1.4rem">📱</span><span>Use Phone Camera</span>
+            </button>
           </div>
           <div id="tx-status"></div>
           <div class="tx-divider">or</div>
@@ -30,33 +40,103 @@ export function showTingxieUpload({ studentId, onDone, onCancel }) {
         </div>
       </div>`;
 
-    overlay.querySelector('#tx-cancel').onclick = () => { overlay.remove(); onCancel?.(); };
-    overlay.querySelector('#tx-manual').onclick = () => renderConfirm(null);
-
-    async function handleFile(file) {
-      const status = overlay.querySelector('#tx-status');
-      status.textContent = 'Extracting word list…'; status.className = 'tx-upload-status loading';
-      try {
-        const result = await extractPaper(file);
-        if (result.error === 'extraction_failed') {
-          status.innerHTML = `<span class="tx-error">We couldn't read the paper clearly — please try a clearer photo or enter words manually.</span>`;
-          return;
-        }
-        renderConfirm(result);
-      } catch (e) { status.innerHTML = `<span class="tx-error">${e.message}</span>`; }
-    }
-
-    overlay.querySelector('#tx-cam').onchange = e => e.target.files[0] && handleFile(e.target.files[0]);
-    overlay.querySelector('#tx-file').onchange = e => e.target.files[0] && handleFile(e.target.files[0]);
+    overlay.querySelector('#tx-cancel').onclick = () => { cleanup(); overlay.remove(); onCancel?.(); };
+    overlay.querySelector('#tx-manual').onclick = () => renderConfirmMulti([]);
+    overlay.querySelector('#tx-cam').onchange = e => e.target.files.length && handleFiles([...e.target.files]);
+    overlay.querySelector('#tx-file').onchange = e => e.target.files.length && handleFiles([...e.target.files]);
+    overlay.querySelector('#tx-qr').onclick = renderQr;
   }
 
-  function renderConfirm(extracted) {
+  async function handleFiles(files) {
+    const status = overlay.querySelector('#tx-status');
+    status.className = 'tx-upload-status loading';
+    status.textContent = `Extracting from ${files.length} file${files.length > 1 ? 's' : ''}…`;
+    try {
+      const result = await extractPaper(files);
+      if (result.error === 'extraction_failed') {
+        status.innerHTML = `<span class="tx-error">Couldn't read the paper clearly — try a clearer photo or enter words manually.</span>`;
+        return;
+      }
+      renderConfirmMulti(result.exams || []);
+    } catch (e) { status.innerHTML = `<span class="tx-error">${e.message}</span>`; }
+  }
+
+  async function renderQr() {
+    overlay.innerHTML = `
+      <div class="tx-modal">
+        <div class="tx-modal-header">
+          <button class="tx-back-btn" id="tx-back">‹ Back</button>
+          <h2>Use Phone Camera</h2>
+        </div>
+        <div class="tx-upload-body" style="align-items:center;text-align:center">
+          <p class="tx-hint">Scan this QR code with your phone, then take photos of the exam paper(s).</p>
+          <div id="tx-qr-box" style="margin:16px auto;max-width:220px"></div>
+          <p id="tx-qr-status" class="tx-hint" style="color:#6b6b6b">Waiting for phone upload…</p>
+        </div>
+      </div>`;
+    overlay.querySelector('#tx-back').onclick = renderUpload;
+
+    let session;
+    try {
+      session = await createUploadSession();
+    } catch (e) {
+      overlay.querySelector('#tx-qr-status').textContent = 'Failed to create session: ' + e.message;
+      return;
+    }
+
+    const qrBox = overlay.querySelector('#tx-qr-box');
+    qrBox.innerHTML = session.qrSvg;
+    qrBox.querySelector('svg').style.width = '100%';
+    qrBox.querySelector('svg').style.height = 'auto';
+
+    pollInterval = setInterval(async () => {
+      try {
+        const res = await pollUploadSession(session.token);
+        if (res.status !== 'ready') return;
+        cleanup();
+        overlay.querySelector('#tx-qr-status').textContent = 'Photos received! Extracting…';
+
+        // Convert base64 files to File objects for extraction
+        const files = res.files.map((f, i) => {
+          const bytes = atob(f.data);
+          const arr = new Uint8Array(bytes.length);
+          for (let j = 0; j < bytes.length; j++) arr[j] = bytes.charCodeAt(j);
+          return new File([arr], `photo-${i + 1}.jpg`, { type: f.mimeType });
+        });
+
+        const result = await extractPaper(files);
+        if (result.error === 'extraction_failed') {
+          overlay.querySelector('#tx-qr-status').innerHTML = `<span class="tx-error">Couldn't read the paper — try again or enter manually.</span>`;
+          return;
+        }
+        renderConfirmMulti(result.exams || []);
+      } catch (e) {
+        // Silently ignore poll errors (network blip)
+      }
+    }, 2500);
+  }
+
+  // Multi-exam confirm: step through exams one by one
+  function renderConfirmMulti(exams) {
+    cleanup();
+    if (!exams.length) {
+      // No exams extracted — go straight to manual entry
+      renderConfirmOne(null, 0, 1, []);
+      return;
+    }
+    renderConfirmOne(exams[0], 0, exams.length, exams);
+  }
+
+  function renderConfirmOne(extracted, index, total, allExams) {
+    const isLast = index === total - 1;
+    const isOnly = total === 1;
     let words = (extracted?.words || []).slice();
+
     overlay.innerHTML = `
       <div class="tx-modal tx-confirm">
         <div class="tx-modal-header">
           <button class="tx-back-btn" id="tx-back">‹ Back</button>
-          <h2>Confirm Word List</h2>
+          <h2>${total > 1 ? `Exam ${index + 1} of ${total}` : 'Confirm Word List'}</h2>
         </div>
         <div class="tx-confirm-body">
           ${extracted?.warning ? `<div class="tx-warning">⚠️ ${extracted.warning}</div>` : ''}
@@ -73,14 +153,18 @@ export function showTingxieUpload({ studentId, onDone, onCancel }) {
           <ul class="tx-word-list" id="tx-word-list"></ul>
           <div class="tx-confirm-actions">
             <div id="tx-err" class="tx-error" hidden></div>
-            <button class="tx-primary-btn" id="tx-save">Save &amp; Create Schedule →</button>
+            <button class="tx-primary-btn" id="tx-save">
+              ${isOnly ? 'Save &amp; Create Schedule →' : isLast ? 'Save All →' : `Save &amp; Next Exam →`}
+            </button>
           </div>
         </div>
       </div>`;
 
-    overlay.querySelector('#tx-back').onclick = renderUpload;
+    overlay.querySelector('#tx-back').onclick = () => {
+      if (index === 0) renderUpload();
+      else renderConfirmOne(allExams[index - 1], index - 1, total, allExams);
+    };
 
-    // Set values programmatically to avoid XSS via AI-extracted content in HTML attributes
     if (extracted?.title) overlay.querySelector('#tx-title').value = extracted.title;
     if (extracted?.examDate) overlay.querySelector('#tx-date').value = extracted.examDate;
 
@@ -124,10 +208,15 @@ export function showTingxieUpload({ studentId, onDone, onCancel }) {
       if (!date)  { errEl.textContent = 'Please select the exam date.'; errEl.hidden = false; return; }
       if (!words.length) { errEl.textContent = 'Add at least one word.'; errEl.hidden = false; return; }
       errEl.hidden = true;
+
       try {
         const exam = await createExam({ studentId, title, examDate: date, words });
-        overlay.remove();
-        onDone(exam);
+        if (isLast || isOnly) {
+          overlay.remove();
+          onDone(exam);
+        } else {
+          renderConfirmOne(allExams[index + 1], index + 1, total, allExams);
+        }
       } catch (e) { errEl.textContent = e.message; errEl.hidden = false; }
     };
   }
