@@ -74,30 +74,52 @@ export function renderPictureReader({ root, story }) {
   questionCard.className = 'picture-question-card';
   questionCard.hidden = true;
 
-  // SCFRAS hints panel — video only, only when there's content to show
-  // Contains scene context + SCFRAS list, both behind the toggle
+  // Hints panel — video only
+  // Phase 0: SCFRAS structure hints for the description
+  // Phase 1-3: generic Q&A answering tips
+  const QA_HINTS = [
+    '直接回答问题 Answer the question directly',
+    '说出你的理由或感受 Give a reason or feeling',
+    '联系你的亲身经历 Relate to your own experience',
+    '用完整的句子 Use complete sentences',
+  ];
+
   let hintsPanel = null;
+  let hintsBody = null;
+  let hintsToggle = null;
   const hasHintContent = isVideo && (story.scene || (Array.isArray(story.hints) && story.hints.length > 0));
   if (hasHintContent) {
     hintsPanel = document.createElement('div');
     hintsPanel.className = 'scfras-hints';
 
-    const toggle = document.createElement('button');
-    toggle.className = 'scfras-toggle secondary';
-    toggle.textContent = '💡 答题提示 Hints ▾';
-    toggle.setAttribute('aria-expanded', 'false');
+    hintsToggle = document.createElement('button');
+    hintsToggle.className = 'scfras-toggle secondary';
+    hintsToggle.textContent = '💡 答题提示 Hints ▾';
+    hintsToggle.setAttribute('aria-expanded', 'false');
 
-    const body = document.createElement('div');
-    body.className = 'scfras-body';
-    body.hidden = true;
+    hintsBody = document.createElement('div');
+    hintsBody.className = 'scfras-body';
+    hintsBody.hidden = true;
 
+    hintsToggle.addEventListener('click', () => {
+      const willExpand = hintsBody.hidden;
+      hintsBody.hidden = !willExpand;
+      hintsToggle.setAttribute('aria-expanded', String(willExpand));
+      hintsToggle.textContent = willExpand ? '💡 答题提示 Hints ▴' : '💡 答题提示 Hints ▾';
+    });
+
+    hintsPanel.appendChild(hintsToggle);
+    hintsPanel.appendChild(hintsBody);
+  }
+
+  function buildPhase0HintsBody() {
+    hintsBody.innerHTML = '';
     if (story.scene) {
       const sceneP = document.createElement('p');
       sceneP.className = 'scfras-scene';
       sceneP.textContent = story.scene;
-      body.appendChild(sceneP);
+      hintsBody.appendChild(sceneP);
     }
-
     if (Array.isArray(story.hints) && story.hints.length > 0) {
       const list = document.createElement('ul');
       list.className = 'scfras-list';
@@ -106,19 +128,23 @@ export function renderPictureReader({ root, story }) {
         li.textContent = h;
         list.appendChild(li);
       }
-      body.appendChild(list);
+      hintsBody.appendChild(list);
     }
-
-    toggle.addEventListener('click', () => {
-      const willExpand = body.hidden;
-      body.hidden = !willExpand;
-      toggle.setAttribute('aria-expanded', String(willExpand));
-      toggle.textContent = willExpand ? '💡 答题提示 Hints ▴' : '💡 答题提示 Hints ▾';
-    });
-
-    hintsPanel.appendChild(toggle);
-    hintsPanel.appendChild(body);
   }
+
+  function buildQaHintsBody() {
+    hintsBody.innerHTML = '';
+    const list = document.createElement('ul');
+    list.className = 'scfras-list';
+    for (const h of QA_HINTS) {
+      const li = document.createElement('li');
+      li.textContent = h;
+      list.appendChild(li);
+    }
+    hintsBody.appendChild(list);
+  }
+
+  if (hasHintContent) buildPhase0HintsBody();
 
   // DOM order: title → media → credit → step counter → prompt/question → hints
   card.appendChild(title);
@@ -137,11 +163,19 @@ export function renderPictureReader({ root, story }) {
       questionCounter.textContent = isVideo
         ? '录音 1 / 4 · 看视频说话 Describe the video'
         : '录音 1 / 4 · 看图说话 Describe the picture';
+      if (hintsBody) buildPhase0HintsBody();
     } else {
       prompt.hidden = true;
       questionCard.hidden = false;
       questionCard.textContent = questionText || '';
       questionCounter.textContent = `录音 ${phase + 1} / 4 · 第${phase}题 Question ${phase}`;
+      if (hintsBody) buildQaHintsBody();
+    }
+    // Collapse hints when switching phase so student sees the new content on open
+    if (hintsBody && hintsToggle) {
+      hintsBody.hidden = true;
+      hintsToggle.setAttribute('aria-expanded', 'false');
+      hintsToggle.textContent = '💡 答题提示 Hints ▾';
     }
   }
 
