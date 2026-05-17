@@ -193,6 +193,7 @@ const recorderCtl = renderRecorder({
             story,
             transcripts: state.transcripts,
             durations: state.durationMs,
+            questions: state.questions,
           });
         } catch (err) {
           pictureOralState = null;
