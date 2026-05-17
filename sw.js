@@ -1,7 +1,7 @@
 // Minimal offline-first service worker. Caches the shell + stories so the app
 // keeps working without network. Bumping CACHE_VERSION invalidates old caches.
 
-const CACHE_VERSION = "v17";
+const CACHE_VERSION = "v18";
 const CACHE_NAME = `chinese-reader-${CACHE_VERSION}`;
 const SHELL = [
   "./",
