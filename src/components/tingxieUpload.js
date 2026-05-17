@@ -106,9 +106,11 @@ export function showTingxieUpload({ studentId, onDone, onCancel }) {
           <p class="tx-hint">Scan this QR code with your phone, then take photos of the exam paper(s).</p>
           <div id="tx-qr-box" style="margin:16px auto;max-width:220px"></div>
           <p id="tx-qr-status" class="tx-hint" style="color:#6b6b6b">📱 Waiting for phone upload…</p>
+          <button class="tx-secondary-btn" id="tx-manual" style="margin-top:8px">Enter words manually instead</button>
         </div>
       </div>`;
-    overlay.querySelector('#tx-back').onclick = renderUpload;
+    overlay.querySelector('#tx-back').onclick = () => { cleanup(); renderUpload(); };
+    overlay.querySelector('#tx-manual').onclick = () => { cleanup(); renderConfirmMulti([]); };
 
     let session;
     try {
