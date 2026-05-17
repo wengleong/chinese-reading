@@ -5,7 +5,6 @@ const express = require('express');
 const multer  = require('multer');
 const QRCode  = require('qrcode');
 const { pinyin } = require('pinyin-pro');
-const { v4: uuidv4 } = require('uuid');
 const db      = require('../db');
 const { requireAuth } = require('../auth');
 
@@ -13,24 +12,23 @@ const router = express.Router();
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
 
-// ---- Phone upload sessions (in-memory, 15min TTL) ----
+// ---- Phone upload sessions (DB-backed, survives restarts/deployments) ----
 // Sessions are created by authenticated desktop, uploaded to by phone (token-only auth).
-const uploadSessions = new Map();
-const SESSION_TTL_MS = 15 * 60 * 1000;
-
-function cleanSessions() {
-  const now = Date.now();
-  for (const [token, s] of uploadSessions) {
-    if (now - s.createdAt > SESSION_TTL_MS) uploadSessions.delete(token);
-  }
-}
-setInterval(cleanSessions, 60_000);
+// Periodically clean up sessions older than 15 minutes.
+setInterval(async () => {
+  try {
+    await db.query(`DELETE FROM phone_upload_sessions WHERE created_at < NOW() - INTERVAL '15 minutes'`);
+  } catch (_) {}
+}, 60_000);
 
 // Create a session — returns token + QR code SVG
 router.post('/upload-session', requireAuth, async (req, res) => {
   try {
-    const token = uuidv4();
-    uploadSessions.set(token, { createdAt: Date.now(), familyId: req.familyId, files: [], done: false });
+    const { rows } = await db.query(
+      `INSERT INTO phone_upload_sessions (family_id) VALUES ($1) RETURNING token`,
+      [req.familyId]
+    );
+    const token = rows[0].token;
     const appOrigin = `${req.protocol}://${req.get('host')}`;
     const uploadUrl = `${appOrigin}/phone-upload.html?token=${token}`;
     const qrSvg = await QRCode.toString(uploadUrl, { type: 'svg', margin: 1 });
@@ -38,21 +36,23 @@ router.post('/upload-session', requireAuth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// Phone polls to check if it's already uploaded (optional, not currently used)
 // Phone submits one or more images — no JWT required, token is the credential
 router.post('/upload-session/:token', upload.array('files', 10), async (req, res) => {
   try {
-    const session = uploadSessions.get(req.params.token);
-    if (!session) return res.status(404).json({ error: 'Session not found or expired' });
-    if (Date.now() - session.createdAt > SESSION_TTL_MS)
-      return res.status(410).json({ error: 'Session expired' });
+    const { rows } = await db.query(
+      `SELECT token, created_at FROM phone_upload_sessions WHERE token = $1 AND done = false`,
+      [req.params.token]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Session not found or expired' });
     const incoming = (req.files || []).map(f => ({
       data: f.buffer.toString('base64'),
       mimeType: f.mimetype.startsWith('image/') ? f.mimetype : 'image/jpeg',
     }));
     if (!incoming.length) return res.status(400).json({ error: 'No files received' });
-    session.files.push(...incoming);
-    session.done = true;
+    await db.query(
+      `UPDATE phone_upload_sessions SET files = $1::jsonb, done = true WHERE token = $2`,
+      [JSON.stringify(incoming), req.params.token]
+    );
     res.json({ ok: true, received: incoming.length });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -60,13 +60,17 @@ router.post('/upload-session/:token', upload.array('files', 10), async (req, res
 // Desktop polls until done
 router.get('/upload-session/:token', requireAuth, async (req, res) => {
   try {
-    const session = uploadSessions.get(req.params.token);
-    if (!session) return res.status(404).json({ error: 'Session not found or expired' });
-    if (session.familyId !== req.familyId) return res.status(403).json({ error: 'Forbidden' });
+    const { rows } = await db.query(
+      `SELECT family_id, files, done FROM phone_upload_sessions WHERE token = $1`,
+      [req.params.token]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Session not found or expired' });
+    const session = rows[0];
+    if (session.family_id !== req.familyId) return res.status(403).json({ error: 'Forbidden' });
     if (!session.done) return res.json({ status: 'pending' });
-    const files = session.files;
-    uploadSessions.delete(req.params.token);
-    res.json({ status: 'ready', files });
+    // Delete after reading so the session is consumed
+    await db.query(`DELETE FROM phone_upload_sessions WHERE token = $1`, [req.params.token]);
+    res.json({ status: 'ready', files: session.files });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
