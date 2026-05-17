@@ -48,17 +48,51 @@ export function showTingxieUpload({ studentId, onDone, onCancel }) {
   }
 
   async function handleFiles(files) {
-    const status = overlay.querySelector('#tx-status');
-    status.className = 'tx-upload-status loading';
-    status.textContent = `Extracting from ${files.length} file${files.length > 1 ? 's' : ''}…`;
+    // Full-screen processing state — consistent with QR flow
+    overlay.innerHTML = `
+      <div class="tx-modal">
+        <div class="tx-modal-header">
+          <div></div>
+          <h2>Extracting Word List</h2>
+        </div>
+        <div class="tx-upload-body" style="align-items:center;text-align:center">
+          <div style="font-size:3rem;margin:16px 0">⏳</div>
+          <p style="font-weight:600;color:#e8590c;font-size:1rem">${files.length} file${files.length > 1 ? 's' : ''} uploaded — AI is extracting the word list…</p>
+          <p class="tx-hint" style="margin-top:8px">This usually takes 10–20 seconds.</p>
+        </div>
+      </div>`;
     try {
       const result = await extractPaper(files);
       if (result.error === 'extraction_failed') {
-        status.innerHTML = `<span class="tx-error">Couldn't read the paper clearly — try a clearer photo or enter words manually.</span>`;
+        overlay.innerHTML = `
+          <div class="tx-modal">
+            <div class="tx-modal-header">
+              <button class="tx-back-btn" id="tx-back">‹ Back</button>
+              <h2>Upload Exam Paper</h2>
+            </div>
+            <div class="tx-upload-body" style="align-items:center;text-align:center">
+              <div style="font-size:2.5rem;margin:12px 0">❌</div>
+              <p class="tx-error" style="text-align:center">Couldn't read the paper clearly — try a clearer photo or enter words manually.</p>
+            </div>
+          </div>`;
+        overlay.querySelector('#tx-back').onclick = renderUpload;
         return;
       }
       renderConfirmMulti(result.exams || []);
-    } catch (e) { status.innerHTML = `<span class="tx-error">${e.message}</span>`; }
+    } catch (e) {
+      overlay.innerHTML = `
+        <div class="tx-modal">
+          <div class="tx-modal-header">
+            <button class="tx-back-btn" id="tx-back">‹ Back</button>
+            <h2>Upload Exam Paper</h2>
+          </div>
+          <div class="tx-upload-body" style="align-items:center;text-align:center">
+            <div style="font-size:2.5rem;margin:12px 0">❌</div>
+            <p class="tx-error" style="text-align:center">${e.message}</p>
+          </div>
+        </div>`;
+      overlay.querySelector('#tx-back').onclick = renderUpload;
+    }
   }
 
   async function renderQr() {
@@ -71,7 +105,7 @@ export function showTingxieUpload({ studentId, onDone, onCancel }) {
         <div class="tx-upload-body" style="align-items:center;text-align:center">
           <p class="tx-hint">Scan this QR code with your phone, then take photos of the exam paper(s).</p>
           <div id="tx-qr-box" style="margin:16px auto;max-width:220px"></div>
-          <p id="tx-qr-status" class="tx-hint" style="color:#6b6b6b">Waiting for phone upload…</p>
+          <p id="tx-qr-status" class="tx-hint" style="color:#6b6b6b">📱 Waiting for phone upload…</p>
         </div>
       </div>`;
     overlay.querySelector('#tx-back').onclick = renderUpload;
@@ -94,7 +128,15 @@ export function showTingxieUpload({ studentId, onDone, onCancel }) {
         const res = await pollUploadSession(session.token);
         if (res.status !== 'ready') return;
         cleanup();
-        overlay.querySelector('#tx-qr-status').textContent = 'Photos received! Extracting…';
+
+        const n = res.files.length;
+        // Replace QR + status with a full processing state
+        overlay.querySelector('#tx-qr-box').innerHTML = `<div style="font-size:3rem;margin:12px 0">⏳</div>`;
+        const statusEl = overlay.querySelector('#tx-qr-status');
+        statusEl.style.color = '#e8590c';
+        statusEl.style.fontWeight = '600';
+        statusEl.style.fontSize = '1rem';
+        statusEl.textContent = `${n} photo${n > 1 ? 's' : ''} received — extracting word list…`;
 
         // Convert base64 files to File objects for extraction
         const files = res.files.map((f, i) => {
@@ -106,7 +148,10 @@ export function showTingxieUpload({ studentId, onDone, onCancel }) {
 
         const result = await extractPaper(files);
         if (result.error === 'extraction_failed') {
-          overlay.querySelector('#tx-qr-status').innerHTML = `<span class="tx-error">Couldn't read the paper — try again or enter manually.</span>`;
+          overlay.querySelector('#tx-qr-box').innerHTML = `<div style="font-size:2.5rem;margin:12px 0">❌</div>`;
+          statusEl.style.color = '#c92a2a';
+          statusEl.style.fontWeight = 'normal';
+          statusEl.textContent = "Couldn't read the paper — try again or enter manually.";
           return;
         }
         renderConfirmMulti(result.exams || []);
@@ -140,10 +185,10 @@ export function showTingxieUpload({ studentId, onDone, onCancel }) {
         </div>
         <div class="tx-confirm-body">
           ${extracted?.warning ? `<div class="tx-warning" id="tx-warning">⚠️</div>` : ''}
-          <label class="tx-field-label">Exam title
+          <label class="tx-field-label">Exam title <span class="tx-required">*</span>
             <input class="tx-input" id="tx-title" placeholder="e.g. 词语单元一">
           </label>
-          <label class="tx-field-label">Exam date
+          <label class="tx-field-label">Exam date <span class="tx-required">*</span>
             <input class="tx-input" id="tx-date" type="date">
           </label>
           <div class="tx-words-header">
