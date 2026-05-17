@@ -125,10 +125,20 @@ export function showTingxieUpload({ studentId, onDone, onCancel }) {
     qrBox.querySelector('svg').style.width = '100%';
     qrBox.querySelector('svg').style.height = 'auto';
 
+    let pollCount = 0;
+    let errorCount = 0;
+    const dots = ['●○○', '○●○', '○○●'];
+
     pollInterval = setInterval(async () => {
       try {
         const res = await pollUploadSession(session.token);
-        if (res.status !== 'ready') return;
+        errorCount = 0;
+        if (res.status !== 'ready') {
+          pollCount++;
+          const statusEl = overlay.querySelector('#tx-qr-status');
+          if (statusEl) statusEl.textContent = `📱 Waiting for phone upload… ${dots[pollCount % 3]}`;
+          return;
+        }
         cleanup();
 
         const n = res.files.length;
@@ -158,7 +168,15 @@ export function showTingxieUpload({ studentId, onDone, onCancel }) {
         }
         renderConfirmMulti(result.exams || []);
       } catch (e) {
-        // Silently ignore poll errors (network blip)
+        errorCount++;
+        if (errorCount >= 4) {
+          cleanup();
+          const statusEl = overlay.querySelector('#tx-qr-status');
+          if (statusEl) {
+            statusEl.style.color = '#c92a2a';
+            statusEl.textContent = 'Connection lost — tap Back and try again.';
+          }
+        }
       }
     }, 2500);
   }
