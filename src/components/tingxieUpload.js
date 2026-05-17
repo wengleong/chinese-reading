@@ -142,13 +142,19 @@ export function showTingxieUpload({ studentId, onDone, onCancel }) {
         cleanup();
 
         const n = res.files.length;
-        // Replace QR + status with a full processing state
-        overlay.querySelector('#tx-qr-box').innerHTML = `<div style="font-size:3rem;margin:12px 0">⏳</div>`;
-        const statusEl = overlay.querySelector('#tx-qr-status');
-        statusEl.style.color = '#e8590c';
-        statusEl.style.fontWeight = '600';
-        statusEl.style.fontSize = '1rem';
-        statusEl.textContent = `${n} photo${n > 1 ? 's' : ''} received — extracting word list…`;
+        // Full-screen processing state — impossible to miss
+        overlay.innerHTML = `
+          <div class="tx-modal">
+            <div class="tx-modal-header">
+              <div></div>
+              <h2>Extracting Word List</h2>
+            </div>
+            <div class="tx-upload-body" style="align-items:center;text-align:center">
+              <div style="font-size:3rem;margin:16px 0">⏳</div>
+              <p style="font-weight:600;color:#e8590c;font-size:1rem">${n} photo${n > 1 ? 's' : ''} received — AI is extracting the word list…</p>
+              <p class="tx-hint" style="margin-top:8px">This usually takes 10–20 seconds.</p>
+            </div>
+          </div>`;
 
         // Convert base64 files to File objects for extraction
         const files = res.files.map((f, i) => {
@@ -160,10 +166,20 @@ export function showTingxieUpload({ studentId, onDone, onCancel }) {
 
         const result = await extractPaper(files);
         if (result.error === 'extraction_failed') {
-          overlay.querySelector('#tx-qr-box').innerHTML = `<div style="font-size:2.5rem;margin:12px 0">❌</div>`;
-          statusEl.style.color = '#c92a2a';
-          statusEl.style.fontWeight = 'normal';
-          statusEl.textContent = "Couldn't read the paper — try again or enter manually.";
+          overlay.innerHTML = `
+            <div class="tx-modal">
+              <div class="tx-modal-header">
+                <button class="tx-back-btn" id="tx-back">‹ Back</button>
+                <h2>Use Phone Camera</h2>
+              </div>
+              <div class="tx-upload-body" style="align-items:center;text-align:center">
+                <div style="font-size:2.5rem;margin:12px 0">❌</div>
+                <p class="tx-error" style="text-align:center">Couldn't read the paper — try again or enter manually.</p>
+                <button class="tx-secondary-btn" id="tx-manual" style="margin-top:12px">Enter words manually</button>
+              </div>
+            </div>`;
+          overlay.querySelector('#tx-back').onclick = renderUpload;
+          overlay.querySelector('#tx-manual').onclick = () => renderConfirmMulti([]);
           return;
         }
         renderConfirmMulti(result.exams || []);
@@ -178,7 +194,7 @@ export function showTingxieUpload({ studentId, onDone, onCancel }) {
           }
         }
       }
-    }, 2500);
+    }, 1000);
   }
 
   // Multi-exam confirm: step through exams one by one
