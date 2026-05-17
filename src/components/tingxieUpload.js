@@ -24,7 +24,7 @@ export function showTingxieUpload({ studentId, onDone, onCancel }) {
           <div class="tx-upload-options">
             <label class="tx-upload-btn">
               📷<span>Take Photo</span>
-              <input type="file" accept="image/*" capture="environment" multiple hidden id="tx-cam">
+              <input type="file" accept="image/*" multiple hidden id="tx-cam">
             </label>
             <label class="tx-upload-btn">
               📄<span>Choose Files</span>
@@ -160,7 +160,15 @@ export function showTingxieUpload({ studentId, onDone, onCancel }) {
         </div>
       </div>`;
 
+    // Snapshot current form state back into allExams before navigating away
+    function snapshotCurrent() {
+      const title = overlay.querySelector('#tx-title').value.trim();
+      const examDate = overlay.querySelector('#tx-date').value;
+      allExams[index] = { ...(allExams[index] || {}), title, examDate, words: words.slice() };
+    }
+
     overlay.querySelector('#tx-back').onclick = () => {
+      snapshotCurrent();
       if (index === 0) renderUpload();
       else renderConfirmOne(allExams[index - 1], index - 1, total, allExams);
     };
@@ -212,6 +220,7 @@ export function showTingxieUpload({ studentId, onDone, onCancel }) {
       errEl.hidden = true;
 
       try {
+        snapshotCurrent();
         const exam = await createExam({ studentId, title, examDate: date, words });
         if (isLast || isOnly) {
           overlay.remove();
