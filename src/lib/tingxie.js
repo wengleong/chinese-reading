@@ -53,16 +53,29 @@ export async function saveSession({ examId, studentId, date, mode, results, scor
   return res.json();
 }
 
-export async function extractPaper(file) {
+// files can be a single File or an array of Files
+export async function extractPaper(files) {
   const fd = new FormData();
-  fd.append('file', file);
+  const arr = Array.isArray(files) ? files : [files];
+  for (const f of arr) fd.append('files', f);
   const res = await fetch(`${BASE}/extract`, {
     method: 'POST', headers: { Authorization: `Bearer ${getToken()}` }, body: fd,
   });
   const data = await res.json();
-  // Pass extraction errors through (extraction_failed has special handling in upload component)
   if (!res.ok && data.error !== 'extraction_failed') throw new Error(data.error || 'Upload failed');
-  return data;
+  return data; // { exams: [...] } or { error: 'extraction_failed' }
+}
+
+export async function createUploadSession() {
+  const res = await fetch(`${BASE}/upload-session`, { method: 'POST', headers: authHeaders() });
+  if (!res.ok) throw new Error((await res.json()).error || 'Failed to create session');
+  return res.json(); // { token, qrSvg, uploadUrl }
+}
+
+export async function pollUploadSession(token) {
+  const res = await fetch(`${BASE}/upload-session/${token}`, { headers: authHeaders() });
+  if (!res.ok) throw new Error((await res.json()).error || 'Session error');
+  return res.json(); // { status: 'pending' | 'ready', files?: [...] }
 }
 
 export async function gradeCharacter({ studentId, hanzi, imageB64 }) {
