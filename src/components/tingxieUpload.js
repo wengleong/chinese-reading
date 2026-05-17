@@ -139,7 +139,7 @@ export function showTingxieUpload({ studentId, onDone, onCancel }) {
           <h2>${total > 1 ? `Exam ${index + 1} of ${total}` : 'Confirm Word List'}</h2>
         </div>
         <div class="tx-confirm-body">
-          ${extracted?.warning ? `<div class="tx-warning">⚠️ ${extracted.warning}</div>` : ''}
+          ${extracted?.warning ? `<div class="tx-warning" id="tx-warning">⚠️</div>` : ''}
           <label class="tx-field-label">Exam title
             <input class="tx-input" id="tx-title" placeholder="e.g. 词语单元一">
           </label>
@@ -165,6 +165,8 @@ export function showTingxieUpload({ studentId, onDone, onCancel }) {
       else renderConfirmOne(allExams[index - 1], index - 1, total, allExams);
     };
 
+    // Set text content via DOM to avoid XSS from AI-extracted strings
+    if (extracted?.warning) overlay.querySelector('#tx-warning').append(' ' + extracted.warning);
     if (extracted?.title) overlay.querySelector('#tx-title').value = extracted.title;
     if (extracted?.examDate) overlay.querySelector('#tx-date').value = extracted.examDate;
 
