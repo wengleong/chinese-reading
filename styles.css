@@ -1153,6 +1153,28 @@ button.danger {
   flex-wrap: wrap;
 }
 
+/* Recorder status — mic/recognition/scoring problems, never silent */
+.recorder-status {
+  flex: 1 1 100%;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.recorder-status.is-error {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
+}
+
+.recorder-status.is-info {
+  color: var(--muted);
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+
 .recording-timer {
   font-size: 20px;
   font-weight: 700;

@@ -5,7 +5,7 @@ import { renderStoryPicker } from "./components/storyPicker.js";
 import { renderStoryReader } from "./components/storyReader.js";
 import { renderPinyinToggle } from "./components/pinyinToggle.js";
 import { renderPlaybackControls } from "./components/playbackControls.js";
-import { renderRecorder } from "./components/recorder.js";
+import { renderRecorder, speechSupported } from "./components/recorder.js";
 import { renderRecordingsList } from "./components/recordingsList.js";
 import { renderStudentPanel } from "./components/studentPanel.js";
 import { openScoreModal } from "./components/scoreModal.js";
@@ -148,6 +148,24 @@ renderPlaybackControls({
   onRateChange: (v) => { rate = v; player?.setRate(v); },
 });
 
+// Why nothing was heard — a blank transcript must never be scored silently.
+function noSpeechMessage(speechSupported, speechError) {
+  if (!speechSupported) {
+    return '这个浏览器不能识别语音，无法评分。请用 Chrome 或 Safari 打开。 '
+         + 'This browser cannot transcribe speech, so it cannot score. Open the app in Chrome or Safari.';
+  }
+  if (speechError === 'not-allowed' || speechError === 'service-not-allowed') {
+    return '麦克风权限被拒绝。请允许使用麦克风后再录一次。 Microphone permission was denied — allow it and record again.';
+  }
+  if (speechError === 'network') {
+    return '语音识别需要网络连接。请检查网络后再录一次。 Speech recognition needs an internet connection — check your connection and record again.';
+  }
+  if (speechError) {
+    return `语音识别出错 (${speechError})。请再录一次。 Speech recognition failed (${speechError}) — please record again.`;
+  }
+  return '没有听到声音。请靠近麦克风，大声朗读，再录一次。 We did not hear anything — speak up close to the mic and record again.';
+}
+
 const recorderCtl = renderRecorder({
   root: els.recorder,
   getCurrentStory: () => activeStory,
@@ -155,15 +173,23 @@ const recorderCtl = renderRecorder({
   onSaved: () => renderRecordingsList({ root: els.recordings }),
   onActiveChange: () => {},
   onStart: () => els.reader.scrollIntoView({ behavior: 'smooth', block: 'start' }),
-  onComplete: async ({ transcript, story, sessionId, avgConfidence, timingGaps, durationMs }) => {
+  onComplete: async ({ transcript, story, sessionId, avgConfidence, timingGaps, durationMs, speechSupported: srOk, speechError }) => {
     const student = getActiveStudent();
     if (!student || !story) return;
+
+    // Nothing transcribed = nothing to score. Keep the phase, let them redo it.
+    if (!(transcript || '').trim()) {
+      recorderCtl.setStatus(noSpeechMessage(srOk, speechError));
+      return;
+    }
+    recorderCtl.setStatus('');
 
     if (story.type === 'picture' || story.type === 'video') {
       const state = pictureOralState;
       if (!state) return;
-      state.transcripts.push(transcript);
-      state.durationMs.push(durationMs);
+      // Indexed (not pushed) so re-recording a phase replaces its answer.
+      state.transcripts[state.phase] = transcript;
+      state.durationMs[state.phase] = durationMs;
 
       if (state.phase === 0) {
         // Description done — AI selects 3 questions, show first
@@ -186,8 +212,11 @@ const recorderCtl = renderRecorder({
         recorderCtl.rearm();
         recorderCtl.setStopLabel('■ 停止 Stop & Score');
       } else {
-        // Q3 done — score all 4 responses
+        // Q3 done — score all 4 responses.
+        // On failure keep the state at phase 3 so the student can press Record
+        // again to retry instead of losing all four answers.
         let picResult;
+        recorderCtl.setStatus('⏳ 评分中… Scoring…', 'info');
         try {
           picResult = await scorePicture({
             story,
@@ -196,10 +225,16 @@ const recorderCtl = renderRecorder({
             questions: state.questions,
           });
         } catch (err) {
-          pictureOralState = null;
-          alert('Scoring failed: ' + (err.message || 'Unknown error'));
+          recorderCtl.setStatus('评分失败 Scoring failed: ' + (err.message || 'Unknown error')
+            + ' — 请再录一次第3题 press Record to try Question 3 again.');
           return;
         }
+        if (!picResult) {
+          recorderCtl.setStatus('口语评分需要家庭账号和 API key。请在设置中登录后再试。 '
+            + 'Oral scoring needs a family account with an API key — set one up in Settings, then record Question 3 again.');
+          return;
+        }
+        recorderCtl.setStatus('');
         pictureOralState = null;
         openScoreModal({
           student, story,
@@ -212,8 +247,10 @@ const recorderCtl = renderRecorder({
           transcript: state.transcripts.join('\n---\n'),
           sessionId,
           pictureFeedback: picResult.feedback,
-          onRetry: () => {},
-          onDone: () => { studentPanelCtl?.refresh(); refreshPicker(); },
+          // Both paths restart the oral from phase 0 — without this the flow is
+          // left with no state and the Record button does nothing.
+          onRetry: () => { pickStory(story.id); },
+          onDone: () => { studentPanelCtl?.refresh(); refreshPicker(); pickStory(story.id); },
         });
       }
       return;
@@ -270,6 +307,16 @@ async function pickStory(id) {
   } catch (err) {
     els.reader.innerHTML = `<p class="privacy-note">Could not load story: ${err.message}</p>`;
     return;
+  }
+
+  // Warn before the student records four answers that cannot be scored.
+  if (!speechSupported) {
+    recorderCtl.setStatus(noSpeechMessage(false, null));
+  } else if ((activeStory.type === 'picture' || activeStory.type === 'video') && !isLoggedIn()) {
+    recorderCtl.setStatus('口语评分需要家庭账号和 API key（设置里可以登录）。 '
+      + 'Oral scoring needs a family account with an API key — add one in Settings first.');
+  } else {
+    recorderCtl.setStatus('');
   }
 
   if (activeStory.type === 'picture' || activeStory.type === 'video') {
