@@ -5,6 +5,12 @@ import { saveRecording } from '../lib/storage.js';
 
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition || null;
 
+export const speechSupported = !!SR;
+
+// Errors that mean recognition will never produce a transcript for this take.
+// 'no-speech' is benign — Chrome fires it after a silence and we simply restart.
+const FATAL_SR_ERRORS = new Set(['not-allowed', 'service-not-allowed', 'audio-capture', 'network']);
+
 function pickMimeType() {
   for (const t of ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4']) {
     if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported?.(t)) return t;
@@ -27,6 +33,11 @@ export function renderRecorder({ root, getCurrentStory, getActiveStudent, onSave
   note.className = 'privacy-note';
   note.textContent = 'Tap Record, read aloud, then Stop to get your score.';
 
+  // Status line — surfaces recognition/scoring problems instead of failing silently.
+  const status = document.createElement('p');
+  status.className = 'recorder-status';
+  status.hidden = true;
+
   // Sticky bar with Start / Stop buttons (mobile: fixed at bottom; desktop: inside card)
   const stickyBar = document.createElement('div');
   stickyBar.className = 'recorder-sticky-bar';
@@ -45,11 +56,18 @@ export function renderRecorder({ root, getCurrentStory, getActiveStudent, onSave
 
   card.appendChild(indicator);
   card.appendChild(note);
+  card.appendChild(status);
   card.appendChild(stickyBar);
   root.appendChild(card);
 
+  function setStatus(text, kind = 'error') {
+    status.textContent = text || '';
+    status.hidden = !text;
+    status.className = `recorder-status${text ? ' is-' + kind : ''}`;
+  }
+
   let mediaRecorder = null, chunks = [], startedAt = 0, mimeType = '';
-  let recognition = null, transcript = '';
+  let recognition = null, transcript = '', speechError = null, wantRecognition = false;
   // Speech quality signals for richer scoring
   let confidenceSum = 0, confidenceCount = 0, lastResultMs = 0, timingGaps = [];
 
@@ -71,10 +89,16 @@ export function renderRecorder({ root, getCurrentStory, getActiveStudent, onSave
       : new MediaRecorder(stream);
 
     transcript = '';
+    speechError = null;
     confidenceSum = 0; confidenceCount = 0; lastResultMs = 0; timingGaps = [];
     if (SR) {
+      // Chrome ends a recognition session after a few seconds of silence even
+      // with continuous=true. Restart it while the take is still running,
+      // otherwise everything the student says after their first pause is lost.
+      let restarts = 0;
       try {
         recognition = new SR();
+        wantRecognition = true;
         recognition.lang = 'zh-CN';
         recognition.continuous = true;
         recognition.interimResults = false;
@@ -98,9 +122,25 @@ export function renderRecorder({ root, getCurrentStory, getActiveStudent, onSave
             lastResultMs = now;
           }
         };
-        recognition.onerror = () => {};
+        recognition.onerror = (e) => {
+          const code = e?.error || 'unknown';
+          if (FATAL_SR_ERRORS.has(code)) {
+            speechError = code;
+            wantRecognition = false;   // no point restarting — it will fail again
+          }
+        };
+        recognition.addEventListener('end', () => {
+          // Silence timeout mid-take: restart so the rest of the answer is heard.
+          if (!wantRecognition || restarts >= 20) return;
+          restarts += 1;
+          try { recognition.start(); } catch { /* already restarting */ }
+        });
         recognition.start();
-      } catch { recognition = null; }
+      } catch {
+        recognition = null;
+        wantRecognition = false;
+        speechError = 'start-failed';
+      }
     }
 
     chunks = [];
@@ -113,6 +153,7 @@ export function renderRecorder({ root, getCurrentStory, getActiveStudent, onSave
         await new Promise(resolve => {
           const r = recognition;
           recognition = null;
+          wantRecognition = false;   // stop the silence-timeout auto-restart
           // 2s covers slow iOS devices; onend fires sooner on desktop.
           const timeout = setTimeout(resolve, 2000);
           // Use addEventListener to avoid clobbering any internal browser handler.
@@ -147,9 +188,13 @@ export function renderRecorder({ root, getCurrentStory, getActiveStudent, onSave
       stickyBar.classList.remove('is-recording');
       onActiveChange?.(false);
       const avgConfidence = confidenceCount > 0 ? confidenceSum / confidenceCount : 0;
-      onComplete?.({ transcript, story, sessionId, avgConfidence, timingGaps, durationMs });
+      onComplete?.({
+        transcript, story, sessionId, avgConfidence, timingGaps, durationMs,
+        speechSupported, speechError,
+      });
     };
 
+    setStatus('');
     mediaRecorder.start();
     startedAt = Date.now();
     startBtn.disabled = true; stopBtn.disabled = false;
@@ -178,5 +223,6 @@ export function renderRecorder({ root, getCurrentStory, getActiveStudent, onSave
     setStopLabel(text) {
       stopBtn.textContent = text;
     },
+    setStatus,
   };
 }
