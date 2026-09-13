@@ -1,0 +1,66 @@
+[
+  {
+    "id": "p3-zh-comp-umbrella",
+    "lang": "zh",
+    "level": "P3",
+    "title": "一件好事",
+    "theme": "助人",
+    "timeMinutes": 40
+  },
+  {
+    "id": "p4-zh-comp-market",
+    "lang": "zh",
+    "level": "P4",
+    "title": "我最难忘的一天",
+    "theme": "家人",
+    "timeMinutes": 50
+  },
+  {
+    "id": "p5-zh-comp-lostdog",
+    "lang": "zh",
+    "level": "P5",
+    "title": "一次助人的经历",
+    "theme": "爱心",
+    "timeMinutes": 50
+  },
+  {
+    "id": "p6-zh-comp-cleanup",
+    "lang": "zh",
+    "level": "P6",
+    "title": "那一次，我做对了",
+    "theme": "公德心",
+    "timeMinutes": 50
+  },
+  {
+    "id": "p3-en-comp-lost",
+    "lang": "en",
+    "level": "P3",
+    "title": "Lost",
+    "theme": "Lost",
+    "timeMinutes": 40
+  },
+  {
+    "id": "p4-en-comp-surprise",
+    "lang": "en",
+    "level": "P4",
+    "title": "A Surprise",
+    "theme": "A Surprise",
+    "timeMinutes": 50
+  },
+  {
+    "id": "p5-en-comp-mistake",
+    "lang": "en",
+    "level": "P5",
+    "title": "A Mistake",
+    "theme": "A Mistake",
+    "timeMinutes": 50
+  },
+  {
+    "id": "p6-en-comp-courage",
+    "lang": "en",
+    "level": "P6",
+    "title": "Courage",
+    "theme": "Courage",
+    "timeMinutes": 50
+  }
+]

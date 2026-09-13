@@ -1,0 +1,15 @@
+{
+  "id": "p3-en-comp-lost",
+  "lang": "en",
+  "level": "P3",
+  "minWords": 120,
+  "timeMinutes": 40,
+  "topic": "Lost",
+  "guidingQuestions": [
+    "Who lost something, and what was it?",
+    "How did they feel when they realised?",
+    "Who helped, and what happened in the end?"
+  ],
+  "instructions": "Write a composition of at least 120 words about the topic below. The three pictures are there to help you think of ideas — you may use one, two, all three, or none of them. Your composition must be about the topic.",
+  "image": "p3-en-comp-lost.jpg"
+}

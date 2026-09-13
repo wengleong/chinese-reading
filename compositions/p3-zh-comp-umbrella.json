@@ -1,0 +1,39 @@
+{
+  "id": "p3-zh-comp-umbrella",
+  "lang": "zh",
+  "level": "P3",
+  "minChars": 80,
+  "timeMinutes": 40,
+  "theme": "助人",
+  "questions": [
+    {
+      "no": 1,
+      "type": "命题作文",
+      "title": "一件好事",
+      "hints": [
+        "你做了一件什么好事？",
+        "当时发生了什么事？",
+        "你是怎么帮助别人的？",
+        "事后你心里有什么感受？"
+      ]
+    },
+    {
+      "no": 2,
+      "type": "看图作文",
+      "title": "看图作文",
+      "referenceWords": [
+        "下雨",
+        "雨伞",
+        "同学",
+        "淋湿",
+        "分享",
+        "一起",
+        "笑容",
+        "帮助"
+      ],
+      "note": "第六幅图是空白的，请你想象故事的结局，把它写出来。"
+    }
+  ],
+  "instructions": "从下面两题中选做一题，写一篇不少于80字的作文。",
+  "image": "p3-zh-comp-umbrella.jpg"
+}
