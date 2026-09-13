@@ -44,8 +44,7 @@ async function req(method, path, body, isFormData = false) {
 // Families
 export const createFamily = ()     => req('POST', '/api/families');
 export const joinFamily   = (code) => req('POST', '/api/families/join', { code });
-export const saveApiKey   = (key)  => req('PUT',  '/api/families/apikey', { key });
-export const getApiKey    = ()     => req('GET',  '/api/families/apikey');
+// No apikey calls: AI runs on the server's own key, so the browser never holds one.
 
 // Students
 export const listStudents  = ()         => req('GET',    '/api/students');

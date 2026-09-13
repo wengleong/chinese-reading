@@ -5,10 +5,7 @@
 import {
   isLoggedIn, listStudents, upsertStudent, removeStudent,
   listSessions, saveSession, uploadRecording as apiUpload,
-  getApiKey, saveApiKey,
 } from './api.js';
-
-export const API_KEY_STORAGE = 'anthropicApiKey';
 
 // ---- Students ----
 
@@ -39,33 +36,7 @@ export async function pushRecording({ blob, mimeType, studentId, sessionId, dura
   } catch { return null; }
 }
 
-// ---- API Key ----
-
-// Two-way. Picture/video oral scoring is proxied through /api/generate, which
-// reads the key off the FAMILY ROW — a key that only ever reached this device's
-// localStorage (entered before joining a family, or saved while the PUT failed)
-// makes Settings show "configured" while scoring 400s with "No API key".
-// So: server key wins if there is one, otherwise push this device's key up.
-export async function syncApiKey() {
-  if (!isLoggedIn()) return null;
-  const local = localStorage.getItem(API_KEY_STORAGE) || '';
-
-  let remote = null;
-  try {
-    ({ key: remote } = await getApiKey());
-  } catch { return null; }
-
-  if (remote) {
-    localStorage.setItem(API_KEY_STORAGE, remote);
-    return remote;
-  }
-  if (!local) return null;
-
-  try {
-    await saveApiKey(local);
-    return local;
-  } catch { return null; }
-}
+// No API key sync: the key lives only in the server's ANTHROPIC_API_KEY.
 
 // ---- Sync Up (push local data not yet in cloud — runs once per device after login) ----
 // Handles the case where sessions were recorded before joining a family.
@@ -152,7 +123,4 @@ export async function syncDown() {
       }
     }
   } catch {}
-
-  // API key
-  await syncApiKey();
 }

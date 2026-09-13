@@ -82,33 +82,40 @@ function installStubs(srMode) {
   window.webkitSpeechRecognition = FakeSR;
 }
 
-// serverKey = the family row's anthropic_key; localKey = this device's copy.
-// They are separate stores, and /api/generate only ever reads the server one.
-async function boot(page, {
-  srMode = 'ok', loggedIn = true, generate = 'ok',
-  serverKey = 'sk-test', localKey = null,
-} = {}) {
-  const ctx = { dialogs: [], pageErrors: [], generate, serverKey, apiKeyPuts: [] };
+// generate: 'ok' | 'fail' (upstream error) | 'nokey' (server has no ANTHROPIC_API_KEY).
+// The browser never holds a key — /api/generate answers on the server's own.
+async function boot(page, { srMode = 'ok', loggedIn = true, generate = 'ok' } = {}) {
+  const ctx = { dialogs: [], pageErrors: [], generate, anthropicCalls: 0 };
   page.on('dialog', async d => { ctx.dialogs.push(d.message()); await d.dismiss(); });
   page.on('pageerror', e => ctx.pageErrors.push(e.message));
 
   await page.addInitScript(installStubs, srMode);
-  await page.addInitScript(({ li, key }) => {
+  await page.addInitScript((li) => {
     if (li) localStorage.setItem('cr-token', 'test-token');
-    if (key) localStorage.setItem('anthropicApiKey', key);
     localStorage.setItem('cr-students', JSON.stringify([
       { id: 'stu-1', name: 'Test Kid', level: 'P1', color: '#e8590c', createdAt: 1 },
     ]));
     localStorage.setItem('cr-active-student', 'stu-1');
     localStorage.setItem('cr-synced-up', '1');
-  }, { li: loggedIn, key: localKey });
+  }, loggedIn);
+
+  // The key must never leave the server, so the page must never call Anthropic itself.
+  await page.route('https://api.anthropic.com/**', route => {
+    ctx.anthropicCalls += 1;
+    return route.fulfill({ status: 403, contentType: 'application/json', body: '{}' });
+  });
 
   await page.route('**/api/generate', route => {
-    // The proxy reads the key off the family row — no server key, no scoring.
-    if (!ctx.serverKey || ctx.generate !== 'ok') {
+    if (ctx.generate === 'nokey') {
       return route.fulfill({
-        status: 400, contentType: 'application/json',
-        body: JSON.stringify({ error: 'No API key configured. Add one in Settings.' }),
+        status: 503, contentType: 'application/json',
+        body: JSON.stringify({ error: 'AI is unavailable — the server has no Anthropic API key configured.' }),
+      });
+    }
+    if (ctx.generate !== 'ok') {
+      return route.fulfill({
+        status: 502, contentType: 'application/json',
+        body: JSON.stringify({ error: 'Could not reach Anthropic API: socket hang up' }),
       });
     }
     return route.fulfill({
@@ -119,18 +126,6 @@ async function boot(page, {
   for (const p of ['**/api/students', '**/api/sessions', '**/api/recordings**']) {
     await page.route(p, r => r.fulfill({ status: 200, contentType: 'application/json', body: '[]' }));
   }
-  await page.route('**/api/families/apikey', r => {
-    if (r.request().method() === 'PUT') {
-      const { key } = JSON.parse(r.request().postData() || '{}');
-      ctx.apiKeyPuts.push(key);
-      ctx.serverKey = key || null;
-      return r.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' });
-    }
-    return r.fulfill({
-      status: 200, contentType: 'application/json',
-      body: JSON.stringify({ key: ctx.serverKey }),
-    });
-  });
 
   await page.goto('/');
   const skip = page.locator('#ob-skip');
@@ -230,34 +225,34 @@ test.describe('picture oral', () => {
     expect(ctx.pageErrors).toEqual([]);   // used to be a TypeError on null result
   });
 
-  test('a key saved before joining a family is pushed up, so scoring works', async ({ page }) => {
-    // The device has a key (entered in Settings before joining); the family row
-    // has none. Scoring is proxied server-side, so without a push it 400s with
-    // "No API key configured" while Settings still shows the key as set.
-    const ctx = await boot(page, { serverKey: null, localKey: 'sk-ant-local' });
-
-    expect(ctx.apiKeyPuts).toEqual(['sk-ant-local']);
+  test('scoring needs no key in the browser and never calls Anthropic directly', async ({ page }) => {
+    const ctx = await boot(page);
 
     for (let i = 0; i < 4; i++) await record(page);
 
     await expect(page.locator('.modal-overlay')).toBeVisible();
     await expect(page.locator('#score-num')).toBeVisible();
+    expect(ctx.anthropicCalls).toBe(0);   // the key lives only on the server
+    const stored = await page.evaluate(() => localStorage.getItem('anthropicApiKey'));
+    expect(stored).toBeNull();
     expect(ctx.pageErrors).toEqual([]);
   });
 
-  test('the family key wins over a stale key on this device', async ({ page }) => {
-    const ctx = await boot(page, { serverKey: 'sk-ant-family', localKey: 'sk-ant-stale' });
+  test('a server with no ANTHROPIC_API_KEY is reported, and the answers survive', async ({ page }) => {
+    const ctx = await boot(page, { generate: 'nokey' });
 
-    expect(ctx.apiKeyPuts).toEqual([]);   // nothing to push — server already has one
-    const local = await page.evaluate(() => localStorage.getItem('anthropicApiKey'));
-    expect(local).toBe('sk-ant-family');
-  });
+    for (let i = 0; i < 4; i++) await record(page);
 
-  test('with no key anywhere the student is warned before recording', async ({ page }) => {
-    await boot(page, { serverKey: null, localKey: null });
+    await expect(status(page)).toContainText('AI is unavailable');
+    await expect(counter(page)).toContainText('录音 4 / 4');
+    await expect(page.locator('.modal-overlay')).toHaveCount(0);
 
-    await expect(status(page)).toContainText('API key');
-    await expect(status(page)).toContainText('Settings');
+    // Key added in Railway — re-recording question 3 scores the whole set.
+    ctx.generate = 'ok';
+    await record(page);
+    await expect(page.locator('.modal-overlay')).toBeVisible();
+    await expect(page.locator('#score-num')).toBeVisible();
+    expect(ctx.pageErrors).toEqual([]);
   });
 
   test('a scoring API failure keeps the four answers and allows a retry', async ({ page }) => {

@@ -4,6 +4,7 @@ const path = require('path');
 const fs   = require('fs');
 const express = require('express');
 const db = require('./db');
+const { hasApiKey } = require('./anthropic');
 
 async function runMigrations() {
   await db.query(`
@@ -40,7 +41,9 @@ app.use('/api/recordings', require('./routes/recordings'));
 app.use('/api/generate',   require('./routes/generate'));
 app.use('/api/tingxie',    require('./routes/tingxie'));
 
-app.get('/health', (_, res) => res.json({ ok: true }));
+// anthropicKey reports only WHETHER the server has a key — never its value.
+// It is how a deploy is checked for the AI features being live.
+app.get('/health', (_, res) => res.json({ ok: true, anthropicKey: hasApiKey() }));
 
 // Fallback: serve index.html for any non-API route (PWA / deep links)
 app.get('*', (req, res) => {

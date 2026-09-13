@@ -3,16 +3,7 @@
 
 import { isLoggedIn, generateViaApi } from '../lib/api.js';
 
-const API_KEY_STORAGE = "anthropicApiKey";
 const LEVELS = ["P1", "P2", "P3", "P4", "P5", "P6"];
-
-function saveApiKey(key) {
-  localStorage.setItem(API_KEY_STORAGE, key);
-}
-
-function loadApiKey() {
-  return localStorage.getItem(API_KEY_STORAGE) || "";
-}
 
 const CHAR_RANGES = {
   P1: "40–60",
@@ -23,7 +14,7 @@ const CHAR_RANGES = {
   P6: "200–280",
 };
 
-async function callClaudeAPI(apiKey, level, theme) {
+async function callClaudeAPI(level, theme) {
   const themeHint = theme.trim()
     ? `Theme / topic: ${theme.trim()}`
     : "Choose an engaging, educational theme suitable for Singapore children (e.g. family, school life, friendship, community, nature, festivals).";
@@ -72,23 +63,8 @@ CRITICAL RULES — follow exactly:
     messages: [{ role: 'user', content: prompt }],
   };
 
-  let data;
-  if (isLoggedIn()) {
-    data = await generateViaApi(body);
-  } else {
-    if (!apiKey) throw new Error('No API key. Add one in Settings.');
-    const r = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': apiKey, 'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
-      body: JSON.stringify(body),
-    });
-    if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.error?.message || `API error ${r.status}`); }
-    data = await r.json();
-  }
+  // Always server-side: the AI key is the server's and never reaches a browser.
+  const data = await generateViaApi(body);
   let text = data.content[0].text.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
 
   let story;
@@ -112,8 +88,6 @@ export function openStoryGenerator({ onGenerated }) {
   const overlay = document.createElement("div");
   overlay.className = "modal-overlay";
 
-  const savedKey = loadApiKey();
-
   overlay.innerHTML = `
     <div class="modal-card" role="dialog" aria-modal="true" aria-label="Generate Story">
       <h2 class="modal-title">✨ 生成故事 Generate Story</h2>
@@ -132,13 +106,6 @@ export function openStoryGenerator({ onGenerated }) {
           placeholder="e.g. 动物, 友谊, 节日, 环境保护" />
       </label>
 
-      <label class="modal-label">
-        Anthropic API Key
-        <input class="modal-input" id="gen-apikey" type="password"
-          placeholder="sk-ant-…" value="${savedKey}" autocomplete="off" />
-        <span class="modal-hint">Saved locally in your browser. Only sent to api.anthropic.com.</span>
-      </label>
-
       <div class="modal-error" id="gen-error" hidden></div>
 
       <div class="modal-actions">
@@ -152,7 +119,6 @@ export function openStoryGenerator({ onGenerated }) {
 
   const levelEl = overlay.querySelector("#gen-level");
   const themeEl = overlay.querySelector("#gen-theme");
-  const apikeyEl = overlay.querySelector("#gen-apikey");
   const errorEl = overlay.querySelector("#gen-error");
   const submitBtn = overlay.querySelector("#gen-submit");
   const cancelBtn = overlay.querySelector("#gen-cancel");
@@ -176,21 +142,18 @@ export function openStoryGenerator({ onGenerated }) {
   });
 
   submitBtn.addEventListener("click", async () => {
-    const apiKey = apikeyEl.value.trim();
-    if (!apiKey) {
-      errorEl.textContent = "Please enter your Anthropic API key.";
+    if (!isLoggedIn()) {
+      errorEl.textContent = "Story generation needs a family account — join or create one first.";
       errorEl.hidden = false;
-      apikeyEl.focus();
       return;
     }
 
-    saveApiKey(apiKey);
     errorEl.hidden = true;
     submitBtn.disabled = true;
     submitBtn.textContent = "⏳ Generating…";
 
     try {
-      const story = await callClaudeAPI(apiKey, levelEl.value, themeEl.value);
+      const story = await callClaudeAPI(levelEl.value, themeEl.value);
       onGenerated(story);
       close();
     } catch (err) {

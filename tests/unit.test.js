@@ -510,3 +510,44 @@ test('tingxie gamification: tingxie_champion counts distinct exams not retakes',
   const badge = STATIC_BADGES.find(b => b.id === 'tingxie_champion');
   assert.strictEqual(badge.check({ sessions, totalPoints: 0 }), false);
 });
+
+// ---------------------------------------------------------------------------
+// api/src/anthropic.js — the server owns the only Anthropic credential.
+// A missing ANTHROPIC_API_KEY must surface as a clean 503, not a crash or a
+// call to Anthropic with an undefined key.
+// ---------------------------------------------------------------------------
+import { createRequire } from 'node:module';
+const requireCjs = createRequire(import.meta.url);
+const { hasApiKey, callAnthropic } = requireCjs('../api/src/anthropic.js');
+
+test('anthropic: hasApiKey reflects ANTHROPIC_API_KEY', () => {
+  const original = process.env.ANTHROPIC_API_KEY;
+  try {
+    delete process.env.ANTHROPIC_API_KEY;
+    assert.strictEqual(hasApiKey(), false);
+    process.env.ANTHROPIC_API_KEY = 'sk-ant-example';
+    assert.strictEqual(hasApiKey(), true);
+  } finally {
+    if (original === undefined) delete process.env.ANTHROPIC_API_KEY;
+    else process.env.ANTHROPIC_API_KEY = original;
+  }
+});
+
+test('anthropic: no key throws 503 without calling out to Anthropic', async () => {
+  const original = process.env.ANTHROPIC_API_KEY;
+  const realFetch = globalThis.fetch;
+  let called = false;
+  globalThis.fetch = async () => { called = true; throw new Error('should not be reached'); };
+  try {
+    delete process.env.ANTHROPIC_API_KEY;
+    await assert.rejects(
+      () => callAnthropic({ model: 'claude-haiku-4-5-20251001', messages: [] }),
+      (err) => err.status === 503 && /no Anthropic API key/i.test(err.message)
+    );
+    assert.strictEqual(called, false);
+  } finally {
+    globalThis.fetch = realFetch;
+    if (original === undefined) delete process.env.ANTHROPIC_API_KEY;
+    else process.env.ANTHROPIC_API_KEY = original;
+  }
+});
