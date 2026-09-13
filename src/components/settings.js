@@ -84,32 +84,69 @@ function openSettingsModal() {
   overlay.querySelector("#settings-cancel").addEventListener("click", close);
   overlay.addEventListener("click", e => { if (e.target === overlay) close(); });
 
-  overlay.querySelector("#settings-clear").addEventListener("click", () => {
+  const clearBtn = overlay.querySelector("#settings-clear");
+  const saveBtn = overlay.querySelector("#settings-save");
+
+  clearBtn.addEventListener("click", async () => {
     localStorage.removeItem(API_KEY_STORAGE);
     keyEl.value = "";
-    statusEl.innerHTML = `<span style="color:var(--muted)">Key cleared</span>`;
+    if (!isLoggedIn()) {
+      statusEl.innerHTML = `<span style="color:var(--muted)">Key cleared</span>`;
+      return;
+    }
+    // The family row holds the key oral scoring uses — clearing only this
+    // device would leave it live on the account.
+    clearBtn.disabled = true;
+    try {
+      await apiSaveKey("");
+      statusEl.innerHTML = `<span style="color:var(--muted)">Key cleared from this device and the family account</span>`;
+    } catch (err) {
+      statusEl.innerHTML = `<span style="color:var(--muted)">Cleared on this device only</span>`;
+      errorEl.textContent = `Could not clear the key on the family account: ${err.message}`;
+      errorEl.hidden = false;
+    } finally {
+      clearBtn.disabled = false;
+    }
   });
 
-  overlay.querySelector("#settings-save").addEventListener("click", () => {
+  saveBtn.addEventListener("click", async () => {
     const key = keyEl.value.trim();
     if (key && !key.startsWith("sk-ant-")) {
       errorEl.textContent = "That doesn't look like an Anthropic API key (should start with sk-ant-).";
       errorEl.hidden = false;
       return;
     }
-    if (key) {
-      localStorage.setItem(API_KEY_STORAGE, key);
-      if (isLoggedIn()) {
-        apiSaveKey(key).catch(() => {});
-        statusEl.innerHTML = `<span style="color:var(--good)">✓ Saved to family account</span>`;
-      } else {
-        statusEl.innerHTML = `<span style="color:var(--good)">✓ Saved locally</span>`;
-      }
-    } else {
-      localStorage.removeItem(API_KEY_STORAGE);
-    }
     errorEl.hidden = true;
-    setTimeout(close, 600);
+
+    if (!key) {
+      localStorage.removeItem(API_KEY_STORAGE);
+      setTimeout(close, 600);
+      return;
+    }
+
+    localStorage.setItem(API_KEY_STORAGE, key);
+    if (!isLoggedIn()) {
+      statusEl.innerHTML = `<span style="color:var(--good)">✓ Saved locally</span>`;
+      setTimeout(close, 600);
+      return;
+    }
+
+    // Oral scoring reads the key server-side, so a failed PUT means scoring
+    // stays broken — say so instead of reporting a save that did not happen.
+    saveBtn.disabled = true;
+    statusEl.innerHTML = `<span style="color:var(--accent)">⏳ Saving to family account…</span>`;
+    try {
+      await apiSaveKey(key);
+      statusEl.innerHTML = `<span style="color:var(--good)">✓ Saved to family account</span>`;
+      setTimeout(close, 600);
+    } catch (err) {
+      statusEl.innerHTML = `<span style="color:var(--muted)">Saved on this device only</span>`;
+      errorEl.textContent = `Could not save to your family account (${err.message}). `
+        + `Oral scoring needs the key on the account — check your connection and press Save again.`;
+      errorEl.hidden = false;
+    } finally {
+      saveBtn.disabled = false;
+    }
   });
 
   setTimeout(() => keyEl.focus(), 50);

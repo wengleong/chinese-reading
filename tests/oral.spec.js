@@ -82,38 +82,55 @@ function installStubs(srMode) {
   window.webkitSpeechRecognition = FakeSR;
 }
 
-async function boot(page, { srMode = 'ok', loggedIn = true, generate = 'ok' } = {}) {
-  const ctx = { dialogs: [], pageErrors: [], generate };
+// serverKey = the family row's anthropic_key; localKey = this device's copy.
+// They are separate stores, and /api/generate only ever reads the server one.
+async function boot(page, {
+  srMode = 'ok', loggedIn = true, generate = 'ok',
+  serverKey = 'sk-test', localKey = null,
+} = {}) {
+  const ctx = { dialogs: [], pageErrors: [], generate, serverKey, apiKeyPuts: [] };
   page.on('dialog', async d => { ctx.dialogs.push(d.message()); await d.dismiss(); });
   page.on('pageerror', e => ctx.pageErrors.push(e.message));
 
   await page.addInitScript(installStubs, srMode);
-  await page.addInitScript((li) => {
+  await page.addInitScript(({ li, key }) => {
     if (li) localStorage.setItem('cr-token', 'test-token');
+    if (key) localStorage.setItem('anthropicApiKey', key);
     localStorage.setItem('cr-students', JSON.stringify([
       { id: 'stu-1', name: 'Test Kid', level: 'P1', color: '#e8590c', createdAt: 1 },
     ]));
     localStorage.setItem('cr-active-student', 'stu-1');
     localStorage.setItem('cr-synced-up', '1');
-  }, loggedIn);
+  }, { li: loggedIn, key: localKey });
 
   await page.route('**/api/generate', route => {
-    if (ctx.generate === 'ok') {
+    // The proxy reads the key off the family row — no server key, no scoring.
+    if (!ctx.serverKey || ctx.generate !== 'ok') {
       return route.fulfill({
-        status: 200, contentType: 'application/json',
-        body: JSON.stringify({ content: [{ type: 'text', text: SCORE_JSON }] }),
+        status: 400, contentType: 'application/json',
+        body: JSON.stringify({ error: 'No API key configured. Add one in Settings.' }),
       });
     }
     return route.fulfill({
-      status: 400, contentType: 'application/json',
-      body: JSON.stringify({ error: 'No API key configured. Add one in Settings.' }),
+      status: 200, contentType: 'application/json',
+      body: JSON.stringify({ content: [{ type: 'text', text: SCORE_JSON }] }),
     });
   });
   for (const p of ['**/api/students', '**/api/sessions', '**/api/recordings**']) {
     await page.route(p, r => r.fulfill({ status: 200, contentType: 'application/json', body: '[]' }));
   }
-  await page.route('**/api/families/apikey', r =>
-    r.fulfill({ status: 200, contentType: 'application/json', body: '{"key":"sk-test"}' }));
+  await page.route('**/api/families/apikey', r => {
+    if (r.request().method() === 'PUT') {
+      const { key } = JSON.parse(r.request().postData() || '{}');
+      ctx.apiKeyPuts.push(key);
+      ctx.serverKey = key || null;
+      return r.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' });
+    }
+    return r.fulfill({
+      status: 200, contentType: 'application/json',
+      body: JSON.stringify({ key: ctx.serverKey }),
+    });
+  });
 
   await page.goto('/');
   const skip = page.locator('#ob-skip');
@@ -211,6 +228,36 @@ test.describe('picture oral', () => {
     await expect(status(page)).toContainText('family account');
     await expect(page.locator('.modal-overlay')).toHaveCount(0);
     expect(ctx.pageErrors).toEqual([]);   // used to be a TypeError on null result
+  });
+
+  test('a key saved before joining a family is pushed up, so scoring works', async ({ page }) => {
+    // The device has a key (entered in Settings before joining); the family row
+    // has none. Scoring is proxied server-side, so without a push it 400s with
+    // "No API key configured" while Settings still shows the key as set.
+    const ctx = await boot(page, { serverKey: null, localKey: 'sk-ant-local' });
+
+    expect(ctx.apiKeyPuts).toEqual(['sk-ant-local']);
+
+    for (let i = 0; i < 4; i++) await record(page);
+
+    await expect(page.locator('.modal-overlay')).toBeVisible();
+    await expect(page.locator('#score-num')).toBeVisible();
+    expect(ctx.pageErrors).toEqual([]);
+  });
+
+  test('the family key wins over a stale key on this device', async ({ page }) => {
+    const ctx = await boot(page, { serverKey: 'sk-ant-family', localKey: 'sk-ant-stale' });
+
+    expect(ctx.apiKeyPuts).toEqual([]);   // nothing to push — server already has one
+    const local = await page.evaluate(() => localStorage.getItem('anthropicApiKey'));
+    expect(local).toBe('sk-ant-family');
+  });
+
+  test('with no key anywhere the student is warned before recording', async ({ page }) => {
+    await boot(page, { serverKey: null, localKey: null });
+
+    await expect(status(page)).toContainText('API key');
+    await expect(status(page)).toContainText('Settings');
   });
 
   test('a scoring API failure keeps the four answers and allows a retry', async ({ page }) => {
