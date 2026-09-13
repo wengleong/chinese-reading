@@ -908,5 +908,101 @@
     ],
     "lang": "en",
     "type": "picture"
+  },
+  {
+    "id": "p3-en-challenge-ants",
+    "title": "The Ant Highway",
+    "level": "P3",
+    "estMinutes": 3,
+    "tags": [
+      "english",
+      "challenge",
+      "nature"
+    ],
+    "lang": "en"
+  },
+  {
+    "id": "p4-en-challenge-storm",
+    "title": "Before the Storm",
+    "level": "P4",
+    "estMinutes": 4,
+    "tags": [
+      "english",
+      "challenge",
+      "nature"
+    ],
+    "lang": "en"
+  },
+  {
+    "id": "p5-en-challenge-inventor",
+    "title": "The Girl Who Fixed Things",
+    "level": "P5",
+    "estMinutes": 4,
+    "tags": [
+      "english",
+      "challenge",
+      "perseverance"
+    ],
+    "lang": "en"
+  },
+  {
+    "id": "p6-en-challenge-reservoir",
+    "title": "Where the Water Comes From",
+    "level": "P6",
+    "estMinutes": 4,
+    "tags": [
+      "english",
+      "challenge",
+      "environment"
+    ],
+    "lang": "en"
+  },
+  {
+    "id": "p3-en-exam-library",
+    "title": "A Visit to the Library",
+    "level": "P3",
+    "estMinutes": 3,
+    "tags": [
+      "english",
+      "past-years",
+      "school"
+    ],
+    "lang": "en"
+  },
+  {
+    "id": "p4-en-exam-sports",
+    "title": "The School Field",
+    "level": "P4",
+    "estMinutes": 3,
+    "tags": [
+      "english",
+      "past-years",
+      "school"
+    ],
+    "lang": "en"
+  },
+  {
+    "id": "p5-en-exam-market",
+    "title": "Morning at the Wet Market",
+    "level": "P5",
+    "estMinutes": 4,
+    "tags": [
+      "english",
+      "past-years",
+      "community"
+    ],
+    "lang": "en"
+  },
+  {
+    "id": "p6-en-exam-volunteer",
+    "title": "The Saturday Shift",
+    "level": "P6",
+    "estMinutes": 4,
+    "tags": [
+      "english",
+      "past-years",
+      "values"
+    ],
+    "lang": "en"
   }
 ]
