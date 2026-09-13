@@ -1,0 +1,58 @@
+{
+  "id": "p3-en-pic-playground",
+  "lang": "en",
+  "type": "picture",
+  "title": "At the Playground",
+  "level": "P3",
+  "estMinutes": 4,
+  "tags": [
+    "english",
+    "picture"
+  ],
+  "scene": "Children of different ages playing together at a neighbourhood playground, where an older child helps a younger one who has fallen.",
+  "sceneParts": [
+    {
+      "emoji": "🛝",
+      "label": "slide"
+    },
+    {
+      "emoji": "🤕",
+      "label": "fell down"
+    },
+    {
+      "emoji": "🤝",
+      "label": "helping"
+    },
+    {
+      "emoji": "👧",
+      "label": "children"
+    },
+    {
+      "emoji": "🌳",
+      "label": "trees"
+    },
+    {
+      "emoji": "😊",
+      "label": "happy"
+    }
+  ],
+  "keyElements": [
+    "playground",
+    "slide",
+    "swing",
+    "fell down",
+    "helped",
+    "kind",
+    "friends",
+    "grazed knee",
+    "thank you",
+    "safe"
+  ],
+  "questions": [
+    "What is happening in this picture?",
+    "How do you think the child who fell is feeling? Why?",
+    "Have you ever helped someone who was hurt? What did you do?",
+    "What are the rules we should follow at a playground?",
+    "Why is it important to help others, even people we do not know?"
+  ]
+}

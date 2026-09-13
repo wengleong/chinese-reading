@@ -58,16 +58,21 @@ export function renderPictureReader({ root, story }) {
   // Step counter — always visible
   const questionCounter = document.createElement('p');
   questionCounter.className = 'picture-question-counter';
-  questionCounter.textContent = isVideo
-    ? '录音 1 / 4 · 看视频说话 Describe the video'
-    : '录音 1 / 4 · 看图说话 Describe the picture';
+  const isEnglishOral = story.lang === 'en';
+  questionCounter.textContent = isEnglishOral
+    ? 'Recording 1 / 4 · Describe the picture'
+    : isVideo
+      ? '录音 1 / 4 · 看视频说话 Describe the video'
+      : '录音 1 / 4 · 看图说话 Describe the picture';
 
   // Phase 0 description prompt
   const prompt = document.createElement('p');
   prompt.className = 'picture-prompt';
-  prompt.textContent = isVideo
-    ? '观看视频后，用中文描述视频内容及你的看法。Watch the video, then describe it in Chinese.'
-    : '请用中文描述以上图片内容。Describe what you see in Chinese.';
+  prompt.textContent = isEnglishOral
+    ? 'Look at the picture and describe what you see. Speak in full sentences.'
+    : isVideo
+      ? '观看视频后，用中文描述视频内容及你的看法。Watch the video, then describe it in Chinese.'
+      : '请用中文描述以上图片内容。Describe what you see in Chinese.';
 
   // Question card — phases 1-3
   const questionCard = document.createElement('div');
@@ -160,15 +165,19 @@ export function renderPictureReader({ root, story }) {
     if (phase === 0) {
       prompt.hidden = false;
       questionCard.hidden = true;
-      questionCounter.textContent = isVideo
-        ? '录音 1 / 4 · 看视频说话 Describe the video'
-        : '录音 1 / 4 · 看图说话 Describe the picture';
+      questionCounter.textContent = isEnglishOral
+        ? 'Recording 1 / 4 · Describe the picture'
+        : isVideo
+          ? '录音 1 / 4 · 看视频说话 Describe the video'
+          : '录音 1 / 4 · 看图说话 Describe the picture';
       if (hintsBody) buildPhase0HintsBody();
     } else {
       prompt.hidden = true;
       questionCard.hidden = false;
       questionCard.textContent = questionText || '';
-      questionCounter.textContent = `录音 ${phase + 1} / 4 · 第${phase}题 Question ${phase}`;
+      questionCounter.textContent = isEnglishOral
+        ? `Recording ${phase + 1} / 4 · Question ${phase}`
+        : `录音 ${phase + 1} / 4 · 第${phase}题 Question ${phase}`;
       if (hintsBody) buildQaHintsBody();
     }
     // Collapse hints when switching phase so student sees the new content on open

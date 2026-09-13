@@ -1,0 +1,58 @@
+{
+  "id": "p6-en-pic-sports",
+  "lang": "en",
+  "type": "picture",
+  "title": "Sports Day",
+  "level": "P6",
+  "estMinutes": 4,
+  "tags": [
+    "english",
+    "picture"
+  ],
+  "scene": "The finish line of a primary school sports day, where the leading runner stops to help a fallen classmate instead of winning the race.",
+  "sceneParts": [
+    {
+      "emoji": "🏃",
+      "label": "runners"
+    },
+    {
+      "emoji": "🏁",
+      "label": "finish line"
+    },
+    {
+      "emoji": "🤕",
+      "label": "fell"
+    },
+    {
+      "emoji": "🤝",
+      "label": "helping up"
+    },
+    {
+      "emoji": "📣",
+      "label": "cheering"
+    },
+    {
+      "emoji": "🏅",
+      "label": "medal"
+    }
+  ],
+  "keyElements": [
+    "sports day",
+    "race",
+    "finish line",
+    "tripped",
+    "helped him up",
+    "sportsmanship",
+    "cheering",
+    "crowd",
+    "winning",
+    "teamwork"
+  ],
+  "questions": [
+    "Describe what is happening in this picture.",
+    "Do you think the runner made the right choice? Why?",
+    "Tell me about a time you had to choose between winning and being fair.",
+    "Some people say winning is the most important thing in sports. Do you agree?",
+    "What does good sportsmanship look like at your school?"
+  ]
+}

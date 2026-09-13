@@ -7,6 +7,7 @@ import {
 } from "../lib/students.js";
 import { isLoggedIn, generateViaApi } from '../lib/api.js';
 import { STATIC_BADGES, getEarnedBadgeIds, getWeeklyTargets } from '../lib/badges.js';
+import { isEnglish, passageText } from '../lib/english.js';
 
 
 const BADGES = STATIC_BADGES;
@@ -94,10 +95,49 @@ function showBadgeCelebration(badges) {
   setTimeout(() => showOne(badges[0]), 1800);
 }
 
+// MOE English oral, Reading Aloud component. The examiner marks three things:
+// pronunciation & articulation, fluency & rhythm (pace, phrasing, pausing at
+// punctuation), and expression (stress, intonation, conveying meaning).
+// The transcript is what speech recognition heard, so it evidences words
+// read/skipped — not the child's accent. Say so, or the model invents
+// pronunciation faults it cannot possibly have observed.
+function englishReadAloudPrompt(storyTitle, storyText, transcript, accuracy, coverage, fluency) {
+  return `A Singapore primary school student just read this English passage aloud for oral practice.
+
+Passage: "${storyTitle}"
+Passage text: ${storyText}
+Speech recognition transcript: ${transcript || "(not captured)"}
+Computed scores — Word accuracy: ${accuracy}/100, Coverage: ${coverage}/100, Fluency: ${fluency}/100
+
+You are a warm, encouraging Singapore primary school English teacher marking the
+Reading Aloud component of the MOE English oral examination. The three marking
+criteria are:
+1. Pronunciation and articulation — clear consonants and vowel sounds, word endings not dropped.
+2. Fluency and rhythm — smooth pace, sensible phrasing, pausing at commas and full stops.
+3. Expression — stress and intonation that convey the meaning and mood of the passage.
+
+Judge only from the evidence you have: the transcript shows which words were read,
+misread or skipped. You CANNOT hear accent or tone, so never claim a specific sound
+was mispronounced unless the transcript shows that word came out as a different word.
+Write to the child, in simple encouraging English.
+
+Return JSON only (no code fences):
+{
+  "highlight": "one specific thing they did well, 1 sentence",
+  "feedback": "overall encouraging comment tied to the reading, 1-2 sentences",
+  "accuracy_tip": "tip on pronunciation/articulation naming an actual word from the passage they misread, or empty string if accuracy >= 80",
+  "coverage_tip": "tip if they skipped or rushed past parts of the passage, or empty string if coverage >= 80",
+  "fluency_tip": "tip about pace, phrasing or pausing at punctuation, or empty string if fluency >= 75",
+  "expression_score": a number 0-100 for expression and confidence, based on coverage and fluency
+}`;
+}
+
 // ---- AI feedback (richer prompt) ----
-async function getAiFeedback(storyTitle, storyText, transcript, scoreResult, fluency) {
+async function getAiFeedback(storyTitle, storyText, transcript, scoreResult, fluency, english = false) {
   const { accuracy, coverage } = scoreResult;
-  const prompt = `A Singapore primary school student just read this Chinese story aloud.
+  const prompt = english
+    ? englishReadAloudPrompt(storyTitle, storyText, transcript, accuracy, coverage, fluency)
+    : `A Singapore primary school student just read this Chinese story aloud.
 
 Story: "${storyTitle}"
 Story text: ${storyText}
@@ -274,8 +314,10 @@ export function openScoreModal({ student, story, scoreResult, fluency = 50, tran
         : `<p class="score-feedback-text">${passed ? '好极了！继续加油！Keep it up!' : '再试一次，你一定能做到！Try again!'}</p>`;
     }
   } else if (!isOral) {
-    const storyText = story.tokens.filter(t => t.pinyin).map(t => t.char).join('');
-    getAiFeedback(story.title, storyText, transcript, scoreResult ?? { accuracy: score, coverage: score, overall: score }, fluency)
+    const storyText = isEnglish(story)
+      ? passageText(story)
+      : story.tokens.filter(t => t.pinyin).map(t => t.char).join('');
+    getAiFeedback(story.title, storyText, transcript, scoreResult ?? { accuracy: score, coverage: score, overall: score }, fluency, isEnglish(story))
       .then(result => {
         if (!overlay.isConnected) return;
         const feedbackEl = overlay.querySelector('#score-feedback');

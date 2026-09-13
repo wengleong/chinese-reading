@@ -53,6 +53,152 @@ function buildSegments(tokens) {
   return segments;
 }
 
+function pickEnglishVoice() {
+  if (!synth) return null;
+  const voices = synth.getVoices();
+  // en-SG first so the model of pronunciation matches what the child is marked
+  // on in school; fall back through the other common English locales.
+  const byLang = (tag) => voices.find((v) => v.lang && v.lang.toLowerCase().replace('_', '-') === tag);
+  return (
+    byLang('en-sg') || byLang('en-gb') || byLang('en-au') || byLang('en-us') ||
+    voices.find((v) => v.lang && v.lang.toLowerCase().startsWith('en')) ||
+    null
+  );
+}
+
+// Group English word tokens into sentences so each utterance is a natural
+// phrase and a pause/resume lands on a sentence boundary.
+function buildEnglishSegments(tokens) {
+  const segments = [];
+  let current = [];
+  tokens.forEach((token, globalIdx) => {
+    if (token.break) {
+      if (current.length) { segments.push(current); current = []; }
+      return;
+    }
+    current.push({ token, globalIdx });
+    // "end." / "end!" / 'end?"' — punctuation may be followed by quotes/brackets.
+    if (/[.!?]["'’)\]]*$/.test(token.text)) { segments.push(current); current = []; }
+  });
+  if (current.length) segments.push(current);
+  return segments;
+}
+
+// English read-aloud. Same interface as createPlayer so app.js can swap them.
+// Highlighting is driven by onboundary where the engine provides it, with a
+// paced timer filling in between (and covering engines that never fire it).
+export function createEnglishPlayer({ tokens, onTokenStart, onEnd }) {
+  const segments = buildEnglishSegments(tokens);
+  let segIndex = 0;
+  let playing = false;
+  let cancelled = false;
+  let rate = 0.9;
+  let highlightTimer = null;
+
+  // ~150 wpm at rate 1.0 → 400ms per word, rate-normalised per utterance.
+  const BASE_MS_PER_WORD = 400;
+
+  function clearHighlightTimer() {
+    if (highlightTimer !== null) { clearTimeout(highlightTimer); highlightTimer = null; }
+  }
+
+  function speakSegment() {
+    if (cancelled || !playing) return;
+    if (segIndex >= segments.length) {
+      playing = false;
+      onEnd && onEnd();
+      return;
+    }
+
+    const seg = segments[segIndex];
+    const text = seg.map(({ token }) => token.text).join(' ');
+
+    // Character offset of each word, so onboundary's charIndex maps to a token.
+    const startOffsets = [];
+    let pos = 0;
+    for (const { token } of seg) {
+      startOffsets.push(pos);
+      pos += token.text.length + 1; // + the joining space
+    }
+
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'en-SG';
+    u.rate = rate;
+    const voice = pickEnglishVoice();
+    if (voice) { u.voice = voice; u.lang = voice.lang; }
+
+    let wordIdx = 0;
+
+    function highlight(i) {
+      if (cancelled || i >= seg.length) return;
+      wordIdx = i;
+      const { token, globalIdx } = seg[i];
+      onTokenStart && onTokenStart(globalIdx, token);
+    }
+
+    function scheduleNext() {
+      clearHighlightTimer();
+      if (cancelled || !playing) return;
+      highlightTimer = setTimeout(() => {
+        if (cancelled || !playing) return;
+        if (wordIdx + 1 < seg.length) {
+          highlight(wordIdx + 1);
+          scheduleNext();
+        }
+      }, BASE_MS_PER_WORD / (rate || 1));
+    }
+
+    u.onstart = () => {
+      if (cancelled) return;
+      highlight(0);
+      scheduleNext();
+    };
+
+    u.onboundary = (e) => {
+      if (cancelled || e.name === 'sentence') return;
+      // Snap to the word the engine actually reached, then re-pace from there.
+      let i = 0;
+      while (i + 1 < startOffsets.length && startOffsets[i + 1] <= e.charIndex) i++;
+      highlight(i);
+      scheduleNext();
+    };
+
+    const advance = () => {
+      clearHighlightTimer();
+      if (cancelled) return;
+      segIndex++;
+      speakSegment();
+    };
+    u.onend = advance;
+    u.onerror = advance;
+
+    synth.speak(u);
+  }
+
+  return {
+    async play() {
+      await whenVoicesReady();
+      if (playing) return;
+      playing = true;
+      cancelled = false;
+      if (segIndex >= segments.length) segIndex = 0;
+      speakSegment();
+    },
+    pause() {
+      playing = false;
+      cancelled = true;
+      clearHighlightTimer();
+      if (synth) synth.cancel();
+    },
+    restart() {
+      this.pause();
+      segIndex = 0;
+    },
+    setRate(value) { rate = value; },
+    isPlaying() { return playing; },
+  };
+}
+
 export function createPlayer({ tokens, onTokenStart, onEnd }) {
   const segments = buildSegments(tokens);
   let segIndex = 0;

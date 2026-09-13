@@ -11,6 +11,7 @@ const LEVEL_ORDER = ["P1", "P2", "P3", "P4", "P5", "P6"];
 // Module-level so filters survive re-renders triggered by story selection
 let activeLevel = null;
 let activeType = null;
+let activeLang = null;   // null = all, 'zh' | 'en'
 
 export function renderStoryPicker({ root, stories, activeId, activeStudentId, onPick }) {
   root.innerHTML = "";
@@ -36,6 +37,30 @@ export function renderStoryPicker({ root, stories, activeId, activeStudentId, on
   header.appendChild(heading);
   header.appendChild(genBtn);
   root.appendChild(header);
+
+  // Language filter bar
+  const langBar = document.createElement("div");
+  langBar.className = "filter-bar";
+
+  function makeLangTab(label, value) {
+    const btn = document.createElement("button");
+    btn.className = "filter-tab" + (activeLang === value ? " active" : "");
+    btn.textContent = label;
+    btn.addEventListener("click", () => {
+      activeLang = value;
+      renderList();
+      langBar.querySelectorAll(".filter-tab").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+    });
+    return btn;
+  }
+
+  // Deliberately not "全部 All" — the type bar already has a tab by that name,
+  // and two identical tabs in stacked bars are ambiguous to read and to click.
+  langBar.appendChild(makeLangTab("全部 Both", null));
+  langBar.appendChild(makeLangTab("中文 Chinese", "zh"));
+  langBar.appendChild(makeLangTab("English", "en"));
+  root.appendChild(langBar);
 
   // Type filter bar
   const typeBar = document.createElement("div");
@@ -88,6 +113,8 @@ export function renderStoryPicker({ root, stories, activeId, activeStudentId, on
 
   function applyFilters(list) {
     return list.filter(s => {
+      // Stories without a lang are the original Chinese library.
+      if (activeLang && (s.lang || 'zh') !== activeLang) return false;
       if (activeLevel && s.level !== activeLevel) return false;
       if (activeType === "challenge") return (s.tags || []).includes("challenge");
       if (activeType === "past-years") return (s.tags || []).includes("past-years");
@@ -125,15 +152,17 @@ export function renderStoryPicker({ root, stories, activeId, activeStudentId, on
         const typeTag = story.type === "picture" ? ' 📷' : story.type === "video" ? ' 🎬' : '';
         const challengeTag = (story.tags || []).includes("challenge") ? ' 🗡️' : '';
         const examTag = (story.tags || []).includes("past-years") ? ' 📝' : '';
-        btn.innerHTML = `${tick}${story.title}${typeTag}${challengeTag}${examTag}<span class="meta">${story.estMinutes} min</span>`;
+        const langTag = story.lang === "en" ? '<span class="lang-badge">EN</span> ' : '';
+        btn.innerHTML = `${tick}${langTag}${story.title}${typeTag}${challengeTag}${examTag}<span class="meta">${story.estMinutes} min</span>`;
         btn.addEventListener("click", () => onPick(story.id));
         group.appendChild(btn);
       }
       listWrap.appendChild(group);
     }
 
-    // Generated stories (show when type filter is null or not restricting)
-    if (!activeType || activeType === null) {
+    // Generated stories (show when type filter is null or not restricting).
+    // The generator only produces Chinese, so hide them under the English filter.
+    if ((!activeType || activeType === null) && activeLang !== "en") {
       const generated = loadGeneratedStories().filter(
         s => !activeLevel || s.level === activeLevel
       );

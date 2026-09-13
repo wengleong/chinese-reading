@@ -1,5 +1,6 @@
 import { loadIndex, loadStory } from "./lib/stories.js";
-import { createPlayer, isSupported as ttsSupported } from "./lib/speech.js";
+import { createPlayer, createEnglishPlayer, isSupported as ttsSupported } from "./lib/speech.js";
+import { isEnglish, passageText, tokenizeEnglish, wordsOf, scoreEnglishTranscript } from "./lib/english.js";
 import { getActiveStudent, getActiveStudentId, scoreTranscript, computeFluency } from "./lib/students.js";
 import { renderStoryPicker } from "./components/storyPicker.js";
 import { renderStoryReader } from "./components/storyReader.js";
@@ -256,9 +257,14 @@ const recorderCtl = renderRecorder({
       return;
     }
 
-    // Standard passage scoring
-    const scoreResult = scoreTranscript(story.tokens, transcript);
-    const storyLength = story.tokens.filter(t => t.pinyin).length;
+    // Standard passage scoring — English is scored by word, Chinese by character.
+    const english = isEnglish(story);
+    const scoreResult = english
+      ? scoreEnglishTranscript(passageText(story), transcript)
+      : scoreTranscript(story.tokens, transcript);
+    const storyLength = english
+      ? wordsOf(passageText(story)).length
+      : story.tokens.filter(t => t.pinyin).length;
     const fluency = computeFluency({ avgConfidence, timingGaps, durationMs, storyLength });
     openScoreModal({
       student, story, scoreResult, fluency, transcript, sessionId,
@@ -331,18 +337,26 @@ async function pickStory(id) {
     els.recordings.style.display = 'none';
     recorderCtl.setStopLabel('■ 停止 Next →');
   } else {
+    const english = isEnglish(activeStory);
     els.playback.style.display = '';
-    els.pinyinToggle.style.display = '';
+    // Pinyin is meaningless for an English passage.
+    els.pinyinToggle.style.display = english ? 'none' : '';
     els.highlightToggle.style.display = '';
     if (els.toolbar) els.toolbar.style.display = '';
     els.recordings.style.display = '';
-    recorderCtl.setStopLabel('■ 停止 Stop & Score');
+    recorderCtl.setStopLabel(english ? '■ Stop & Score' : '■ 停止 Stop & Score');
     readerCtl = renderStoryReader({ root: els.reader, story: activeStory });
-    player = createPlayer({
-      tokens: activeStory.tokens,
-      onTokenStart: (i) => { if (highlightEnabled) readerCtl.setActiveIndex(i); },
-      onEnd: () => readerCtl.clearActive(),
-    });
+    player = english
+      ? createEnglishPlayer({
+          tokens: tokenizeEnglish(passageText(activeStory)),
+          onTokenStart: (i) => { if (highlightEnabled) readerCtl.setActiveIndex(i); },
+          onEnd: () => readerCtl.clearActive(),
+        })
+      : createPlayer({
+          tokens: activeStory.tokens,
+          onTokenStart: (i) => { if (highlightEnabled) readerCtl.setActiveIndex(i); },
+          onEnd: () => readerCtl.clearActive(),
+        });
     player.setRate(rate);
   }
   refreshPicker(id);

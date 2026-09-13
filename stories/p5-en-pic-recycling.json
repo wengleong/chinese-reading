@@ -1,0 +1,58 @@
+{
+  "id": "p5-en-pic-recycling",
+  "lang": "en",
+  "type": "picture",
+  "title": "Recycling Day",
+  "level": "P5",
+  "estMinutes": 4,
+  "tags": [
+    "english",
+    "picture"
+  ],
+  "scene": "Students and residents sorting cardboard, cans and plastic bottles into recycling bins at the void deck of an HDB block.",
+  "sceneParts": [
+    {
+      "emoji": "♻️",
+      "label": "recycling"
+    },
+    {
+      "emoji": "📦",
+      "label": "cardboard"
+    },
+    {
+      "emoji": "🥤",
+      "label": "plastic bottles"
+    },
+    {
+      "emoji": "🗑️",
+      "label": "bins"
+    },
+    {
+      "emoji": "🧑‍🤝‍🧑",
+      "label": "volunteers"
+    },
+    {
+      "emoji": "🏢",
+      "label": "void deck"
+    }
+  ],
+  "keyElements": [
+    "recycling",
+    "sorting",
+    "cardboard",
+    "plastic bottles",
+    "bins",
+    "volunteers",
+    "environment",
+    "waste",
+    "reuse",
+    "community"
+  ],
+  "questions": [
+    "What are the people in this picture doing, and why?",
+    "How do you think the volunteers feel about giving up their Saturday?",
+    "What does your family do with things you no longer need?",
+    "Some people say recycling is troublesome. Do you agree? Why?",
+    "What is one thing your school could do to produce less waste?"
+  ]
+}
