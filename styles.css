@@ -722,6 +722,34 @@ body {
   visibility: hidden;
 }
 
+/* ---- English passages: word-level highlight, no ruby ---- */
+
+.story-paragraph-en {
+  line-height: 2;
+}
+
+.story-reader .en-word {
+  border-radius: 4px;
+  padding: 2px 2px;
+  transition: background-color 120ms;
+}
+
+.story-reader .en-word.active {
+  background: var(--highlight);
+}
+
+.lang-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--accent);
+  color: #fff;
+  vertical-align: 2px;
+}
+
 /* ---- Toggle / controls ---- */
 .toggle {
   display: inline-flex;

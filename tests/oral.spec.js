@@ -37,6 +37,8 @@ function installStubs(srMode) {
 
   class FakeSR extends EventTarget {
     start() {
+      // Recorded so a test can assert the language followed the story.
+      window.__srLang = this.lang;
       if (srMode === 'silence') {
         // Chrome ends the session after a pause; the app must restart it and
         // keep transcribing the rest of the answer.
@@ -267,6 +269,93 @@ test.describe('picture oral', () => {
     // API recovers — re-recording question 3 scores the whole set, no restart.
     ctx.generate = 'ok';
     await record(page);
+    await expect(page.locator('.modal-overlay')).toBeVisible();
+    await expect(page.locator('#score-num')).toBeVisible();
+    expect(ctx.pageErrors).toEqual([]);
+  });
+});
+
+// English read-aloud and English stimulus-based conversation.
+// Boots without forcing the Picture filter so the language bar can be used.
+async function bootEnglish(page, { srMode = 'ok', generate = 'ok' } = {}) {
+  const ctx = { pageErrors: [], generate };
+  page.on('pageerror', e => ctx.pageErrors.push(e.message));
+
+  await page.addInitScript(installStubs, srMode);
+  await page.addInitScript(() => {
+    localStorage.setItem('cr-token', 'test-token');
+    localStorage.setItem('cr-students', JSON.stringify([
+      { id: 'stu-1', name: 'Test Kid', level: 'P4', color: '#e8590c', createdAt: 1 },
+    ]));
+    localStorage.setItem('cr-active-student', 'stu-1');
+    localStorage.setItem('cr-synced-up', '1');
+  });
+  await page.route('**/api/generate', route => route.fulfill({
+    status: ctx.generate === 'ok' ? 200 : 503,
+    contentType: 'application/json',
+    body: ctx.generate === 'ok'
+      ? JSON.stringify({ content: [{ type: 'text', text: SCORE_JSON }] })
+      : JSON.stringify({ error: 'AI is unavailable — the server has no Anthropic API key configured.' }),
+  }));
+  for (const p of ['**/api/students', '**/api/sessions', '**/api/recordings**']) {
+    await page.route(p, r => r.fulfill({ status: 200, contentType: 'application/json', body: '[]' }));
+  }
+
+  await page.goto('/');
+  const skip = page.locator('#ob-skip');
+  if (await skip.isVisible().catch(() => false)) await skip.click();
+  await page.waitForSelector('.filter-tab', { timeout: 10000 });
+  await page.locator('.filter-tab', { hasText: 'English' }).click();
+  return ctx;
+}
+
+test.describe('english', () => {
+  test('the English filter shows only English stories', async ({ page }) => {
+    await bootEnglish(page);
+
+    const titles = await page.locator('.story-button').allInnerTexts();
+    expect(titles.length).toBeGreaterThan(0);
+    // Every visible story carries the EN badge; no Chinese titles leak through.
+    expect(await page.locator('.story-button .lang-badge').count()).toBe(titles.length);
+    expect(titles.join(' ')).not.toMatch(/[一-鿿]/);
+  });
+
+  test('an English passage renders as words, with pinyin hidden', async ({ page }) => {
+    await bootEnglish(page);
+    await page.locator('.story-button', { hasText: 'The Lost Wallet' }).click();
+
+    await expect(page.locator('.story-paragraph-en')).toBeVisible();
+    expect(await page.locator('.en-word').count()).toBeGreaterThan(20);
+    expect(await page.locator('.story-reader ruby').count()).toBe(0);
+    await expect(page.locator('#pinyin-toggle')).toBeHidden();
+    await expect(page.locator('.en-word').first()).toHaveText('On');
+  });
+
+  test('recording an English story transcribes in English, not Chinese', async ({ page }) => {
+    const ctx = await bootEnglish(page);
+    await page.locator('.story-button', { hasText: 'The Lost Wallet' }).click();
+    await expect(page.locator('.story-paragraph-en')).toBeVisible();
+
+    await page.locator('.recorder-start-btn').click();
+    await page.waitForTimeout(400);
+    expect(await page.evaluate(() => window.__srLang)).toBe('en-SG');
+    await page.locator('.recorder-stop-btn').click();
+    await expect(page.locator('.recorder-start-btn')).toBeEnabled({ timeout: 10000 });
+    expect(ctx.pageErrors).toEqual([]);
+  });
+
+  test('an English picture oral prompts in English through all four steps', async ({ page }) => {
+    const ctx = await bootEnglish(page);
+    await page.locator('.story-button', { hasText: 'Lunchtime at the Hawker Centre' }).click();
+
+    await expect(page.locator('.picture-reader-card')).toBeVisible();
+    await expect(counter(page)).toContainText('Recording 1 / 4');
+    await expect(page.locator('.picture-prompt')).toContainText('describe what you see', { ignoreCase: true });
+
+    await record(page);
+    await expect(counter(page)).toContainText('Recording 2 / 4');
+    for (let i = 0; i < 3; i++) await record(page);
+
     await expect(page.locator('.modal-overlay')).toBeVisible();
     await expect(page.locator('#score-num')).toBeVisible();
     expect(ctx.pageErrors).toEqual([]);

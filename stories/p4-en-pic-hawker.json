@@ -1,0 +1,58 @@
+{
+  "id": "p4-en-pic-hawker",
+  "lang": "en",
+  "type": "picture",
+  "title": "Lunchtime at the Hawker Centre",
+  "level": "P4",
+  "estMinutes": 4,
+  "tags": [
+    "english",
+    "picture"
+  ],
+  "scene": "A busy neighbourhood hawker centre at lunchtime, where people of all races eat together and a schoolgirl helps an elderly woman carry her tray.",
+  "sceneParts": [
+    {
+      "emoji": "🍜",
+      "label": "noodles"
+    },
+    {
+      "emoji": "🧓",
+      "label": "elderly woman"
+    },
+    {
+      "emoji": "🎒",
+      "label": "schoolgirl"
+    },
+    {
+      "emoji": "🍽️",
+      "label": "tray"
+    },
+    {
+      "emoji": "👨‍🍳",
+      "label": "stall holder"
+    },
+    {
+      "emoji": "🤝",
+      "label": "helping"
+    }
+  ],
+  "keyElements": [
+    "hawker centre",
+    "stall",
+    "tray",
+    "elderly",
+    "helping",
+    "crowded",
+    "queue",
+    "return the tray",
+    "lunchtime",
+    "neighbours"
+  ],
+  "questions": [
+    "Describe what the people in this picture are doing.",
+    "Why do you think the girl is helping the elderly woman?",
+    "Tell me about a time you ate at a hawker centre with your family.",
+    "Some people do not return their trays. What do you think about that?",
+    "Why are hawker centres important to people in Singapore?"
+  ]
+}

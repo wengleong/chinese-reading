@@ -1,0 +1,58 @@
+{
+  "id": "p5-en-pic-mrt",
+  "lang": "en",
+  "type": "picture",
+  "title": "On the MRT",
+  "level": "P5",
+  "estMinutes": 4,
+  "tags": [
+    "english",
+    "picture"
+  ],
+  "scene": "A crowded MRT carriage where a teenager gives up his reserved seat to a pregnant woman while other passengers stare at their phones.",
+  "sceneParts": [
+    {
+      "emoji": "🚇",
+      "label": "MRT"
+    },
+    {
+      "emoji": "💺",
+      "label": "reserved seat"
+    },
+    {
+      "emoji": "🤰",
+      "label": "pregnant woman"
+    },
+    {
+      "emoji": "📱",
+      "label": "phones"
+    },
+    {
+      "emoji": "🎒",
+      "label": "student"
+    },
+    {
+      "emoji": "🧍",
+      "label": "standing"
+    }
+  ],
+  "keyElements": [
+    "MRT",
+    "carriage",
+    "reserved seat",
+    "gave up his seat",
+    "pregnant",
+    "crowded",
+    "passengers",
+    "phone",
+    "considerate",
+    "graciousness"
+  ],
+  "questions": [
+    "Describe what is happening in this picture.",
+    "Why do you think the other passengers did not offer their seats?",
+    "Tell me about a time someone was kind to you in public.",
+    "Should reserved seats only be for people who need them? Why?",
+    "What makes a person a considerate commuter?"
+  ]
+}

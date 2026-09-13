@@ -9,6 +9,12 @@ const GENERIC_QUESTIONS = [
   '你从这幅图片学到了什么？',
 ];
 
+const GENERIC_QUESTIONS_EN = [
+  'What do you think is happening in this picture?',
+  'How do you think the people in the picture are feeling? Why?',
+  'Have you ever been somewhere like this? Tell me about it.',
+];
+
 function extractFirstJsonObject(text) {
   const start = text.indexOf('{');
   if (start === -1) return null;
@@ -71,7 +77,7 @@ function toBoundedScore(value, fallback) {
 // Falls back to first 3 (or generic) if AI call fails or story has no questions.
 export async function selectQuestions({ story, descriptionTranscript }) {
   const questions = story.questions || [];
-  if (questions.length === 0) return GENERIC_QUESTIONS;
+  if (questions.length === 0) return story.lang === 'en' ? GENERIC_QUESTIONS_EN : GENERIC_QUESTIONS;
   if (questions.length <= 3) return questions.slice(0, 3);
 
   if (!isLoggedIn()) return questions.slice(0, 3);
@@ -127,7 +133,38 @@ export async function scorePicture({ story, transcripts, durations, questions = 
     return `[Q${i} ${q}]: ${transcripts[i] || '(none)'}`;
   }).join('\n');
 
-  const promptText = isVideo
+  const promptText = story.lang === 'en'
+    ? `You are an encouraging Singapore primary school English teacher marking the
+Stimulus-Based Conversation component of the ${story.level || 'primary'} MOE English oral examination.
+
+Picture shown to the student: "${story.scene}"
+Ideas and vocabulary a strong answer might draw on: ${keyElements.join(', ')}
+Key element coverage detected locally: ${coveragePct}%
+
+Student responses:
+[Describing the picture]: ${transcripts[0] || '(none)'}
+
+${qLines}
+
+Total speaking time: ${totalSecs} seconds
+
+The three marking criteria are:
+1. Personal Response — relevant ideas, a clear stand, reasons and personal experience that answer the question actually asked.
+2. Language Use — range of vocabulary, sentence variety, grammatical accuracy.
+3. Engagement — elaborated rather than one-word answers, confident and sustained.
+
+These are speech-recognition transcripts, so you cannot hear tone or accent —
+judge content, language and elaboration only, never pronunciation. A very short
+answer should not score highly on Engagement.
+
+Return JSON only (no code fences):
+{
+  "content_score": <0-100: Personal Response — relevance, clear stand, reasons, personal experience>,
+  "language_score": <0-100: Language Use — vocabulary range, sentence variety, grammar>,
+  "expression_score": <0-100: Engagement — elaboration, confidence, sustained answers>,
+  "feedback": "<2 sentences of encouraging English feedback written to the child: 1 strength, 1 specific tip>"
+}`
+    : isVideo
     ? `You are an encouraging Singapore Chinese language teacher marking a P${story.level?.replace('P', '') || '5'} video oral (看录像会话).
 
 Video topic: "${story.title}"

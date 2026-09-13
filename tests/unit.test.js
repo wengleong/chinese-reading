@@ -551,3 +551,69 @@ test('anthropic: no key throws 503 without calling out to Anthropic', async () =
     else process.env.ANTHROPIC_API_KEY = original;
   }
 });
+
+// ---------------------------------------------------------------------------
+// English read-aloud: word tokenising and word-level scoring.
+// The Chinese scorer strips everything outside CJK, so English needs its own.
+// ---------------------------------------------------------------------------
+import {
+  tokenizeEnglish, normalizeWord, wordsOf, scoreEnglishTranscript, passageText, isEnglish,
+} from '../src/lib/english.js';
+
+test('english: tokenize keeps punctuation on the word and marks paragraph breaks', () => {
+  const tokens = tokenizeEnglish('Hello, world!\nNext line.');
+  assert.deepStrictEqual(tokens.map(t => t.text ?? '\\n'), ['Hello,', 'world!', '\\n', 'Next', 'line.']);
+  assert.deepStrictEqual(tokens.filter(t => t.word).map(t => t.word),
+    ['hello', 'world', 'next', 'line']);
+  assert.strictEqual(tokens[2].break, true);
+});
+
+test('english: normalizeWord folds case, punctuation and apostrophes', () => {
+  // Recognisers disagree on apostrophes, so both spellings must score the same.
+  assert.strictEqual(normalizeWord('Don’t!'), 'dont');
+  assert.strictEqual(normalizeWord("don't"), 'dont');
+  assert.strictEqual(normalizeWord('"Quoted,"'), 'quoted');
+  assert.strictEqual(normalizeWord('—'), '');
+});
+
+test('english: a perfect reading scores 100', () => {
+  const passage = 'The quick brown fox jumps over the lazy dog.';
+  const r = scoreEnglishTranscript(passage, 'the quick brown fox jumps over the lazy dog');
+  assert.strictEqual(r.accuracy, 100);
+  assert.strictEqual(r.coverage, 100);
+  assert.strictEqual(r.overall, 100);
+});
+
+test('english: punctuation, casing and apostrophes do not cost marks', () => {
+  const passage = '"Don\'t run!" she said.';
+  const r = scoreEnglishTranscript(passage, 'dont run she said');
+  assert.strictEqual(r.coverage, 100, 'apostrophe spelling must not be penalised');
+  assert.strictEqual(r.accuracy, 100);
+});
+
+test('english: skipping half the passage halves coverage', () => {
+  const passage = 'one two three four five six seven eight nine ten';
+  const r = scoreEnglishTranscript(passage, 'one two three four five');
+  assert.strictEqual(r.coverage, 50);
+  assert.ok(r.accuracy < 100);
+});
+
+test('english: an empty or unheard transcript scores zero, never a default', () => {
+  assert.deepStrictEqual(scoreEnglishTranscript('a real passage here', ''),
+    { accuracy: 0, coverage: 0, overall: 0 });
+  assert.deepStrictEqual(scoreEnglishTranscript('', 'spoken words'),
+    { accuracy: 0, coverage: 0, overall: 0 });
+});
+
+test('english: a Chinese transcript against an English passage scores zero', () => {
+  const r = scoreEnglishTranscript('The boy ran home quickly', '男孩很快跑回家');
+  assert.strictEqual(r.overall, 0);
+});
+
+test('english: isEnglish and passageText read the story shape', () => {
+  assert.strictEqual(isEnglish({ lang: 'en' }), true);
+  assert.strictEqual(isEnglish({ lang: 'zh' }), false);
+  assert.strictEqual(isEnglish({}), false);
+  assert.strictEqual(passageText({ text: 'hello there' }), 'hello there');
+  assert.strictEqual(wordsOf('Hello, there!').join(' '), 'hello there');
+});

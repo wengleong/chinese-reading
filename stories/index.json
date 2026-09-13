@@ -782,5 +782,131 @@
       "idiom",
       "classical"
     ]
+  },
+  {
+    "id": "p3-en-read-bus",
+    "title": "The Lost Wallet",
+    "level": "P3",
+    "estMinutes": 3,
+    "tags": [
+      "english",
+      "values"
+    ],
+    "lang": "en"
+  },
+  {
+    "id": "p4-en-read-garden",
+    "title": "The Rooftop Garden",
+    "level": "P4",
+    "estMinutes": 3,
+    "tags": [
+      "english",
+      "environment"
+    ],
+    "lang": "en"
+  },
+  {
+    "id": "p4-en-read-rain",
+    "title": "Caught in the Rain",
+    "level": "P4",
+    "estMinutes": 3,
+    "tags": [
+      "english",
+      "school"
+    ],
+    "lang": "en"
+  },
+  {
+    "id": "p5-en-read-library",
+    "title": "The Night Librarian",
+    "level": "P5",
+    "estMinutes": 4,
+    "tags": [
+      "english",
+      "community"
+    ],
+    "lang": "en"
+  },
+  {
+    "id": "p5-en-read-kampong",
+    "title": "Grandfather's Kampong",
+    "level": "P5",
+    "estMinutes": 4,
+    "tags": [
+      "english",
+      "heritage"
+    ],
+    "lang": "en"
+  },
+  {
+    "id": "p6-en-read-hawker",
+    "title": "The Last Bowl",
+    "level": "P6",
+    "estMinutes": 4,
+    "tags": [
+      "english",
+      "heritage"
+    ],
+    "lang": "en"
+  },
+  {
+    "id": "p3-en-pic-playground",
+    "title": "At the Playground",
+    "level": "P3",
+    "estMinutes": 4,
+    "tags": [
+      "english",
+      "picture"
+    ],
+    "lang": "en",
+    "type": "picture"
+  },
+  {
+    "id": "p4-en-pic-hawker",
+    "title": "Lunchtime at the Hawker Centre",
+    "level": "P4",
+    "estMinutes": 4,
+    "tags": [
+      "english",
+      "picture"
+    ],
+    "lang": "en",
+    "type": "picture"
+  },
+  {
+    "id": "p5-en-pic-recycling",
+    "title": "Recycling Day",
+    "level": "P5",
+    "estMinutes": 4,
+    "tags": [
+      "english",
+      "picture"
+    ],
+    "lang": "en",
+    "type": "picture"
+  },
+  {
+    "id": "p5-en-pic-mrt",
+    "title": "On the MRT",
+    "level": "P5",
+    "estMinutes": 4,
+    "tags": [
+      "english",
+      "picture"
+    ],
+    "lang": "en",
+    "type": "picture"
+  },
+  {
+    "id": "p6-en-pic-sports",
+    "title": "Sports Day",
+    "level": "P6",
+    "estMinutes": 4,
+    "tags": [
+      "english",
+      "picture"
+    ],
+    "lang": "en",
+    "type": "picture"
   }
 ]

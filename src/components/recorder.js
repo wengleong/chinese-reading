@@ -99,7 +99,9 @@ export function renderRecorder({ root, getCurrentStory, getActiveStudent, onSave
       try {
         recognition = new SR();
         wantRecognition = true;
-        recognition.lang = 'zh-CN';
+        // An English passage transcribed as zh-CN comes back as garbage, which
+        // would then score 0 — the language must follow the story.
+        recognition.lang = story.lang === 'en' ? 'en-SG' : 'zh-CN';
         recognition.continuous = true;
         recognition.interimResults = false;
         recognition.maxAlternatives = 3;
