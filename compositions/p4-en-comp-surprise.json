@@ -1,0 +1,15 @@
+{
+  "id": "p4-en-comp-surprise",
+  "lang": "en",
+  "level": "P4",
+  "minWords": 150,
+  "timeMinutes": 50,
+  "topic": "A Surprise",
+  "guidingQuestions": [
+    "What was the surprise, and who was it for?",
+    "What had to be kept secret, and why?",
+    "Did everything go to plan?"
+  ],
+  "instructions": "Write a composition of at least 150 words about the topic below. The three pictures are there to help you think of ideas — you may use one, two, all three, or none of them. Your composition must be about the topic.",
+  "image": "p4-en-comp-surprise.jpg"
+}

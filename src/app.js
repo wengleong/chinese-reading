@@ -17,6 +17,7 @@ import { showFamilyOnboarding } from './components/familyOnboarding.js';
 import { renderPictureReader } from './components/pictureReader.js';
 import { scorePicture, selectQuestions } from './lib/pictureScorer.js';
 import { renderTingxieHome } from './components/tingxieHome.js';
+import { renderCompositionHome } from './components/compositionHome.js';
 
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
   window.addEventListener("load", () => {
@@ -66,16 +67,36 @@ renderSettingsButton({ root: els.settingsBtn });
 // ---- Mode toggle ----
 const modeReadingBtn = document.getElementById('mode-reading');
 const modeTingxieBtn = document.getElementById('mode-tingxie');
+const modeCompositionBtn = document.getElementById('mode-composition');
 const appMain        = document.querySelector('.app-main');
 const tingxiePanel   = document.getElementById('tingxie-panel');
+const compositionPanel = document.getElementById('composition-panel');
 let tingxieActive = false;
+
+function setActiveMode(btn) {
+  for (const b of [modeReadingBtn, modeTingxieBtn, modeCompositionBtn]) {
+    b?.classList.toggle('active', b === btn);
+  }
+}
 
 function switchToReading() {
   tingxieActive = false;
-  modeReadingBtn.classList.add('active');
-  modeTingxieBtn.classList.remove('active');
+  setActiveMode(modeReadingBtn);
   appMain.hidden = false;
   tingxiePanel.hidden = true;
+  compositionPanel.hidden = true;
+}
+
+// Composition needs no account: it only hands out a topic and pictures, and the
+// child writes on paper. Nothing is uploaded, stored or scored.
+function switchToComposition() {
+  tingxieActive = false;
+  setActiveMode(modeCompositionBtn);
+  appMain.hidden = true;
+  tingxiePanel.hidden = true;
+  compositionPanel.hidden = false;
+  player?.pause();
+  renderCompositionHome({ root: compositionPanel });
 }
 
 function switchToTingxie() {
@@ -88,10 +109,10 @@ function switchToTingxie() {
   }
 
   tingxieActive = true;
-  modeTingxieBtn.classList.add('active');
-  modeReadingBtn.classList.remove('active');
+  setActiveMode(modeTingxieBtn);
   appMain.hidden = true;
   tingxiePanel.hidden = false;
+  compositionPanel.hidden = true;
 
   const student = getActiveStudent();
   if (!student) {
@@ -103,6 +124,7 @@ function switchToTingxie() {
 
 modeReadingBtn.addEventListener('click', switchToReading);
 modeTingxieBtn.addEventListener('click', switchToTingxie);
+modeCompositionBtn.addEventListener('click', switchToComposition);
 
 function refreshPicker(activeId = activeStory?.id ?? null) {
   if (!stories.length) return;

@@ -1,0 +1,15 @@
+{
+  "id": "p5-en-comp-mistake",
+  "lang": "en",
+  "level": "P5",
+  "minWords": 150,
+  "timeMinutes": 50,
+  "topic": "A Mistake",
+  "guidingQuestions": [
+    "What went wrong, and whose fault was it?",
+    "Did anyone find out straight away?",
+    "What did the person do to put it right?"
+  ],
+  "instructions": "Write a composition of at least 150 words about the topic below. The three pictures are there to help you think of ideas — you may use one, two, all three, or none of them. Your composition must be about the topic.",
+  "image": "p5-en-comp-mistake.jpg"
+}
