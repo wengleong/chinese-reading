@@ -1,7 +1,7 @@
 // api/src/routes/families.js
 const express = require('express');
 const db = require('../db');
-const { signToken, requireAuth } = require('../auth');
+const { signToken } = require('../auth');
 
 const router = express.Router();
 
@@ -50,24 +50,7 @@ router.post('/join', async (req, res) => {
   res.json({ token });
 });
 
-// PUT /api/families/apikey — save Anthropic API key
-router.put('/apikey', requireAuth, async (req, res) => {
-  const { key } = req.body;
-  await db.query(
-    'update families set anthropic_key = $1 where id = $2',
-    // Normalise "" to NULL so a cleared key reads as absent, not as a blank key.
-    [key || null, req.familyId]
-  );
-  res.json({ ok: true });
-});
-
-// GET /api/families/apikey — get API key (for pulling into localStorage on login)
-router.get('/apikey', requireAuth, async (req, res) => {
-  const { rows } = await db.query(
-    'select anthropic_key from families where id = $1',
-    [req.familyId]
-  );
-  res.json({ key: rows[0]?.anthropic_key ?? null });
-});
+// No /apikey routes: AI runs on the server's own ANTHROPIC_API_KEY, so there is
+// no per-family key to store, fetch, or ship to a browser.
 
 module.exports = router;

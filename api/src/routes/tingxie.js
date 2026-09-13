@@ -7,6 +7,7 @@ const QRCode  = require('qrcode');
 const { pinyin } = require('pinyin-pro');
 const db      = require('../db');
 const { requireAuth } = require('../auth');
+const { callAnthropic } = require('../anthropic');
 
 const router = express.Router();
 
@@ -94,24 +95,12 @@ async function assertStudentOwner(studentId, familyId) {
   if (!rows.length) throw Object.assign(new Error('Student not found'), { status: 403 });
 }
 
-async function callClaude(familyId, body) {
-  const { rows } = await db.query('SELECT anthropic_key FROM families WHERE id = $1', [familyId]);
-  const apiKey = rows[0]?.anthropic_key;
-  if (!apiKey) throw Object.assign(new Error('No API key configured'), { status: 400 });
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw Object.assign(new Error(err.error?.message || 'Anthropic API error'), { status: 502 });
+async function callClaude(body) {
+  const { status, data } = await callAnthropic(body);
+  if (status < 200 || status >= 300) {
+    throw Object.assign(new Error(data?.error?.message || 'Anthropic API error'), { status: 502 });
   }
-  return res.json();
+  return data;
 }
 
 // Build schedule in Singapore time (UTC+8)
@@ -273,7 +262,7 @@ router.post('/extract', upload.fields([{ name: 'files', maxCount: 10 }, { name: 
 
     const imageContents = (await Promise.all(files.map(fileToImageContents))).flat();
 
-    const claudeRes = await callClaude(req.familyId, {
+    const claudeRes = await callClaude({
       model: 'claude-opus-4-6',
       max_tokens: 2048,
       messages: [{
@@ -340,7 +329,7 @@ router.post('/grade', async (req, res) => {
       { type: 'image', source: { type: 'base64', media_type: 'image/png', data: b64 } },
     ]);
 
-    const claudeRes = await callClaude(req.familyId, {
+    const claudeRes = await callClaude({
       model: 'claude-opus-4-6',
       max_tokens: 256,
       messages: [{
@@ -383,7 +372,7 @@ router.post('/grade-batch', async (req, res) => {
 [{ "hanzi": "...", "read": "what you see", "correct": true/false }]
 No tips. Strict character identity.` });
 
-    const claudeRes = await callClaude(req.familyId, {
+    const claudeRes = await callClaude({
       model: 'claude-opus-4-6',
       max_tokens: 1024,
       messages: [{ role: 'user', content }],

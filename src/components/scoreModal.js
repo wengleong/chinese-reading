@@ -8,7 +8,6 @@ import {
 import { isLoggedIn, generateViaApi } from '../lib/api.js';
 import { STATIC_BADGES, getEarnedBadgeIds, getWeeklyTargets } from '../lib/badges.js';
 
-const API_KEY_STORAGE = "anthropicApiKey";
 
 const BADGES = STATIC_BADGES;
 
@@ -116,21 +115,13 @@ Return JSON only (no code fences):
   "expression_score": a number 0-100 estimating reading expression and confidence based on coverage and fluency
 }`;
   try {
-    const body = { model: 'claude-haiku-4-5-20251001', max_tokens: 350, messages: [{ role: 'user', content: prompt }] };
-    let data;
-    if (isLoggedIn()) {
-      data = await generateViaApi(body);
-    } else {
-      const apiKey = localStorage.getItem(API_KEY_STORAGE);
-      if (!apiKey) return null;
-      const r = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json', 'anthropic-dangerous-direct-browser-access': 'true' },
-        body: JSON.stringify(body),
-      });
-      if (!r.ok) return null;
-      data = await r.json();
-    }
+    // Server-side only — the AI key is the server's and never reaches a browser.
+    if (!isLoggedIn()) return null;
+    const data = await generateViaApi({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 350,
+      messages: [{ role: 'user', content: prompt }],
+    });
     let text = data.content[0].text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
     return JSON.parse(text);
   } catch { return null; }
