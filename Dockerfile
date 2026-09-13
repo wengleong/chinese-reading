@@ -13,8 +13,12 @@ COPY api/migrations/ ./api/migrations/
 COPY index.html styles.css manifest.webmanifest sw.js phone-upload.html ./public/
 COPY src/ ./public/src/
 COPY stories/ ./public/stories/
-# verify images directory is present (invalidates Docker cache on each build)
+COPY compositions/ ./public/compositions/
+# Verify asset directories are present (also invalidates Docker cache each build).
+# Without this the server's SPA fallback answers every missing asset with
+# index.html — a 200 carrying HTML, which looks fine until an image never loads.
 RUN ls /app/public/stories/images/ || (echo "ERROR: stories/images missing from build context" && exit 1)
+RUN ls /app/public/compositions/images/ || (echo "ERROR: compositions/images missing from build context" && exit 1)
 COPY icons/ ./public/icons/
 
 EXPOSE 3001
