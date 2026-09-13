@@ -55,7 +55,8 @@ router.put('/apikey', requireAuth, async (req, res) => {
   const { key } = req.body;
   await db.query(
     'update families set anthropic_key = $1 where id = $2',
-    [key ?? null, req.familyId]
+    // Normalise "" to NULL so a cleared key reads as absent, not as a blank key.
+    [key || null, req.familyId]
   );
   res.json({ ok: true });
 });

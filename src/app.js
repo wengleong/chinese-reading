@@ -11,7 +11,7 @@ import { renderStudentPanel } from "./components/studentPanel.js";
 import { openScoreModal } from "./components/scoreModal.js";
 import { renderSettingsButton } from "./components/settings.js";
 import { isLoggedIn } from './lib/api.js';
-import { syncDown } from './lib/cloud.js';
+import { syncDown, API_KEY_STORAGE } from './lib/cloud.js';
 import { showFamilyOnboarding } from './components/familyOnboarding.js';
 import { renderPictureReader } from './components/pictureReader.js';
 import { scorePicture, selectQuestions } from './lib/pictureScorer.js';
@@ -315,6 +315,11 @@ async function pickStory(id) {
   } else if ((activeStory.type === 'picture' || activeStory.type === 'video') && !isLoggedIn()) {
     recorderCtl.setStatus('口语评分需要家庭账号和 API key（设置里可以登录）。 '
       + 'Oral scoring needs a family account with an API key — add one in Settings first.');
+  } else if ((activeStory.type === 'picture' || activeStory.type === 'video')
+             && !localStorage.getItem(API_KEY_STORAGE)) {
+    // Logged in but no key anywhere — say so now, not after four recordings.
+    recorderCtl.setStatus('口语评分需要 API key。请在设置中添加。 '
+      + 'Oral scoring needs an Anthropic API key — add one in Settings first.');
   } else {
     recorderCtl.setStatus('');
   }
