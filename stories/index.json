@@ -1144,5 +1144,53 @@
       "school"
     ],
     "lang": "en"
+  },
+  {
+    "id": "p3-en-pic-classpet",
+    "title": "The Class Pet",
+    "level": "P3",
+    "estMinutes": 4,
+    "tags": [
+      "english",
+      "picture"
+    ],
+    "type": "picture",
+    "lang": "en"
+  },
+  {
+    "id": "p4-en-pic-lostchild",
+    "title": "Lost in the Shopping Mall",
+    "level": "P4",
+    "estMinutes": 4,
+    "tags": [
+      "english",
+      "picture"
+    ],
+    "type": "picture",
+    "lang": "en"
+  },
+  {
+    "id": "p5-en-pic-voiddeck",
+    "title": "A Celebration at the Void Deck",
+    "level": "P5",
+    "estMinutes": 4,
+    "tags": [
+      "english",
+      "picture"
+    ],
+    "type": "picture",
+    "lang": "en"
+  },
+  {
+    "id": "p6-en-pic-beach",
+    "title": "The Beach Clean-Up",
+    "level": "P6",
+    "estMinutes": 4,
+    "tags": [
+      "english",
+      "picture"
+    ],
+    "type": "picture",
+    "lang": "en"
   }
 ]

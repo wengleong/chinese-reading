@@ -1,0 +1,58 @@
+{
+  "id": "p4-en-pic-lostchild",
+  "level": "P4",
+  "estMinutes": 4,
+  "title": "Lost in the Shopping Mall",
+  "scene": "A busy shopping mall where a small crying child stands alone, and a teenage girl crouches to comfort him while a mall staff member hurries over.",
+  "sceneParts": [
+    {
+      "emoji": "😢",
+      "label": "crying"
+    },
+    {
+      "emoji": "🏬",
+      "label": "shopping mall"
+    },
+    {
+      "emoji": "🧍",
+      "label": "alone"
+    },
+    {
+      "emoji": "🙋",
+      "label": "helping"
+    },
+    {
+      "emoji": "👮",
+      "label": "staff"
+    },
+    {
+      "emoji": "🛍️",
+      "label": "shoppers"
+    }
+  ],
+  "keyElements": [
+    "shopping mall",
+    "lost",
+    "crying",
+    "alone",
+    "crowded",
+    "comfort",
+    "staff",
+    "announcement",
+    "worried",
+    "safe"
+  ],
+  "questions": [
+    "Describe what is happening in this picture.",
+    "How do you think the little boy is feeling? How can you tell?",
+    "Have you ever been separated from your family in a crowded place?",
+    "What should a child do if they get lost?",
+    "Some people walk past without stopping. Why do you think that happens?"
+  ],
+  "lang": "en",
+  "type": "picture",
+  "tags": [
+    "english",
+    "picture"
+  ]
+}

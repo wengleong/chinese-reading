@@ -1,0 +1,58 @@
+{
+  "id": "p5-en-pic-voiddeck",
+  "level": "P5",
+  "estMinutes": 4,
+  "title": "A Celebration at the Void Deck",
+  "scene": "Neighbours of different races gathered at an HDB void deck for a community celebration, sharing food from many cultures at long tables.",
+  "sceneParts": [
+    {
+      "emoji": "🎉",
+      "label": "celebration"
+    },
+    {
+      "emoji": "🍛",
+      "label": "food"
+    },
+    {
+      "emoji": "🏢",
+      "label": "void deck"
+    },
+    {
+      "emoji": "🧕",
+      "label": "neighbours"
+    },
+    {
+      "emoji": "🎈",
+      "label": "decorations"
+    },
+    {
+      "emoji": "🤝",
+      "label": "sharing"
+    }
+  ],
+  "keyElements": [
+    "void deck",
+    "neighbours",
+    "celebration",
+    "sharing",
+    "different races",
+    "food",
+    "decorations",
+    "community",
+    "welcome",
+    "harmony"
+  ],
+  "questions": [
+    "Describe what the people in this picture are doing.",
+    "Why do you think the neighbours organised this together?",
+    "Tell me about a celebration you have enjoyed with your neighbours or family.",
+    "Some neighbours never join in. How could we encourage them?",
+    "Why does it matter that people of different races live well together in Singapore?"
+  ],
+  "lang": "en",
+  "type": "picture",
+  "tags": [
+    "english",
+    "picture"
+  ]
+}

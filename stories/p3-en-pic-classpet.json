@@ -1,0 +1,58 @@
+{
+  "id": "p3-en-pic-classpet",
+  "level": "P3",
+  "estMinutes": 4,
+  "title": "The Class Pet",
+  "scene": "A primary school classroom corner where children take turns caring for the class rabbit, while one child forgets and the water bottle is empty.",
+  "sceneParts": [
+    {
+      "emoji": "🐰",
+      "label": "rabbit"
+    },
+    {
+      "emoji": "🥬",
+      "label": "vegetables"
+    },
+    {
+      "emoji": "💧",
+      "label": "water bottle"
+    },
+    {
+      "emoji": "📋",
+      "label": "duty roster"
+    },
+    {
+      "emoji": "🧒",
+      "label": "children"
+    },
+    {
+      "emoji": "👩‍🏫",
+      "label": "teacher"
+    }
+  ],
+  "keyElements": [
+    "classroom",
+    "rabbit",
+    "hutch",
+    "feeding",
+    "water",
+    "taking turns",
+    "duty",
+    "forgot",
+    "responsible",
+    "caring"
+  ],
+  "questions": [
+    "What are the children in this picture doing?",
+    "How do you think the rabbit is feeling? Why?",
+    "Have you ever looked after an animal? Tell me about it.",
+    "What might happen if everyone forgot their turn?",
+    "Why is it important to keep a promise, even a small one?"
+  ],
+  "lang": "en",
+  "type": "picture",
+  "tags": [
+    "english",
+    "picture"
+  ]
+}
