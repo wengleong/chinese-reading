@@ -31,9 +31,12 @@ export function normalizeWord(raw) {
     .replace(/[^a-z0-9]/g, '');
 }
 
+// Hyphens split into separate words: a child reading "forty-one" out loud says
+// two words, and the recogniser writes two. Comparing against one joined token
+// would mark a correct reading wrong.
 export function wordsOf(text) {
   return String(text || '')
-    .split(/\s+/)
+    .split(/[\s‐-―/-]+/)
     .map(normalizeWord)
     .filter(Boolean);
 }

@@ -1004,5 +1004,145 @@
       "values"
     ],
     "lang": "en"
+  },
+  {
+    "id": "p3-en-read-newboy",
+    "title": "The New Boy",
+    "level": "P3",
+    "estMinutes": 3,
+    "tags": [
+      "english",
+      "friendship"
+    ],
+    "lang": "en"
+  },
+  {
+    "id": "p3-en-challenge-bees",
+    "title": "How Bees Tell Secrets",
+    "level": "P3",
+    "estMinutes": 3,
+    "tags": [
+      "english",
+      "challenge",
+      "nature"
+    ],
+    "lang": "en"
+  },
+  {
+    "id": "p3-en-exam-busstop",
+    "title": "Waiting at the Bus Stop",
+    "level": "P3",
+    "estMinutes": 3,
+    "tags": [
+      "english",
+      "past-years",
+      "community"
+    ],
+    "lang": "en"
+  },
+  {
+    "id": "p4-en-read-bicycle",
+    "title": "Grandfather's Bicycle",
+    "level": "P4",
+    "estMinutes": 3,
+    "tags": [
+      "english",
+      "family"
+    ],
+    "lang": "en"
+  },
+  {
+    "id": "p4-en-challenge-blackout",
+    "title": "The Night the Lights Went Out",
+    "level": "P4",
+    "estMinutes": 4,
+    "tags": [
+      "english",
+      "challenge",
+      "family"
+    ],
+    "lang": "en"
+  },
+  {
+    "id": "p4-en-exam-canteen",
+    "title": "The Canteen at Noon",
+    "level": "P4",
+    "estMinutes": 3,
+    "tags": [
+      "english",
+      "past-years",
+      "school"
+    ],
+    "lang": "en"
+  },
+  {
+    "id": "p5-en-read-cat",
+    "title": "The Cat That Chose Us",
+    "level": "P5",
+    "estMinutes": 4,
+    "tags": [
+      "english",
+      "family"
+    ],
+    "lang": "en"
+  },
+  {
+    "id": "p5-en-challenge-turtles",
+    "title": "The Turtles That Remember",
+    "level": "P5",
+    "estMinutes": 4,
+    "tags": [
+      "english",
+      "challenge",
+      "nature"
+    ],
+    "lang": "en"
+  },
+  {
+    "id": "p5-en-exam-bookshop",
+    "title": "The Bookshop on the Corner",
+    "level": "P5",
+    "estMinutes": 4,
+    "tags": [
+      "english",
+      "past-years",
+      "community"
+    ],
+    "lang": "en"
+  },
+  {
+    "id": "p6-en-read-codingclub",
+    "title": "The Coding Club",
+    "level": "P6",
+    "estMinutes": 4,
+    "tags": [
+      "english",
+      "perseverance"
+    ],
+    "lang": "en"
+  },
+  {
+    "id": "p6-en-challenge-migration",
+    "title": "The Birds That Cross the World",
+    "level": "P6",
+    "estMinutes": 4,
+    "tags": [
+      "english",
+      "challenge",
+      "nature"
+    ],
+    "lang": "en"
+  },
+  {
+    "id": "p6-en-exam-lastday",
+    "title": "The Last Day",
+    "level": "P6",
+    "estMinutes": 4,
+    "tags": [
+      "english",
+      "past-years",
+      "school"
+    ],
+    "lang": "en"
   }
 ]

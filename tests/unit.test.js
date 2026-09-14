@@ -617,3 +617,29 @@ test('english: isEnglish and passageText read the story shape', () => {
   assert.strictEqual(passageText({ text: 'hello there' }), 'hello there');
   assert.strictEqual(wordsOf('Hello, there!').join(' '), 'hello there');
 });
+
+test('english: hyphenated words score as the separate words a child speaks', () => {
+  // The recogniser writes "forty one"; the passage says "forty-one". A correct
+  // reading must not be marked down for the printed hyphen.
+  assert.deepStrictEqual(wordsOf('forty-one'), ['forty', 'one']);
+  assert.deepStrictEqual(wordsOf('with air-conditioning and'), ['with', 'air', 'conditioning', 'and']);
+  const r = scoreEnglishTranscript('He was forty-one years old', 'he was forty one years old');
+  assert.strictEqual(r.overall, 100);
+});
+
+test('english: dashes and slashes separate words, they are not spoken', () => {
+  assert.deepStrictEqual(wordsOf('south — and it'), ['south', 'and', 'it']);
+  assert.deepStrictEqual(wordsOf('and/or'), ['and', 'or']);
+});
+
+test('english: no passage in the library contains a bare numeral', async () => {
+  // "1974" can never match a transcript, which reads "nineteen seventy four".
+  const { readdirSync, readFileSync } = await import('node:fs');
+  const dir = new URL('../stories/', import.meta.url);
+  const offenders = [];
+  for (const file of readdirSync(dir).filter(f => f.includes('en-') && f.endsWith('.json'))) {
+    const story = JSON.parse(readFileSync(new URL(file, dir), 'utf8'));
+    if (typeof story.text === 'string' && /\d/.test(story.text)) offenders.push(file);
+  }
+  assert.deepStrictEqual(offenders, []);
+});
