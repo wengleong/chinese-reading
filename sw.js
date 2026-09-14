@@ -1,7 +1,7 @@
 // Minimal offline-first service worker. Caches the shell + stories so the app
 // keeps working without network. Bumping CACHE_VERSION invalidates old caches.
 
-const CACHE_VERSION = "v34";
+const CACHE_VERSION = "v35";
 const CACHE_NAME = `chinese-reader-${CACHE_VERSION}`;
 const SHELL = [
   "./",
@@ -73,6 +73,25 @@ function networkFirst(req) {
     .catch(() => caches.match(req).then((cached) => cached || caches.match("./index.html")));
 }
 
+// Story and composition JSON: serve the cached copy at once, but refresh it in
+// the background so newly published content appears on the next load. These
+// were cache-first, which meant new stories stayed invisible to anyone who had
+// already opened the app until CACHE_VERSION happened to change.
+function staleWhileRevalidate(req) {
+  return caches.match(req).then((cached) => {
+    const fetching = fetch(req)
+      .then((res) => {
+        if (res && res.status === 200 && res.type === "basic") {
+          const copy = res.clone();
+          caches.open(CACHE_NAME).then((c) => c.put(req, copy));
+        }
+        return res;
+      })
+      .catch(() => cached);
+    return cached || fetching;
+  });
+}
+
 function cacheFirst(req) {
   return caches.match(req).then((cached) => {
     if (cached) return cached;
@@ -93,7 +112,11 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(req.url);
   if (req.mode === "navigate" || isAppShell(url)) {
     event.respondWith(networkFirst(req));
+  } else if (url.pathname.endsWith(".json")) {
+    // Content, not code: stays available offline but must not go stale forever.
+    event.respondWith(staleWhileRevalidate(req));
   } else {
+    // Images are immutable per story id — cache-first is correct for them.
     event.respondWith(cacheFirst(req));
   }
 });

@@ -1,0 +1,58 @@
+{
+  "id": "p6-en-pic-beach",
+  "level": "P6",
+  "estMinutes": 4,
+  "title": "The Beach Clean-Up",
+  "scene": "Student volunteers collecting litter along a Singapore beach at low tide, with plastic bottles and abandoned rubbish washed up among the sand and driftwood.",
+  "sceneParts": [
+    {
+      "emoji": "🏖️",
+      "label": "beach"
+    },
+    {
+      "emoji": "🧤",
+      "label": "gloves"
+    },
+    {
+      "emoji": "🥤",
+      "label": "plastic bottles"
+    },
+    {
+      "emoji": "🗑️",
+      "label": "rubbish bags"
+    },
+    {
+      "emoji": "🎓",
+      "label": "students"
+    },
+    {
+      "emoji": "🌊",
+      "label": "sea"
+    }
+  ],
+  "keyElements": [
+    "beach",
+    "litter",
+    "plastic",
+    "volunteers",
+    "gloves",
+    "rubbish bags",
+    "tide",
+    "pollution",
+    "environment",
+    "responsibility"
+  ],
+  "questions": [
+    "Describe what is happening in this picture.",
+    "How do you think the volunteers feel as they fill the bags?",
+    "Tell me about a time you did something to help the environment.",
+    "Cleaning up is useful, but the rubbish keeps coming back. What else should be done?",
+    "Whose responsibility is it to keep our beaches clean? Why?"
+  ],
+  "lang": "en",
+  "type": "picture",
+  "tags": [
+    "english",
+    "picture"
+  ]
+}
