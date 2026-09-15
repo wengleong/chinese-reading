@@ -79,7 +79,10 @@ export function renderRecorder({ root, getCurrentStory, getActiveStudent, onSave
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     } catch (err) {
-      alert('Could not access microphone: ' + err.message);
+      // err.name is the diagnosis (NotAllowedError = permission, NotFoundError =
+      // no device, NotReadableError = another app holds the mic); err.message
+      // alone is browser-specific prose that says nothing actionable.
+      alert(`Could not access microphone (${err.name}): ${err.message}`);
       return;
     }
 
