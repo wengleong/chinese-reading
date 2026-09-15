@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>麦克风自检 · Microphone Check</title>
+    <style>
+      :root { color-scheme: light; }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        margin: 0; padding: 16px 16px 48px; line-height: 1.5;
+        background: #fffaf2; color: #2b2118;
+      }
+      h1 { font-size: 20px; margin: 0 0 4px; }
+      p.sub { margin: 0 0 16px; color: #7a6a5a; font-size: 14px; }
+      button {
+        font: inherit; font-weight: 700; border: 0; border-radius: 10px;
+        padding: 14px 18px; margin: 0 8px 8px 0; cursor: pointer;
+      }
+      button.primary { background: #e8590c; color: #fff; }
+      button.secondary { background: #e9dfd3; color: #2b2118; }
+      button[disabled] { opacity: .5; }
+      /* The speak-now banner must be impossible to miss — the whole test depends
+         on the child actually talking during the two listening windows. */
+      #banner {
+        display: none; position: sticky; top: 0; z-index: 10;
+        background: #b3261e; color: #fff; text-align: center;
+        border-radius: 12px; padding: 18px 12px; margin-bottom: 12px;
+        font-size: 22px; font-weight: 800;
+      }
+      #banner.on { display: block; }
+      #banner small { display: block; font-size: 15px; font-weight: 600; opacity: .9; margin-top: 4px; }
+      #out {
+        white-space: pre-wrap; word-break: break-word;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 13px; background: #fff; border: 1px solid #e0d4c5;
+        border-radius: 10px; padding: 12px; margin-top: 12px;
+      }
+      .ok   { color: #1f7a33; }
+      .bad  { color: #b3261e; font-weight: 700; }
+      .warn { color: #9a6700; }
+    </style>
+  </head>
+  <body>
+    <h1>麦克风自检 · Microphone Check</h1>
+    <p class="sub">
+      Tap <b>Run check</b> and <b>allow</b> the microphone. Twice during the test a red
+      banner will say <b>SPEAK NOW</b> — read the sentence out loud, normally, until it
+      disappears. Nothing is uploaded and nothing is saved.
+    </p>
+
+    <button id="run" class="primary">▶ Run check</button>
+    <button id="copy" class="secondary" disabled>📋 Copy report</button>
+
+    <div id="banner"></div>
+    <div id="out">Not run yet.</div>
+
+    <script>
+      const out = document.getElementById('out');
+      const banner = document.getElementById('banner');
+      const runBtn = document.getElementById('run');
+      const copyBtn = document.getElementById('copy');
+      const lines = [];
+
+      const SPEAK_LINE = '小猫今天去钓鱼，钓到了一条大鱼。';
+
+      function say(text, cls) {
+        lines.push(text);
+        const span = document.createElement('span');
+        if (cls) span.className = cls;
+        span.textContent = text + '\n';
+        out.appendChild(span);
+        window.scrollTo(0, document.body.scrollHeight);
+      }
+
+      // A rejected getUserMedia carries the diagnosis in err.name, not err.message.
+      // NotAllowedError = permission, NotFoundError = no device, NotReadableError =
+      // the OS or another app holds the mic. Never report just the message.
+      function describe(err) {
+        return (err && err.name ? err.name : 'UnknownError') + ': ' + (err && err.message ? err.message : String(err));
+      }
+
+      function pickMimeType() {
+        for (const t of ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4']) {
+          if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t)) return t;
+        }
+        return '';
+      }
+
+      function countdown(seconds) {
+        banner.classList.add('on');
+        return new Promise((resolve) => {
+          let left = seconds;
+          const paint = () => {
+            banner.innerHTML = '🔴 SPEAK NOW · ' + left + 's<small>' + SPEAK_LINE + '</small>';
+          };
+          paint();
+          const id = setInterval(() => {
+            left -= 1;
+            if (left <= 0) {
+              clearInterval(id);
+              banner.classList.remove('on');
+              resolve();
+            } else paint();
+          }, 1000);
+        });
+      }
+
+      // Runs one SpeechRecognition session with the same settings the app uses,
+      // while the caller asks the user to speak. What matters is not whether
+      // start() succeeded — it always does — but whether audiostart/speechstart
+      // fired and whether any words came back.
+      function probeSpeech(label, lang, seconds) {
+        return new Promise((resolve) => {
+          const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+          if (!SR) { say('  ' + label + ': SpeechRecognition API absent', 'bad'); return resolve({ words: '', events: [], verdict: 'absent' }); }
+          let r;
+          try { r = new SR(); } catch (e) { say('  ' + label + ': constructor threw — ' + describe(e), 'bad'); return resolve({ words: '', events: [], verdict: 'ctor-threw' }); }
+          // Same configuration as src/components/recorder.js.
+          r.lang = lang;
+          r.continuous = true;
+          r.interimResults = false;
+          r.maxAlternatives = 3;
+
+          const events = [];
+          let words = '';
+          let settled = false;
+          // Same cap as the app. Without it, a device where onend fires
+          // immediately would spin start()/end() as fast as the phone allows.
+          let restarts = 0;
+
+          r.onstart = () => events.push('start');
+          r.onaudiostart = () => events.push('audiostart');
+          r.onsoundstart = () => events.push('soundstart');
+          r.onspeechstart = () => events.push('speechstart');
+          r.onresult = (e) => {
+            events.push('result');
+            for (let i = e.resultIndex; i < e.results.length; i++) {
+              if (e.results[i].isFinal) words += e.results[i][0].transcript;
+            }
+          };
+          r.onerror = (e) => { events.push('error:' + (e && e.error ? e.error : 'unknown')); };
+          // The app restarts on end (Chrome's silence timeout); mirror that so
+          // the probe measures the same behaviour the app exhibits.
+          r.onend = () => {
+            events.push('end');
+            if (settled || restarts >= 20) return;
+            restarts += 1;
+            try { r.start(); events.push('restart'); } catch (e) { events.push('restart-threw:' + (e && e.name)); }
+          };
+
+          try { r.start(); } catch (e) {
+            say('  ' + label + ': start() threw — ' + describe(e), 'bad');
+            return resolve({ words: '', events: ['start-threw'], verdict: 'start-threw' });
+          }
+
+          countdown(seconds).then(async () => {
+            settled = true;
+            try { r.stop(); } catch (e) { /* already ended */ }
+            // Final results can arrive after stop() — the app waits 2s for this.
+            await new Promise(res => setTimeout(res, 2000));
+            const heard = words.trim();
+            const gotAudio = events.indexOf('audiostart') !== -1 || events.indexOf('speechstart') !== -1;
+            const verdict = heard ? 'HEARD' : (gotAudio ? 'audio but no words' : 'NO AUDIO AT ALL');
+            say('  ' + label + ' [' + lang + '] → ' + verdict, heard ? 'ok' : 'bad');
+            say('    transcript: ' + (heard ? '"' + heard + '"' : '(empty)'), heard ? 'ok' : 'bad');
+            say('    events: ' + (events.join(', ') || 'none'));
+            resolve({ words: heard, events: events, verdict: verdict });
+          });
+        });
+      }
+
+      async function run() {
+        runBtn.disabled = true;
+        copyBtn.disabled = true;
+        out.textContent = '';
+        lines.length = 0;
+
+        say('=== Microphone check ' + new Date().toISOString() + ' ===');
+        say('');
+
+        // --- 1. Environment -------------------------------------------------
+        say('1. Environment');
+        say('  url:            ' + location.href);
+        say('  secureContext:  ' + window.isSecureContext, window.isSecureContext ? 'ok' : 'bad');
+        if (!window.isSecureContext) {
+          say('  >> Not a secure context. getUserMedia is unavailable over plain http.', 'bad');
+        }
+        const standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+                           window.navigator.standalone === true;
+        say('  installed PWA:  ' + standalone);
+        say('  online:         ' + navigator.onLine, navigator.onLine ? 'ok' : 'bad');
+        say('  userAgent:      ' + navigator.userAgent);
+        say('  mediaDevices:   ' + (navigator.mediaDevices ? 'present' : 'MISSING'), navigator.mediaDevices ? 'ok' : 'bad');
+        say('  MediaRecorder:  ' + (typeof MediaRecorder !== 'undefined' ? 'present (' + (pickMimeType() || 'no supported mimeType') + ')' : 'MISSING'));
+        say('  SpeechRecog:    ' + (window.SpeechRecognition ? 'SpeechRecognition' : window.webkitSpeechRecognition ? 'webkitSpeechRecognition' : 'MISSING'));
+        say('');
+
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          say('STOPPED: this browser exposes no getUserMedia. Nothing below can run.', 'bad');
+          runBtn.disabled = false; copyBtn.disabled = false;
+          return;
+        }
+
+        // --- 2. Permission state --------------------------------------------
+        say('2. Permission state');
+        try {
+          const st = await navigator.permissions.query({ name: 'microphone' });
+          say('  permissions.query: ' + st.state, st.state === 'denied' ? 'bad' : 'ok');
+          if (st.state === 'denied') {
+            say('  >> Chrome has this site blocked. Address bar → lock/tune icon →', 'bad');
+            say('     Permissions → Microphone → Allow. Then re-run.', 'bad');
+          }
+        } catch (e) {
+          say('  permissions.query unsupported — ' + describe(e), 'warn');
+        }
+        say('');
+
+        // --- 3. getUserMedia + real capture ---------------------------------
+        say('3. getUserMedia({ audio: true })');
+        let stream = null;
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          const tracks = stream.getAudioTracks();
+          say('  GRANTED — ' + tracks.length + ' audio track(s)', 'ok');
+          tracks.forEach((t, i) => say('    track ' + i + ': label="' + (t.label || '(no label)') + '" state=' + t.readyState + ' muted=' + t.muted));
+        } catch (e) {
+          say('  FAILED — ' + describe(e), 'bad');
+          if (e && e.name === 'NotAllowedError') {
+            say('  >> Permission. Either Chrome blocked the site, or Android has not', 'bad');
+            say('     granted Chrome the Microphone permission (Android Settings →', 'bad');
+            say('     Apps → Chrome → Permissions → Microphone).', 'bad');
+          } else if (e && e.name === 'NotFoundError') {
+            say('  >> No microphone hardware is exposed to the browser.', 'bad');
+          } else if (e && e.name === 'NotReadableError') {
+            say('  >> Another app or the OS is holding the microphone.', 'bad');
+          }
+          say('');
+          say('STOPPED: without a stream the remaining checks cannot run.', 'bad');
+          runBtn.disabled = false; copyBtn.disabled = false;
+          return;
+        }
+        say('');
+
+        say('4. Devices visible (labels appear only after permission)');
+        try {
+          const devs = await navigator.mediaDevices.enumerateDevices();
+          const ins = devs.filter(d => d.kind === 'audioinput');
+          say('  audioinput count: ' + ins.length, ins.length ? 'ok' : 'bad');
+          ins.forEach((d, i) => say('  [' + i + '] ' + (d.label || '(no label)')));
+        } catch (e) {
+          say('  enumerateDevices failed — ' + describe(e), 'bad');
+        }
+        say('');
+
+        // --- 5. THE PAIR THAT MATTERS ---------------------------------------
+        // The app starts recognition while MediaRecorder holds the stream. If A
+        // hears nothing and B hears the same sentence, the microphone and the
+        // permissions are fine and the two APIs are fighting over one device.
+        say('5. Speech recognition WHILE recording — exactly what the app does');
+        say('   (starting MediaRecorder on the live stream first)');
+        let bytes = 0;
+        let recErr = null;
+        let rec = null;
+        const chunks = [];
+        try {
+          const mimeType = pickMimeType();
+          rec = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+          rec.ondataavailable = (e) => { if (e.data && e.data.size > 0) chunks.push(e.data); };
+          rec.start();
+        } catch (e) {
+          recErr = describe(e);
+          say('  MediaRecorder failed to start — ' + recErr, 'bad');
+        }
+
+        const withRecorder = await probeSpeech('while recording', 'zh-CN', 8);
+
+        if (rec && rec.state !== 'inactive') {
+          const stopped = new Promise(res => { rec.onstop = res; });
+          rec.stop();
+          await stopped;
+        }
+        bytes = chunks.reduce((n, c) => n + c.size, 0);
+        say('  MediaRecorder captured ' + bytes + ' bytes', bytes > 0 ? 'ok' : 'bad');
+        if (bytes === 0 && !recErr) say('  >> Stream was granted but produced no audio data.', 'bad');
+        say('');
+
+        stream.getTracks().forEach(t => t.stop());
+        say('  (microphone stream released)');
+        await new Promise(res => setTimeout(res, 1000));
+        say('');
+
+        say('6. Speech recognition ALONE — nothing else holding the mic');
+        const alone = await probeSpeech('recogniser only', 'zh-CN', 8);
+        say('');
+
+        // --- Verdict ---------------------------------------------------------
+        say('=== Verdict ===');
+        if (!withRecorder.words && alone.words) {
+          say('CONFIRMED: MICROPHONE CONTENTION.', 'bad');
+          say('The recogniser heard nothing while MediaRecorder held the stream,', 'bad');
+          say('and heard you clearly once the stream was released. The microphone,', 'bad');
+          say('the permissions and the hardware are all fine — the app cannot run', 'bad');
+          say('audio recording and speech recognition at the same time on this', 'bad');
+          say('device, and that is why every take scores "we did not hear anything".', 'bad');
+        } else if (withRecorder.words && alone.words) {
+          say('Both listening windows transcribed speech, so contention is NOT the', 'warn');
+          say('cause on this device. Look at language, volume or the restart loop.', 'warn');
+        } else if (!withRecorder.words && !alone.words) {
+          say('The recogniser heard nothing in either window.', 'bad');
+          if (bytes > 0) {
+            say('MediaRecorder DID capture audio, so the microphone works — the', 'bad');
+            say('speech service itself is failing (offline, blocked, or no language', 'bad');
+            say('pack). Check the event list above for network / service-not-allowed.', 'bad');
+          } else {
+            say('MediaRecorder captured nothing either — no audio is reaching the', 'bad');
+            say('browser at all despite permission being granted.', 'bad');
+          }
+        } else {
+          say('Heard while recording but not alone — unexpected; send this report.', 'warn');
+        }
+
+        runBtn.disabled = false;
+        copyBtn.disabled = false;
+      }
+
+      runBtn.addEventListener('click', () => {
+        run().catch(e => {
+          banner.classList.remove('on');
+          say('CHECK CRASHED — ' + describe(e), 'bad');
+          runBtn.disabled = false; copyBtn.disabled = false;
+        });
+      });
+
+      copyBtn.addEventListener('click', async () => {
+        const text = lines.join('\n');
+        try {
+          await navigator.clipboard.writeText(text);
+          copyBtn.textContent = '✅ Copied';
+          setTimeout(() => { copyBtn.textContent = '📋 Copy report'; }, 2000);
+        } catch (e) {
+          // Clipboard access can be refused — fall back to selecting the text so
+          // it can be long-pressed and copied by hand.
+          const range = document.createRange();
+          range.selectNodeContents(out);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+          copyBtn.textContent = 'Selected — long-press to copy';
+        }
+      });
+    </script>
+  </body>
+</html>
