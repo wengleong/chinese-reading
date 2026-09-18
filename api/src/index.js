@@ -5,6 +5,7 @@ const fs   = require('fs');
 const express = require('express');
 const db = require('./db');
 const { hasApiKey } = require('./anthropic');
+const { transcribeEnabled } = require('./openai');
 
 async function runMigrations() {
   await db.query(`
@@ -40,10 +41,15 @@ app.use('/api/sessions',   require('./routes/sessions'));
 app.use('/api/recordings', require('./routes/recordings'));
 app.use('/api/generate',   require('./routes/generate'));
 app.use('/api/tingxie',    require('./routes/tingxie'));
+app.use('/api/transcribe', require('./routes/transcribe'));
 
-// anthropicKey reports only WHETHER the server has a key — never its value.
-// It is how a deploy is checked for the AI features being live.
-app.get('/health', (_, res) => res.json({ ok: true, anthropicKey: hasApiKey() }));
+// Presence-only feature flags in /health so the client can pre-check whether
+// AI features are available without holding a credential.
+app.get('/health', (_, res) => res.json({
+  ok: true,
+  anthropicKey: hasApiKey(),
+  transcribeEnabled: transcribeEnabled(),
+}));
 
 // Fallback: serve index.html for any non-API route (PWA / deep links)
 app.get('*', (req, res) => {
