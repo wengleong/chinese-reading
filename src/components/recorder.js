@@ -2,6 +2,12 @@
 // No camera/canvas — the story reader is the teleprompter.
 
 import { saveRecording } from '../lib/storage.js';
+import {
+  isLoggedIn,
+  getHealth,
+  getTranscriptionConsent,
+  transcribeViaApi,
+} from '../lib/api.js';
 
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition || null;
 
@@ -16,6 +22,24 @@ function pickMimeType() {
     if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported?.(t)) return t;
   }
   return '';
+}
+
+// Per-session cache: neither flag flips mid-session, so one fetch per session
+// is enough. Populated lazily on the first take that needs the fallback.
+let transcribeReady = null;
+async function isTranscribeReady() {
+  if (transcribeReady !== null) return transcribeReady;
+  if (!isLoggedIn()) { transcribeReady = false; return false; }
+  try {
+    const [health, consentInfo] = await Promise.all([
+      getHealth(),
+      getTranscriptionConsent().catch(() => ({ consent: false })),
+    ]);
+    transcribeReady = Boolean(health?.transcribeEnabled && consentInfo?.consent);
+  } catch {
+    transcribeReady = false;
+  }
+  return transcribeReady;
 }
 
 export function renderRecorder({ root, getCurrentStory, getActiveStudent, onSaved, onActiveChange, onComplete, onStart }) {
@@ -213,6 +237,31 @@ export function renderRecorder({ root, getCurrentStory, getActiveStudent, onSave
       let finalTranscript = transcript;
       if (!finalTranscript.trim() && interimTranscript.trim()) {
         finalTranscript = interimTranscript;
+      }
+      // Server-side fallback: only tried when the local recogniser returned
+      // nothing at all, and only for families whose per-family consent AND the
+      // server's global feature flag are both on (isTranscribeReady checks
+      // both). Blob is forwarded in-memory on the server and NEVER persisted.
+      if (!finalTranscript.trim() && blob.size > 0 && await isTranscribeReady()) {
+        setStatus('⏳ 云端识别中… Transcribing on server…', 'info');
+        try {
+          const serverText = await transcribeViaApi({
+            blob,
+            mimeType: blob.type,
+            lang: story?.lang === 'en' ? 'en-SG' : 'zh-CN',
+          });
+          if (serverText.trim()) {
+            finalTranscript = serverText;
+            // Local SR did not produce a transcript but the server did, so the
+            // 'no-transcript' error message would now be a lie — clear it.
+            speechError = null;
+            setStatus('');
+          }
+        } catch (err) {
+          // Preserve the existing speechError-driven message; log for diagnostics.
+          console.warn('Server transcription fallback failed:', err.message);
+          setStatus('');
+        }
       }
       // Distinguish "recogniser returned nothing at all" from other failure
       // modes so the UI steers the reader towards the actual fix.

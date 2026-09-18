@@ -41,6 +41,10 @@ async function req(method, path, body, isFormData = false) {
   return res.json();
 }
 
+// /health is unauthenticated and reports presence-only feature flags.
+export const getHealth = () =>
+  fetch(`${API_BASE}/health`).then(r => (r.ok ? r.json() : {})).catch(() => ({}));
+
 // Families
 export const createFamily = ()     => req('POST', '/api/families');
 export const joinFamily   = (code) => req('POST', '/api/families/join', { code });
@@ -50,6 +54,19 @@ export const joinFamily   = (code) => req('POST', '/api/families/join', { code }
 // Data-flow: docs/pii-transcription-review.md.
 export const getTranscriptionConsent = ()        => req('GET', '/api/families/transcription-consent');
 export const setTranscriptionConsent = (consent) => req('PUT', '/api/families/transcription-consent', { consent });
+
+// POST /api/transcribe — server-side speech-to-text fallback for browsers
+// whose Web Speech API silently returns nothing. Server refuses unless the
+// global ENABLE_SERVER_TRANSCRIBE flag AND the caller's per-family
+// transcription_consent are BOTH true. Returns '' on any failure so callers
+// can preserve their existing empty-transcript UI without a try/catch.
+export async function transcribeViaApi({ blob, mimeType, lang }) {
+  const form = new FormData();
+  form.append('audio', blob, `take.${(mimeType || '').includes('mp4') ? 'mp4' : 'webm'}`);
+  if (lang) form.append('lang', lang);
+  const res = await req('POST', '/api/transcribe', form, true);
+  return typeof res?.transcript === 'string' ? res.transcript : '';
+}
 
 // Students
 export const listStudents  = ()         => req('GET',    '/api/students');
