@@ -39,7 +39,6 @@ function openSettingsModal() {
       <div class="settings-section">
         <div class="settings-section-title">Voice transcription assistance</div>
         <p class="modal-hint">
-          <b>(Draft wording — pending final approval by the Data Protection Officer.)</b><br>
           On some devices your browser cannot transcribe speech on its own
           (Linux Chrome, some non-Google Android tablets, Firefox). If you
           consent, your child's read-aloud audio will be sent to
