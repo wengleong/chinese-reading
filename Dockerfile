@@ -10,7 +10,7 @@ COPY api/src/ ./api/src/
 COPY api/migrations/ ./api/migrations/
 
 # Copy frontend static files into /app/public/
-COPY index.html styles.css manifest.webmanifest sw.js phone-upload.html ./public/
+COPY index.html styles.css manifest.webmanifest sw.js phone-upload.html mic-check.html ./public/
 COPY src/ ./public/src/
 COPY stories/ ./public/stories/
 COPY compositions/ ./public/compositions/
