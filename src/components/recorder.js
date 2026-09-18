@@ -67,7 +67,8 @@ export function renderRecorder({ root, getCurrentStory, getActiveStudent, onSave
   }
 
   let mediaRecorder = null, chunks = [], startedAt = 0, mimeType = '';
-  let recognition = null, transcript = '', speechError = null, wantRecognition = false;
+  let recognition = null, transcript = '', interimTranscript = '', speechError = null, wantRecognition = false;
+  let sawAnyResult = false;
   // Speech quality signals for richer scoring
   let confidenceSum = 0, confidenceCount = 0, lastResultMs = 0, timingGaps = [];
 
@@ -89,6 +90,8 @@ export function renderRecorder({ root, getCurrentStory, getActiveStudent, onSave
       : new MediaRecorder(stream);
 
     transcript = '';
+    interimTranscript = '';
+    sawAnyResult = false;
     speechError = null;
     confidenceSum = 0; confidenceCount = 0; lastResultMs = 0; timingGaps = [];
     if (SR) {
@@ -103,26 +106,39 @@ export function renderRecorder({ root, getCurrentStory, getActiveStudent, onSave
         // would then score 0 — the language must follow the story.
         recognition.lang = story.lang === 'en' ? 'en-SG' : 'zh-CN';
         recognition.continuous = true;
-        recognition.interimResults = false;
+        // Interim results are enabled so we can fall back to them at stop time.
+        // Android Chrome sometimes never finalises a take that stayed below the
+        // recogniser's confidence threshold — the student would otherwise get
+        // "we did not hear anything" even though the mic captured audio.
+        recognition.interimResults = true;
         recognition.maxAlternatives = 3;
         recognition.onresult = (e) => {
           const now = Date.now();
+          sawAnyResult = true;
+          let interimBuf = '';
           for (let i = e.resultIndex; i < e.results.length; i++) {
-            if (!e.results[i].isFinal) continue;
-            // Pick the alternative with highest confidence
-            let bestText = e.results[i][0].transcript;
-            let bestConf = e.results[i][0].confidence || 0;
-            for (let j = 1; j < e.results[i].length; j++) {
-              if ((e.results[i][j].confidence || 0) > bestConf) {
-                bestConf = e.results[i][j].confidence;
-                bestText = e.results[i][j].transcript;
+            const res = e.results[i];
+            // Pick the alternative with highest confidence.
+            let bestText = res[0].transcript;
+            let bestConf = res[0].confidence || 0;
+            for (let j = 1; j < res.length; j++) {
+              if ((res[j].confidence || 0) > bestConf) {
+                bestConf = res[j].confidence;
+                bestText = res[j].transcript;
               }
             }
-            transcript += bestText;
-            if (bestConf > 0) { confidenceSum += bestConf; confidenceCount++; }
-            if (lastResultMs > 0) timingGaps.push(now - lastResultMs);
-            lastResultMs = now;
+            if (res.isFinal) {
+              transcript += bestText;
+              if (bestConf > 0) { confidenceSum += bestConf; confidenceCount++; }
+              if (lastResultMs > 0) timingGaps.push(now - lastResultMs);
+              lastResultMs = now;
+            } else {
+              interimBuf += bestText;
+            }
           }
+          // Chrome resends the growing prefix each interim event, so replace
+          // rather than append.
+          if (interimBuf) interimTranscript = interimBuf;
         };
         recognition.onerror = (e) => {
           const code = e?.error || 'unknown';
@@ -189,9 +205,20 @@ export function renderRecorder({ root, getCurrentStory, getActiveStudent, onSave
       startBtn.disabled = false; stopBtn.disabled = true;
       stickyBar.classList.remove('is-recording');
       onActiveChange?.(false);
+      // Fall back to the last interim result if the recogniser never finalised —
+      // otherwise a genuine read is thrown away as "no audio heard".
+      let finalTranscript = transcript;
+      if (!finalTranscript.trim() && interimTranscript.trim()) {
+        finalTranscript = interimTranscript;
+      }
+      // Distinguish "recogniser returned nothing at all" from other failure
+      // modes so the UI steers the reader towards the actual fix.
+      if (!finalTranscript.trim() && !sawAnyResult && !speechError) {
+        speechError = 'no-transcript';
+      }
       const avgConfidence = confidenceCount > 0 ? confidenceSum / confidenceCount : 0;
       onComplete?.({
-        transcript, story, sessionId, avgConfidence, timingGaps, durationMs,
+        transcript: finalTranscript, story, sessionId, avgConfidence, timingGaps, durationMs,
         speechSupported, speechError,
       });
     };

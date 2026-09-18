@@ -183,6 +183,10 @@ function noSpeechMessage(speechSupported, speechError) {
   if (speechError === 'network') {
     return '语音识别需要网络连接。请检查网络后再录一次。 Speech recognition needs an internet connection — check your connection and record again.';
   }
+  if (speechError === 'no-transcript') {
+    return '这台设备的语音识别没有返回任何文字。请确认浏览器已启用 Google 语音服务，或换一台设备再试。 '
+         + 'Speech recognition returned no text on this device. Check that Google Speech Services is available in this browser, or try another device.';
+  }
   if (speechError) {
     return `语音识别出错 (${speechError})。请再录一次。 Speech recognition failed (${speechError}) — please record again.`;
   }
