@@ -46,6 +46,11 @@ export const createFamily = ()     => req('POST', '/api/families');
 export const joinFamily   = (code) => req('POST', '/api/families/join', { code });
 // No apikey calls: AI runs on the server's own key, so the browser never holds one.
 
+// Per-family opt-in for server-side speech transcription.
+// Data-flow: docs/pii-transcription-review.md.
+export const getTranscriptionConsent = ()        => req('GET', '/api/families/transcription-consent');
+export const setTranscriptionConsent = (consent) => req('PUT', '/api/families/transcription-consent', { consent });
+
 // Students
 export const listStudents  = ()         => req('GET',    '/api/students');
 export const upsertStudent = (student)  => req('POST',   '/api/students', student);
