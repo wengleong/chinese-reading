@@ -2,7 +2,7 @@
 // There is no API key here: every AI feature runs on the server's own
 // ANTHROPIC_API_KEY, so nothing to configure and no key in the browser.
 
-import { isLoggedIn } from '../lib/api.js';
+import { isLoggedIn, getTranscriptionConsent, setTranscriptionConsent } from '../lib/api.js';
 
 export function renderSettingsButton({ root }) {
   const btn = document.createElement("button");
@@ -35,6 +35,26 @@ function openSettingsModal() {
         </div>
       </div>
 
+      ${loggedIn ? `
+      <div class="settings-section">
+        <div class="settings-section-title">Voice transcription assistance</div>
+        <p class="modal-hint">
+          <b>(Draft wording — pending final approval by the Data Protection Officer.)</b><br>
+          On some devices your browser cannot transcribe speech on its own
+          (Linux Chrome, some non-Google Android tablets, Firefox). If you
+          consent, your child's read-aloud audio will be sent to
+          <b>OpenAI's transcription service (US-based)</b> as a fallback so
+          the read-aloud can still be scored. The audio is not stored on our
+          server. The transcription vendor holds it only for their standard
+          abuse-monitoring window. You can withdraw consent at any time.
+        </p>
+        <label class="toggle" style="display:flex; align-items:flex-start; gap:8px; margin-top:8px">
+          <input type="checkbox" id="settings-transcription-consent" disabled />
+          <span>I consent to server-side transcription as described above.</span>
+        </label>
+        <div class="settings-key-status" id="settings-transcription-status" style="margin-top:6px"></div>
+      </div>` : ''}
+
       <div class="settings-section">
         <div class="settings-section-title">About</div>
         <p class="modal-hint">
@@ -60,4 +80,41 @@ function openSettingsModal() {
 
   overlay.querySelector("#settings-close").addEventListener("click", close);
   overlay.addEventListener("click", e => { if (e.target === overlay) close(); });
+
+  if (loggedIn) {
+    const checkbox = overlay.querySelector('#settings-transcription-consent');
+    const status = overlay.querySelector('#settings-transcription-status');
+    // Toggle is disabled until we know the current server-side state, so a
+    // stale-looking checkbox never lets a parent think they have consented
+    // when they have not.
+    getTranscriptionConsent()
+      .then(({ consent }) => {
+        checkbox.checked = !!consent;
+        checkbox.disabled = false;
+        status.textContent = consent
+          ? '✓ Consent on file for this family.'
+          : 'Not consented — server transcription will not be used for this family.';
+      })
+      .catch(err => {
+        status.textContent = 'Could not load consent state: ' + err.message;
+      });
+
+    checkbox.addEventListener('change', () => {
+      const want = checkbox.checked;
+      checkbox.disabled = true;
+      status.textContent = want ? 'Saving consent…' : 'Withdrawing consent…';
+      setTranscriptionConsent(want)
+        .then(({ consent }) => {
+          checkbox.checked = !!consent;
+          status.textContent = consent
+            ? '✓ Consent on file for this family.'
+            : 'Consent withdrawn.';
+        })
+        .catch(err => {
+          checkbox.checked = !want;
+          status.textContent = 'Save failed: ' + err.message;
+        })
+        .finally(() => { checkbox.disabled = false; });
+    });
+  }
 }
