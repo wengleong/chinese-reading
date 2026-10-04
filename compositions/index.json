@@ -8,6 +8,14 @@
     "timeMinutes": 40
   },
   {
+    "id": "p3-zh-comp-flowerpot",
+    "lang": "zh",
+    "level": "P3",
+    "title": "我做错了一件事",
+    "theme": "诚实",
+    "timeMinutes": 40
+  },
+  {
     "id": "p4-zh-comp-market",
     "lang": "zh",
     "level": "P4",
@@ -21,6 +29,14 @@
     "level": "P5",
     "title": "一次助人的经历",
     "theme": "爱心",
+    "timeMinutes": 50
+  },
+  {
+    "id": "p5-zh-comp-race",
+    "lang": "zh",
+    "level": "P5",
+    "title": "一次难忘的比赛",
+    "theme": "坚持",
     "timeMinutes": 50
   },
   {
