@@ -1,0 +1,39 @@
+{
+  "id": "p3-zh-comp-flowerpot",
+  "lang": "zh",
+  "level": "P3",
+  "minChars": 80,
+  "timeMinutes": 40,
+  "theme": "诚实",
+  "questions": [
+    {
+      "no": 1,
+      "type": "命题作文",
+      "title": "我做错了一件事",
+      "hints": [
+        "你做错了什么事？",
+        "事情是怎么发生的？",
+        "后来你是怎么做的？",
+        "你从这件事学到了什么？"
+      ]
+    },
+    {
+      "no": 2,
+      "type": "看图作文",
+      "title": "看图作文",
+      "referenceWords": [
+        "楼下",
+        "踢球",
+        "花盆",
+        "打破",
+        "害怕",
+        "老奶奶",
+        "道歉",
+        "诚实"
+      ],
+      "note": "第六幅图是空白的，请你想象故事的结局，把它写出来。"
+    }
+  ],
+  "instructions": "从下面两题中选做一题，写一篇不少于80字的作文。",
+  "image": "p3-zh-comp-flowerpot.jpg"
+}
