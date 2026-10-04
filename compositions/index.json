@@ -16,6 +16,30 @@
     "timeMinutes": 40
   },
   {
+    "id": "p3-zh-comp-lunchbox",
+    "lang": "zh",
+    "level": "P3",
+    "title": "一件开心的事",
+    "theme": "分享",
+    "timeMinutes": 40
+  },
+  {
+    "id": "p3-zh-comp-birthday",
+    "lang": "zh",
+    "level": "P3",
+    "title": "我为妈妈做了一件事",
+    "theme": "孝顺",
+    "timeMinutes": 40
+  },
+  {
+    "id": "p3-zh-comp-mrt",
+    "lang": "zh",
+    "level": "P3",
+    "title": "我学会了让座",
+    "theme": "礼让",
+    "timeMinutes": 40
+  },
+  {
     "id": "p4-zh-comp-market",
     "lang": "zh",
     "level": "P4",
@@ -37,6 +61,30 @@
     "level": "P5",
     "title": "一次难忘的比赛",
     "theme": "坚持",
+    "timeMinutes": 50
+  },
+  {
+    "id": "p5-zh-comp-gaming",
+    "lang": "zh",
+    "level": "P5",
+    "title": "一次难忘的教训",
+    "theme": "自律",
+    "timeMinutes": 50
+  },
+  {
+    "id": "p5-zh-comp-project",
+    "lang": "zh",
+    "level": "P5",
+    "title": "团结就是力量",
+    "theme": "合作",
+    "timeMinutes": 50
+  },
+  {
+    "id": "p5-zh-comp-swim",
+    "lang": "zh",
+    "level": "P5",
+    "title": "我克服了恐惧",
+    "theme": "勇敢",
     "timeMinutes": 50
   },
   {
