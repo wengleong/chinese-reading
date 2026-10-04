@@ -28,7 +28,7 @@ test.describe('composition', () => {
     // No login prompt: there is nothing to sync or score.
     await expect(page.locator('#ob-skip')).toHaveCount(0);
     const cards = page.locator('.comp-card');
-    await expect(cards).toHaveCount(10);
+    await expect(cards).toHaveCount(16);
     const text = await page.locator('.comp-list').innerText();
     for (const level of ['P3', 'P4', 'P5', 'P6']) expect(text).toContain(level);
     expect(errors).toEqual([]);
@@ -42,8 +42,8 @@ test.describe('composition', () => {
     expect(await page.locator('.comp-card .lang-badge-zh').count()).toBe(0);
 
     await page.locator('.composition-panel .filter-tab', { hasText: '中文 Chinese' }).click();
-    await expect(page.locator('.comp-card')).toHaveCount(6);
-    expect(await page.locator('.comp-card .lang-badge-zh').count()).toBe(6);
+    await expect(page.locator('.comp-card')).toHaveCount(12);
+    expect(await page.locator('.comp-card .lang-badge-zh').count()).toBe(12);
   });
 
   test('an English paper shows the topic, three pictures and the use-any rule', async ({ page }) => {
